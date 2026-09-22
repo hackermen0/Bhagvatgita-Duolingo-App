@@ -41,37 +41,37 @@
   }
 </script>
 
-<div class="w-full max-w-xl mx-auto flex flex-col gap-6 p-4 sm:p-6 bg-slate-900/90 border border-slate-800 rounded-3xl shadow-2xl select-none relative overflow-hidden">
-  
+<div class="w-full max-w-xl mx-auto flex flex-col gap-6 p-4 sm:p-6 bg-bg-surface border border-border-warm rounded-3xl shadow-2xl select-none relative overflow-hidden">
+
   <!-- Ambient background glow -->
-  <div class="absolute -top-12 -left-12 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
+  <div class="absolute -top-12 -left-12 w-32 h-32 bg-success/10 rounded-full blur-2xl pointer-events-none"></div>
 
   <!-- Header Banner -->
-  <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+  <div class="flex items-center justify-between border-b border-border-warm pb-3">
     <div class="flex items-center gap-2">
-      <div class="w-8 h-8 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-sm">
+      <div class="w-8 h-8 rounded-full bg-success/15 border border-success/30 flex items-center justify-center text-success shadow-sm">
         <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M12 3c-1.5 2.5-3 5.5-3 8 0 2.5 1.5 4.5 3 4.5s3-2 3-4.5c0-2.5-1.5-5.5-3-8zm-5 4c-1.5 2-3 5-3 7 0 2.5 2 4.5 4.5 4.5 2 0 3.5-1.5 3.5-3.5-2 0-3.5-1.5-4-3.5-.5-1.5-.5-3 0-4.5zm10 0c.5 1.5.5 3 0 4.5-.5 2-2 3.5-4 3.5 0 2 1.5 3.5 3.5 3.5 2.5 0 4.5-2 4.5-4.5 0-2-1.5-5-3-7z"/></svg>
       </div>
       <div class="flex flex-col">
-        <span class="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">
+        <span class="text-[10px] font-black uppercase tracking-[0.2em] text-success">
           Mindful Reflection
         </span>
-        <span class="text-xs font-bold text-slate-300">
+        <span class="text-xs font-bold text-text-primary">
           Personal Journaling · Non-Graded
         </span>
       </div>
     </div>
 
-    <span class="text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 rounded-full">
+    <span class="text-[10px] font-bold text-primary bg-primary/10 border border-primary/30 px-2.5 py-1 rounded-full">
       No Wrong Answers
     </span>
   </div>
 
   <!-- Verse Context Banner if provided -->
   {#if verseContext}
-    <div class="bg-slate-950/60 border border-slate-800 p-3.5 rounded-2xl flex flex-col gap-1">
-      <span class="text-[9px] font-black uppercase tracking-wider text-slate-400">Verse Context</span>
-      <p class="text-xs text-slate-300 italic leading-relaxed">
+    <div class="bg-bg-surface-alt border border-border-warm p-3.5 rounded-2xl flex flex-col gap-1">
+      <span class="text-[9px] font-black uppercase tracking-wider text-text-muted">Verse Context</span>
+      <p class="text-xs text-text-primary italic leading-relaxed">
         {verseContext}
       </p>
     </div>
@@ -79,11 +79,11 @@
 
   <!-- Reflection Prompt Question -->
   <div class="flex flex-col gap-2">
-    <h2 class="text-lg sm:text-xl font-extrabold font-cinzel text-amber-100 tracking-wide leading-snug">
+    <h2 class="text-lg sm:text-xl font-extrabold font-cinzel text-primary-dark dark:text-primary tracking-wide leading-snug">
       {prompt}
     </h2>
     {#if guidance}
-      <p class="text-xs text-slate-400 leading-relaxed">
+      <p class="text-xs text-text-muted leading-relaxed">
         {guidance}
       </p>
     {/if}
@@ -95,7 +95,7 @@
       <button
         type="button"
         onclick={() => selectedTag = selectedTag === tag.value ? null : tag.value}
-        class="px-3 py-1.5 rounded-xl text-xs font-bold border transition-all active:scale-95 {selectedTag === tag.value ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-sm' : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:text-slate-200'}"
+        class="px-3 py-1.5 rounded-xl text-xs font-bold border transition-all active:scale-95 {selectedTag === tag.value ? 'bg-success/20 text-success border-success/50 shadow-sm' : 'bg-bg-surface-alt text-text-muted border-border-warm hover:text-text-primary'}"
       >
         {tag.label}
       </button>
@@ -104,7 +104,7 @@
 
   <!-- Reflection Textarea -->
   <div class="flex flex-col gap-1.5">
-    <label for="reflection-input" class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex justify-between">
+    <label for="reflection-input" class="text-[10px] font-bold uppercase tracking-wider text-text-muted flex justify-between">
       <span>Your Journal Entry</span>
       <span>{reflectionText.length} characters</span>
     </label>
@@ -113,7 +113,7 @@
       bind:value={reflectionText}
       placeholder="Write your reflection here... (e.g. How can you practice non-attachment in your daily responsibilities today?)"
       rows="4"
-      class="w-full bg-slate-950 border border-slate-750 focus:border-emerald-500 rounded-2xl p-4 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all resize-none leading-relaxed"
+      class="w-full bg-bg-surface-alt border border-border-warm focus:border-success rounded-2xl p-4 text-xs sm:text-sm text-text-primary placeholder-text-muted/60 focus:outline-none focus:ring-2 focus:ring-success/20 transition-all resize-none leading-relaxed"
     ></textarea>
   </div>
 
@@ -122,7 +122,7 @@
     <button
       type="button"
       onclick={onComplete}
-      class="text-xs font-semibold text-slate-400 hover:text-slate-200 px-3 py-2"
+      class="text-xs font-semibold text-text-muted hover:text-text-primary px-3 py-2"
     >
       Skip for now
     </button>
@@ -130,7 +130,7 @@
     <button
       type="button"
       onclick={handleSave}
-      class="py-3.5 px-6 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-lg active:scale-95 transition-all flex items-center gap-2"
+      class="py-3.5 px-6 bg-success hover:brightness-110 text-bg-base font-black text-xs sm:text-sm rounded-xl shadow-lg active:scale-95 transition-all flex items-center gap-2"
     >
       {#if isSaved}
         <span>Saved!</span>

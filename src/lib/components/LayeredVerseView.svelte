@@ -45,7 +45,7 @@
 <div class="flex flex-col gap-5 w-full max-w-xl mx-auto select-none">
   <!-- Top Controls: Single-Slide Dots & Full View Toggle -->
   <div
-    class="flex items-center justify-between bg-bg-surface/90 border border-slate-800 p-2.5 rounded-2xl shadow-inner"
+    class="flex items-center justify-between bg-bg-surface/90 border border-border-warm p-2.5 rounded-2xl shadow-inner"
   >
     <!-- Dots Progress Indicator -->
     {#if !isFullView}
@@ -56,7 +56,7 @@
             class="h-2.5 rounded-full transition-all duration-200 {currentSlide ===
             i
               ? 'w-7 bg-primary shadow-sm'
-              : 'w-2.5 bg-slate-800 hover:bg-slate-700'}"
+              : 'w-2.5 bg-border-warm hover:bg-text-muted/40'}"
             aria-label="Slide {i + 1}"
           ></button>
         {/each}
@@ -74,7 +74,7 @@
       onclick={() => (isFullView = !isFullView)}
       class="px-3 py-1 rounded-xl text-[10px] font-extrabold border transition-all active:scale-95 {isFullView
         ? 'bg-primary/20 text-primary border-primary/40'
-        : 'bg-bg-base text-text-muted border-slate-800 hover:text-text-primary'}"
+        : 'bg-bg-surface-alt text-text-muted border-border-warm hover:text-text-primary'}"
     >
       {isFullView ? "Single Slide View" : "Full Stacked View"}
     </button>
@@ -100,7 +100,7 @@
             </span>
             {#if verseRef}
               <span
-                class="text-[10px] font-bold text-amber-300 bg-primary/10 px-2 py-0.5 rounded-md border border-primary/30"
+                class="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md border border-primary/30"
               >
                 {verseRef}
               </span>
@@ -109,7 +109,7 @@
 
           <div class="py-6 text-center">
             <p
-              class="text-2xl sm:text-3xl font-extrabold font-cinzel text-amber-100 tracking-wide leading-relaxed whitespace-pre-line drop-shadow-md"
+              class="text-2xl sm:text-3xl font-extrabold font-cinzel text-primary-dark dark:text-primary tracking-wide leading-relaxed whitespace-pre-line drop-shadow-md"
             >
               {verseSanskrit}
             </p>
@@ -118,13 +118,13 @@
       {:else if currentSlide === 1}
         <!-- SLIDE 2: TRANSLITERATION -->
         <div
-          class="bg-bg-surface border border-teal-500/40 p-6 rounded-3xl shadow-xl flex flex-col gap-4 animate-[fade-in_0.2s_ease-out]"
+          class="bg-bg-surface border border-success/40 p-6 rounded-3xl shadow-xl flex flex-col gap-4 animate-[fade-in_0.2s_ease-out]"
         >
           <div
-            class="flex items-center justify-between border-b border-teal-500/20 pb-3"
+            class="flex items-center justify-between border-b border-success/20 pb-3"
           >
             <span
-              class="text-[10px] font-black uppercase tracking-[0.2em] text-teal-400"
+              class="text-[10px] font-black uppercase tracking-[0.2em] text-success"
             >
               Layer 2 · Transliteration (IAST)
             </span>
@@ -132,7 +132,7 @@
 
           <div class="py-6 text-center">
             <p
-              class="text-base sm:text-lg font-semibold text-teal-200 italic font-mono leading-relaxed whitespace-pre-line"
+              class="text-base sm:text-lg font-semibold text-success italic font-mono leading-relaxed whitespace-pre-line"
             >
               {verseTransliteration}
             </p>
@@ -141,13 +141,13 @@
       {:else if currentSlide === 2}
         <!-- SLIDE 3: WORD BREAKDOWN -->
         <div
-          class="bg-bg-surface border border-emerald-500/40 p-6 rounded-3xl shadow-xl flex flex-col gap-4 animate-[fade-in_0.2s_ease-out]"
+          class="bg-bg-surface border border-accent/40 p-6 rounded-3xl shadow-xl flex flex-col gap-4 animate-[fade-in_0.2s_ease-out]"
         >
           <div
-            class="flex items-center justify-between border-b border-slate-800 pb-3"
+            class="flex items-center justify-between border-b border-border-warm pb-3"
           >
             <span
-              class="text-[10px] font-black uppercase tracking-[0.2em] text-success"
+              class="text-[10px] font-black uppercase tracking-[0.2em] text-accent"
             >
               Layer 3 · Word-by-Word Breakdown
             </span>
@@ -164,10 +164,10 @@
                 class="flex flex-col items-center group cursor-pointer active:scale-95 transition-all text-center"
               >
                 <div
-                  class="px-3 py-2 rounded-2xl bg-bg-base border border-slate-750 group-hover:border-success/50 shadow-sm transition-all border-b-4 border-b-slate-950 flex flex-col items-center justify-center min-w-[70px]"
+                  class="px-3 py-2 rounded-2xl bg-bg-surface-alt border border-border-warm group-hover:border-accent/50 shadow-sm transition-all border-b-4 flex flex-col items-center justify-center min-w-[70px]"
                 >
                   <span
-                    class="text-[9px] font-semibold text-text-muted group-hover:text-success tracking-wider"
+                    class="text-[9px] font-semibold text-text-muted group-hover:text-accent tracking-wider"
                   >
                     {display.englishSyllables}
                   </span>
@@ -178,7 +178,7 @@
                   </span>
                 </div>
                 <span
-                  class="text-[10px] font-bold text-success/90 group-hover:text-success max-w-[100px] leading-tight text-center mt-1 border-b border-dashed border-success/30 pb-0.5"
+                  class="text-[10px] font-bold text-accent/90 group-hover:text-accent max-w-[100px] leading-tight text-center mt-1 border-b border-dashed border-accent/30 pb-0.5"
                 >
                   {item.meaning}
                 </span>
@@ -189,10 +189,10 @@
       {:else if currentSlide === 3}
         <!-- SLIDE 4: ENGLISH TRANSLATION -->
         <div
-          class="bg-bg-surface border border-slate-750 p-6 rounded-3xl shadow-xl flex flex-col gap-4 animate-[fade-in_0.2s_ease-out]"
+          class="bg-bg-surface border border-border-warm p-6 rounded-3xl shadow-xl flex flex-col gap-4 animate-[fade-in_0.2s_ease-out]"
         >
           <div
-            class="flex items-center justify-between border-b border-slate-800 pb-3"
+            class="flex items-center justify-between border-b border-border-warm pb-3"
           >
             <span
               class="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted"
@@ -248,7 +248,7 @@
         <button
           onclick={prevSlide}
           disabled={currentSlide === 0}
-          class="px-4 py-2 bg-bg-surface hover:bg-slate-800 border border-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-bold rounded-xl flex items-center gap-1 text-text-primary transition-all active:scale-95"
+          class="px-4 py-2 bg-bg-surface hover:bg-bg-surface-alt border border-border-warm disabled:opacity-40 disabled:cursor-not-allowed text-xs font-bold rounded-xl flex items-center gap-1 text-text-primary transition-all active:scale-95"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -307,7 +307,7 @@
           </span>
         </div>
         <p
-          class="text-xl sm:text-2xl font-extrabold font-cinzel text-amber-100 text-center leading-relaxed whitespace-pre-line"
+          class="text-xl sm:text-2xl font-extrabold font-cinzel text-primary-dark dark:text-primary text-center leading-relaxed whitespace-pre-line"
         >
           {verseSanskrit}
         </p>
@@ -315,15 +315,15 @@
 
       <!-- Layer 2: Transliteration -->
       <div
-        class="bg-bg-surface border border-teal-500/30 p-4 rounded-3xl flex flex-col gap-2"
+        class="bg-bg-surface border border-success/30 p-4 rounded-3xl flex flex-col gap-2"
       >
         <span
-          class="text-[9px] font-black uppercase tracking-widest text-teal-400"
+          class="text-[9px] font-black uppercase tracking-widest text-success"
         >
           Layer 2 · Transliteration (IAST)
         </span>
         <p
-          class="text-xs sm:text-sm font-semibold text-teal-200 italic font-mono leading-relaxed whitespace-pre-line"
+          class="text-xs sm:text-sm font-semibold text-success italic font-mono leading-relaxed whitespace-pre-line"
         >
           {verseTransliteration}
         </p>
@@ -331,10 +331,10 @@
 
       <!-- Layer 3: Word Breakdown -->
       <div
-        class="bg-bg-surface border border-slate-800 p-5 rounded-3xl flex flex-col gap-3"
+        class="bg-bg-surface border border-border-warm p-5 rounded-3xl flex flex-col gap-3"
       >
         <span
-          class="text-[10px] font-black uppercase tracking-[0.2em] text-success"
+          class="text-[10px] font-black uppercase tracking-[0.2em] text-accent"
         >
           Layer 3 · Word-by-Word Breakdown
         </span>
@@ -343,13 +343,13 @@
             {@const display = getSanskritDisplay(item.word)}
             <button
               onclick={() => (activeWord = item)}
-              class="px-3 py-1.5 rounded-xl bg-bg-base border border-slate-750 text-center active:scale-95 transition-all"
+              class="px-3 py-1.5 rounded-xl bg-bg-surface-alt border border-border-warm text-center active:scale-95 transition-all"
             >
               <span
                 class="text-xs font-bold text-text-primary block font-cinzel"
                 >{item.devanagari}</span
               >
-              <span class="text-[9px] font-semibold text-success block"
+              <span class="text-[9px] font-semibold text-accent block"
                 >{item.meaning}</span
               >
             </button>
@@ -359,7 +359,7 @@
 
       <!-- Layer 4: Translation -->
       <div
-        class="bg-bg-surface border border-slate-800 p-4 rounded-3xl flex flex-col gap-1"
+        class="bg-bg-surface border border-border-warm p-4 rounded-3xl flex flex-col gap-1"
       >
         <span
           class="text-[10px] font-black uppercase tracking-widest text-text-muted"
@@ -395,7 +395,7 @@
       class="fixed inset-0 bg-bg-base/85 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4"
     >
       <div
-        class="w-full max-w-sm bg-bg-surface border border-slate-750 rounded-3xl p-6 flex flex-col gap-4 shadow-2xl"
+        class="w-full max-w-sm bg-bg-surface border border-border-warm rounded-3xl p-6 flex flex-col gap-4 shadow-2xl"
       >
         <div class="flex justify-between items-start">
           <div class="flex flex-col">
@@ -403,7 +403,7 @@
               class="text-[10px] uppercase font-bold tracking-widest text-text-muted"
               >{activeWord.partOfSpeech}</span
             >
-            <h3 class="text-3xl font-black text-white font-cinzel mt-0.5">
+            <h3 class="text-3xl font-black text-text-primary font-cinzel mt-0.5">
               {activeWord.devanagari}
             </h3>
             <span class="text-base font-bold text-primary"
@@ -412,7 +412,7 @@
           </div>
           <button
             onclick={() => (activeWord = null)}
-            class="text-text-muted hover:text-text-primary bg-bg-base p-2 rounded-full"
+            class="text-text-muted hover:text-text-primary bg-bg-surface-alt p-2 rounded-full"
             aria-label="Close"
           >
             <svg
@@ -432,13 +432,13 @@
           </button>
         </div>
 
-        <div class="h-px bg-slate-800"></div>
+        <div class="h-px bg-border-warm"></div>
 
         <div
-          class="bg-bg-base/60 border border-slate-800 p-4 rounded-2xl flex flex-col gap-1"
+          class="bg-bg-surface-alt border border-border-warm p-4 rounded-2xl flex flex-col gap-1"
         >
           <span
-            class="text-[10px] font-extrabold uppercase tracking-wider text-success"
+            class="text-[10px] font-extrabold uppercase tracking-wider text-accent"
             >Meaning</span
           >
           <p class="text-lg font-extrabold text-text-primary">
@@ -448,7 +448,7 @@
 
         <button
           onclick={() => (activeWord = null)}
-          class="w-full py-3 bg-success hover:bg-emerald-400 text-bg-base font-black rounded-xl shadow-lg active:scale-95 transition-all text-sm"
+          class="w-full py-3 bg-success hover:brightness-110 text-bg-base font-black rounded-xl shadow-lg active:scale-95 transition-all text-sm"
         >
           Got it!
         </button>

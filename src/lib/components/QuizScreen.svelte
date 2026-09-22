@@ -216,10 +216,10 @@
         "Focus on the action without fear of failure. Refill your hearts and try again."
       </p>
       <div class="flex flex-col gap-3 w-full max-w-xs">
-        <button onclick={restartLesson} class="w-full bg-primary hover:bg-primary-dark text-bg-base font-black py-3.5 rounded-2xl shadow-lg btn-3d border-b-4 border-amber-900 transition-all">
+        <button onclick={restartLesson} class="w-full bg-primary hover:bg-primary-dark text-bg-base font-black py-3.5 rounded-2xl shadow-lg btn-3d border-b-4 border-accent transition-all">
           Refill Hearts &amp; Retry
         </button>
-        <button onclick={onExit} class="w-full bg-bg-surface hover:bg-slate-800 text-text-muted font-bold py-3.5 rounded-2xl border border-slate-700 active:scale-[0.98] transition-all text-xs">
+        <button onclick={onExit} class="w-full bg-bg-surface hover:bg-bg-surface-alt text-text-muted font-bold py-3.5 rounded-2xl border border-border-warm active:scale-[0.98] transition-all text-xs">
           Return to Dashboard
         </button>
       </div>
@@ -245,7 +245,7 @@
         You've mastered every word and assembled the complete verse for <strong class="text-text-primary">{lesson.title}</strong>!
       </p>
 
-      <div class="bg-bg-surface border border-slate-800 rounded-2xl p-4 w-full max-w-xs flex justify-around mb-6 shadow-xl">
+      <div class="bg-bg-surface border border-border-warm rounded-2xl p-4 w-full max-w-xs flex justify-around mb-6 shadow-xl">
         <div class="flex flex-col items-center">
           <div class="flex items-center gap-1 text-primary font-black text-2xl">
             <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M13 2L3 14h7v8l10-12h-7V2z"/></svg>
@@ -253,17 +253,17 @@
           </div>
           <span class="text-text-muted text-[9px] uppercase font-bold tracking-wider mt-1">XP Earned</span>
         </div>
-        <div class="w-px bg-slate-800"></div>
+        <div class="w-px bg-border-warm"></div>
         <div class="flex flex-col items-center">
           <div class="flex items-center gap-1 text-error font-black text-2xl">
-            <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-rose-500"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-error"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
             <span>{gameState.hearts}</span>
           </div>
           <span class="text-text-muted text-[9px] uppercase font-bold tracking-wider mt-1">Hearts Left</span>
         </div>
       </div>
 
-      <button onclick={onExit} class="w-full max-w-xs bg-primary hover:bg-primary-dark text-bg-base font-black py-4 rounded-2xl shadow-lg btn-3d border-b-4 border-amber-900 transition-all text-sm">
+      <button onclick={onExit} class="w-full max-w-xs bg-primary hover:bg-primary-dark text-bg-base font-black py-4 rounded-2xl shadow-lg btn-3d border-b-4 border-accent transition-all text-sm">
         Return to Map
       </button>
     </div>
@@ -297,21 +297,21 @@
         You've discovered every word. Now let's test your complete mastery of the entire verse.
       </p>
 
-      <div class="bg-bg-surface border border-slate-800 p-5 rounded-3xl w-full max-w-xs flex flex-col gap-2.5 mb-6 shadow-2xl text-left">
-        <span class="text-[9px] font-black text-primary uppercase tracking-widest block border-b border-slate-800 pb-2">
+      <div class="bg-bg-surface border border-border-warm p-5 rounded-3xl w-full max-w-xs flex flex-col gap-2.5 mb-6 shadow-2xl text-left">
+        <span class="text-[9px] font-black text-primary uppercase tracking-widest block border-b border-border-warm pb-2">
           {lesson.verseRef} · Full Verse:
         </span>
-        <p class="text-base font-bold font-cinzel text-amber-200 leading-snug whitespace-pre-line">
+        <p class="text-base font-bold font-cinzel text-primary-dark dark:text-primary leading-snug whitespace-pre-line">
           {lesson.verseSanskrit}
         </p>
-        <p class="text-xs text-text-muted italic leading-relaxed pt-2 border-t border-slate-800">
+        <p class="text-xs text-text-muted italic leading-relaxed pt-2 border-t border-border-warm">
           "{lesson.translation}"
         </p>
       </div>
 
       <button
         onclick={startSynthesisPlay}
-        class="w-full max-w-xs py-4 bg-primary text-bg-base font-black text-sm rounded-2xl shadow-xl btn-3d border-b-4 border-amber-900 hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+        class="w-full max-w-xs py-4 bg-primary text-bg-base font-black text-sm rounded-2xl shadow-xl btn-3d border-b-4 border-accent hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
       >
         <span>SOLVE FULL VERSE</span>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
@@ -397,14 +397,14 @@
 
     <!-- Check button (hidden for reflection) -->
     {#if activeQuestion && activeQuestion.type !== 'reflection'}
-      <div class="p-4 bg-bg-surface border-t border-slate-800 sticky bottom-0 z-20">
+      <div class="p-4 bg-bg-surface border-t border-border-warm sticky bottom-0 z-20">
         <button
           onclick={checkAnswer}
           disabled={!canCheck() || isChecked}
           class="w-full py-4 rounded-2xl font-black text-sm select-none transition-all active:scale-[0.98] btn-3d
             {canCheck() && !isChecked
-              ? 'bg-primary text-bg-base hover:bg-primary-dark border-b-4 border-amber-900 shadow-lg shadow-primary/10'
-              : 'bg-bg-base text-text-muted/50 border border-slate-800 cursor-not-allowed border-b-4 border-b-slate-950'}"
+              ? 'bg-primary text-bg-base hover:bg-primary-dark border-b-4 border-accent shadow-lg shadow-primary/10'
+              : 'bg-bg-surface-alt text-text-muted/50 border border-border-warm cursor-not-allowed border-b-4 border-b-border-warm'}"
         >
           Check Answer
         </button>

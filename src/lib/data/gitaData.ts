@@ -251,14 +251,25 @@ export const gitaData: GitaData = {
                     {
                       id: 'p1_q1',
                       type: 'phrase_matching',
-                      prompt: 'Match the words in Part 1 to their English meanings.',
+                      prompt: 'Match each word in Part 1 to its meaning.',
+                      pairs: [
+                        { sanskrit: 'karmaṇi', english: 'in action / duty' },
+                        { sanskrit: 'eva', english: 'only / certainly' },
+                        { sanskrit: 'adhikāraḥ', english: 'right / entitlement' },
+                        { sanskrit: 'te', english: 'your' }
+                      ]
+                    },
+                    {
+                      id: 'p1_q2',
+                      type: 'phrase_matching',
+                      prompt: 'Now match the joined phrases to their meanings.',
                       pairs: [
                         { sanskrit: 'karmaṇi eva', english: 'in prescribed duty only' },
                         { sanskrit: 'adhikāraḥ te', english: 'your right is' }
                       ]
                     },
                     {
-                      id: 'p1_q2',
+                      id: 'p1_q3',
                       type: 'sentence_rebuilding',
                       prompt: 'Arrange the words to form Part 1 of the verse.',
                       targetSentence: 'karmaṇi eva adhikāraḥ te',
@@ -281,6 +292,16 @@ export const gitaData: GitaData = {
                   questions: [
                     {
                       id: 'p2_q1',
+                      type: 'phrase_matching',
+                      prompt: 'Match each word in Part 2 to its meaning.',
+                      pairs: [
+                        { sanskrit: 'mā', english: 'never / not' },
+                        { sanskrit: 'phaleṣu', english: 'in the fruits / results' },
+                        { sanskrit: 'kadācana', english: 'at any time' }
+                      ]
+                    },
+                    {
+                      id: 'p2_q2',
                       type: 'fill_in_the_blank',
                       prompt: 'Complete Part 2: "mā phaleṣu ______"',
                       translation: 'Never in the fruits at any time.',
@@ -289,9 +310,9 @@ export const gitaData: GitaData = {
                       explanation: '"kadācana" means at any time. You are never entitled to results.'
                     },
                     {
-                      id: 'p2_q2',
+                      id: 'p2_q3',
                       type: 'phrase_matching',
-                      prompt: 'Match Part 2 terms to their meanings.',
+                      prompt: 'Now match the joined phrases to their meanings.',
                       pairs: [
                         { sanskrit: 'mā phaleṣu', english: 'never in the fruits' },
                         { sanskrit: 'kadācana', english: 'at any time' }
@@ -411,17 +432,42 @@ export const gitaData: GitaData = {
                     { word: 'yogasthaḥ', devanagari: 'योगस्थः', meaning: 'established in Yoga', partOfSpeech: 'adjective' },
                     { word: 'kuru', devanagari: 'कुरु', meaning: 'do / perform', partOfSpeech: 'verb' },
                     { word: 'karmāṇi', devanagari: 'कर्माणि', meaning: 'duties / actions', partOfSpeech: 'noun' },
-                    { word: 'tyaktvā', devanagari: 'त्यक्त्वा', meaning: 'abandoning', partOfSpeech: 'verb' }
+                    { word: 'saṅgaṁ', devanagari: 'सङ्गं', meaning: 'attachment', partOfSpeech: 'noun' },
+                    { word: 'tyaktvā', devanagari: 'त्यक्त्वा', meaning: 'abandoning', partOfSpeech: 'verb' },
+                    { word: 'dhanañjaya', devanagari: 'धनञ्जय', meaning: 'O Arjuna (winner of wealth)', partOfSpeech: 'noun (vocative)' }
                   ],
                   questions: [
                     {
                       id: 'bg248_p1_q1',
                       type: 'phrase_matching',
-                      prompt: 'Match Part 1 terms to their meanings.',
+                      prompt: 'Match each word in Part 1 to its meaning.',
                       pairs: [
                         { sanskrit: 'yogasthaḥ', english: 'established in Yoga' },
-                        { sanskrit: 'kuru karmāṇi', english: 'perform duties' }
+                        { sanskrit: 'kuru', english: 'do / perform' },
+                        { sanskrit: 'karmāṇi', english: 'duties / actions' },
+                        { sanskrit: 'saṅgaṁ', english: 'attachment' },
+                        { sanskrit: 'tyaktvā', english: 'abandoning' },
+                        { sanskrit: 'dhanañjaya', english: 'O Arjuna (winner of wealth)' }
                       ]
+                    },
+                    {
+                      id: 'bg248_p1_q2',
+                      type: 'phrase_matching',
+                      prompt: 'Now match the joined phrases to their meanings.',
+                      pairs: [
+                        { sanskrit: 'yogasthaḥ', english: 'established in Yoga' },
+                        { sanskrit: 'kuru karmāṇi', english: 'perform duties' },
+                        { sanskrit: 'saṅgaṁ tyaktvā', english: 'abandoning attachment' },
+                        { sanskrit: 'dhanañjaya', english: 'O Arjuna' }
+                      ]
+                    },
+                    {
+                      id: 'bg248_p1_q3',
+                      type: 'sentence_rebuilding',
+                      prompt: 'Arrange the words to form Part 1 of the verse.',
+                      targetSentence: 'yogasthaḥ kuru karmāṇi saṅgaṁ tyaktvā dhanañjaya',
+                      tiles: ['yogasthaḥ', 'kuru', 'karmāṇi', 'saṅgaṁ', 'tyaktvā', 'dhanañjaya'],
+                      explanation: '"yogasthaḥ kuru karmāṇi saṅgaṁ tyaktvā dhanañjaya" — Established in Yoga, perform your duties, abandoning attachment, O Arjuna.'
                     }
                   ]
                 },
@@ -432,13 +478,29 @@ export const gitaData: GitaData = {
                   transliteration: 'siddhy-asiddhyoḥ samo bhūtvā samatvaṁ yoga ucyate',
                   translation: 'Be equal in success and failure. Such evenness of mind is called Yoga.',
                   wordBreakdown: [
+                    { word: 'siddhy-asiddhyoḥ', devanagari: 'सिद्ध्यसिद्ध्योः', meaning: 'in success and failure', partOfSpeech: 'noun (compound)' },
                     { word: 'samo', devanagari: 'समो', meaning: 'equal / equipoised', partOfSpeech: 'adjective' },
+                    { word: 'bhūtvā', devanagari: 'भूत्वा', meaning: 'having become / being', partOfSpeech: 'verb (participle)' },
                     { word: 'samatvaṁ', devanagari: 'समत्वम्', meaning: 'evenness of mind', partOfSpeech: 'noun' },
-                    { word: 'yoga', devanagari: 'योग', meaning: 'Yoga', partOfSpeech: 'noun' }
+                    { word: 'yoga', devanagari: 'योग', meaning: 'Yoga', partOfSpeech: 'noun' },
+                    { word: 'ucyate', devanagari: 'उच्यते', meaning: 'is called / is said to be', partOfSpeech: 'verb (passive)' }
                   ],
                   questions: [
                     {
                       id: 'bg248_p2_q1',
+                      type: 'phrase_matching',
+                      prompt: 'Match each word in Part 2 to its meaning.',
+                      pairs: [
+                        { sanskrit: 'siddhy-asiddhyoḥ', english: 'in success and failure' },
+                        { sanskrit: 'samo', english: 'equal / equipoised' },
+                        { sanskrit: 'bhūtvā', english: 'having become / being' },
+                        { sanskrit: 'samatvaṁ', english: 'evenness of mind' },
+                        { sanskrit: 'yoga', english: 'Yoga' },
+                        { sanskrit: 'ucyate', english: 'is called / is said to be' }
+                      ]
+                    },
+                    {
+                      id: 'bg248_p2_q2',
                       type: 'multiple_choice',
                       prompt: 'What does Krishna define as "Yoga" in BG 2.48?',
                       options: [
@@ -560,7 +622,17 @@ export const gitaData: GitaData = {
                     {
                       id: 'bg271_p1_q1',
                       type: 'phrase_matching',
-                      prompt: 'Match Part 1 terms.',
+                      prompt: 'Match each word in Part 1 to its meaning.',
+                      pairs: [
+                        { sanskrit: 'vihāya', english: 'giving up / abandoning' },
+                        { sanskrit: 'kāmān', english: 'desires' },
+                        { sanskrit: 'niḥspṛhaḥ', english: 'free from craving' }
+                      ]
+                    },
+                    {
+                      id: 'bg271_p1_q2',
+                      type: 'phrase_matching',
+                      prompt: 'Now match the joined phrases to their meanings.',
                       pairs: [
                         { sanskrit: 'vihāya kāmān', english: 'giving up desires' },
                         { sanskrit: 'niḥspṛhaḥ', english: 'free from craving' }

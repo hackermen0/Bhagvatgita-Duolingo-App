@@ -1,15 +1,41 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
-  --color-bg-base: #0B0F2B;
-  --color-bg-surface: #12163A;
-  --color-primary: #F4A428;
-  --color-primary-dark: #E88B1F;
-  --color-success: #1DAA7C;
+  /* Saffron & Temple Gold — light (default) */
+  --color-bg-base: #FBF3E6;
+  --color-bg-surface: #FFFFFF;
+  --color-bg-surface-alt: #FFF7EA;
+  --color-primary: #F4972D;
+  --color-primary-dark: #D97615;
+  --color-accent: #8C2F39;
+  --color-success: #1B8A73;
   --color-error: #D64545;
-  --color-accent-rose: #E85D9A;
-  --color-text-primary: #F5EFE0;
-  --color-text-muted: #9CA3C4;
+  --color-text-primary: #3A2B1E;
+  --color-text-muted: #8A7A6C;
+  --color-border-warm: #EADFCC;
+  --color-track-base: #F0E2C8;
+  --color-track-locked: #DCCBAE;
+  --color-node-locked: #F1E6D2;
+}
+
+.dark {
+  /* Saffron & Temple Gold — warm dusk (dark) */
+  --color-bg-base: #241512;
+  --color-bg-surface: #33201A;
+  --color-bg-surface-alt: #3B241D;
+  --color-primary: #F7A83D;
+  --color-primary-dark: #D97615;
+  --color-accent: #C4515E;
+  --color-success: #2FBF9C;
+  --color-error: #E2605D;
+  --color-text-primary: #F5E9D8;
+  --color-text-muted: #C2AA95;
+  --color-border-warm: #4A332B;
+  --color-track-base: #40281F;
+  --color-track-locked: #4A322A;
+  --color-node-locked: #3B2620;
 }
 
 @layer base {
@@ -19,6 +45,7 @@
     font-family: 'Outfit', sans-serif;
     min-height: 100vh;
     overflow-x: hidden;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 }
 
@@ -81,11 +108,11 @@
 /* Node current-lesson glow pulse */
 @keyframes node-glow-pulse {
   0%, 100% {
-    box-shadow: 0 0 16px 4px rgba(244, 164, 40, 0.5), 0 0 40px 8px rgba(244, 164, 40, 0.2);
+    box-shadow: 0 0 16px 4px rgba(244, 151, 45, 0.55), 0 0 40px 8px rgba(244, 151, 45, 0.25);
     transform: scale(1);
   }
   50% {
-    box-shadow: 0 0 28px 10px rgba(244, 164, 40, 0.75), 0 0 60px 20px rgba(244, 164, 40, 0.35);
+    box-shadow: 0 0 28px 10px rgba(244, 151, 45, 0.8), 0 0 60px 20px rgba(244, 151, 45, 0.4);
     transform: scale(1.06);
   }
 }

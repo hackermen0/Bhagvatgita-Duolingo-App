@@ -49,7 +49,7 @@
 <div class="flex flex-col gap-4 w-full select-none max-w-lg mx-auto">
   
   <!-- Verse Display Box -->
-  <div class="bg-bg-surface/90 border border-slate-800 p-4 sm:p-5 rounded-3xl text-center shadow-xl flex flex-col gap-3 items-center justify-center min-h-[110px]">
+  <div class="bg-bg-surface border border-border-warm p-4 sm:p-5 rounded-3xl text-center shadow-lg flex flex-col gap-3 items-center justify-center min-h-[110px]">
     
     {#if parsedPrompt().instruction}
       <span class="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
@@ -63,7 +63,7 @@
         {#if token.isBlank}
           {#if selectedWord}
             {@const display = getSanskritDisplay(selectedWord)}
-            <div class="px-3.5 py-2 rounded-2xl bg-primary text-bg-base border-b-4 border-amber-950 shadow-md flex flex-col items-center justify-center min-w-[70px] animate-[pop_0.12s_ease-out]">
+            <div class="px-3.5 py-2 rounded-2xl bg-primary text-bg-base border-b-4 border-accent shadow-md flex flex-col items-center justify-center min-w-[70px] animate-[pop_0.12s_ease-out]">
               <span class="text-[9px] font-extrabold text-bg-base/80 tracking-wider">
                 {display.englishSyllables}
               </span>
@@ -72,7 +72,7 @@
               </span>
             </div>
           {:else}
-            <div class="px-3.5 py-2 rounded-2xl bg-bg-base/80 border-2 border-dashed border-primary/50 flex flex-col items-center justify-center min-w-[75px] min-h-[50px] shadow-inner animate-pulse">
+            <div class="px-3.5 py-2 rounded-2xl bg-bg-surface-alt border-2 border-dashed border-primary/50 flex flex-col items-center justify-center min-w-[75px] min-h-[50px] shadow-inner animate-pulse">
               <span class="text-xs font-black text-primary font-cinzel tracking-widest">
                 ______
               </span>
@@ -80,7 +80,7 @@
           {/if}
         {:else}
           {@const display = getSanskritDisplay(token.word)}
-          <div class="px-3.5 py-2 rounded-2xl bg-bg-base border border-slate-750 shadow-sm border-b-4 border-b-slate-950 flex flex-col items-center justify-center min-w-[65px]">
+          <div class="px-3.5 py-2 rounded-2xl bg-bg-surface-alt border border-border-warm shadow-sm border-b-4 flex flex-col items-center justify-center min-w-[65px]">
             <span class="text-[9px] font-semibold text-text-muted tracking-wider">
               {display.englishSyllables}
             </span>
@@ -93,13 +93,13 @@
     </div>
 
     {#if translation}
-      <p class="text-xs text-text-muted italic leading-snug border-t border-slate-800/80 pt-2 w-full max-w-md">
+      <p class="text-xs text-text-muted italic leading-snug border-t border-border-warm pt-2 w-full max-w-md">
         "{translation}"
       </p>
     {/if}
   </div>
 
-  <div class="h-px bg-slate-800"></div>
+  <div class="h-px bg-border-warm"></div>
 
   <!-- Options bank with 3D tactile buttons -->
   <div class="flex flex-wrap justify-center gap-2.5">
@@ -112,8 +112,8 @@
         onclick={() => handleSelect(option)}
         class="min-w-[90px] px-4 py-2 rounded-2xl shadow border-b-4 tile-3d flex flex-col items-center justify-center transition-all
           {isSelected
-            ? 'bg-primary text-bg-base border-amber-950 shadow-primary/20'
-            : 'bg-bg-surface hover:bg-slate-800 border-slate-700 border-b-slate-950 text-text-primary'}"
+            ? 'bg-primary text-bg-base border-accent shadow-primary/20'
+            : 'bg-bg-surface hover:bg-bg-surface-alt border-border-warm text-text-primary'}"
       >
         <span class="text-[9px] font-semibold tracking-wider {isSelected ? 'text-bg-base/80' : 'text-text-muted'}">
           {display.englishSyllables}

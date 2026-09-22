@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { WordMeaning } from "../data/gitaData";
+  import { getSanskritDisplay } from "../data/sanskritHelper";
 
   let { word, onNext } = $props<{
     word: WordMeaning;
@@ -8,6 +9,9 @@
 
   let flipped = $state(false);
   let entered = $state(false);
+  let isSpeaking = $state(false);
+  let rate = $state<"normal" | "slow">("normal");
+  let speechSupported = $state(false);
 
   // Pop-in entrance on mount
   import { onMount } from "svelte";
@@ -15,10 +19,60 @@
     requestAnimationFrame(() => {
       entered = true;
     });
+    speechSupported = typeof window !== "undefined" && "speechSynthesis" in window;
+    return () => {
+      if (speechSupported) window.speechSynthesis.cancel();
+    };
   });
 
   function flip() {
     if (!flipped) flipped = true;
+  }
+
+  // Cancelling an utterance to start a replacement fires the OLD utterance's
+  // onend/onerror asynchronously, after the new one has already started — this
+  // reference lets those stale callbacks recognize they're outdated and no-op.
+  let currentUtterance: SpeechSynthesisUtterance | null = null;
+
+  function startSpeaking() {
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(word.devanagari);
+    utterance.lang = "hi-IN";
+    utterance.rate = rate === "slow" ? 0.4 : 0.75;
+    utterance.onend = () => {
+      if (currentUtterance !== utterance) return;
+      isSpeaking = false;
+    };
+    utterance.onerror = () => {
+      if (currentUtterance !== utterance) return;
+      isSpeaking = false;
+    };
+
+    currentUtterance = utterance;
+    isSpeaking = true;
+    window.speechSynthesis.speak(utterance);
+  }
+
+  function toggleSpeakWord(e: MouseEvent) {
+    e.stopPropagation();
+    if (!speechSupported) return;
+
+    if (isSpeaking) {
+      currentUtterance = null;
+      window.speechSynthesis.cancel();
+      isSpeaking = false;
+      return;
+    }
+
+    startSpeaking();
+  }
+
+  function setRate(e: MouseEvent, newRate: "normal" | "slow") {
+    e.stopPropagation();
+    if (rate === newRate) return;
+    rate = newRate;
+    if (isSpeaking) startSpeaking();
   }
 
   // Color-code part of speech
@@ -36,7 +90,7 @@
       return "bg-rose-500/20 text-rose-300 border-rose-500/30";
     if (p.includes("compound"))
       return "bg-orange-500/20 text-orange-300 border-orange-500/30";
-    return "bg-slate-500/20 text-slate-300 border-slate-500/30";
+    return "bg-text-muted/20 text-text-muted border-text-muted/30";
   }
 </script>
 
@@ -57,7 +111,7 @@
   >
     <!-- FRONT FACE -->
     <div
-      class="card-face card-front bg-bg-surface border border-slate-700 rounded-3xl shadow-2xl flex flex-col items-center justify-center gap-3 p-6"
+      class="card-face card-front bg-bg-surface border border-border-warm rounded-3xl shadow-2xl flex flex-col items-center justify-center gap-3 p-6"
     >
       <!-- Subtle Om watermark -->
       <div
@@ -78,10 +132,51 @@
         {word.devanagari}
       </p>
 
-      <!-- Transliteration -->
-      <p class="text-base text-text-muted italic font-light tracking-wide z-10">
-        {word.word}
-      </p>
+      <!-- Transliteration + Listen button -->
+      <div class="flex flex-col items-center gap-2 z-10">
+        <div class="flex items-center gap-2">
+          <p class="text-base text-text-muted italic font-light tracking-wide">
+            {word.word}
+          </p>
+          {#if speechSupported}
+            <button
+              onclick={toggleSpeakWord}
+              aria-label={isSpeaking ? "Stop" : "Listen to pronunciation"}
+              class="relative flex items-center justify-center w-7 h-7 rounded-full border transition-all active:scale-90
+                {isSpeaking
+                  ? 'bg-primary/20 border-primary text-primary'
+                  : 'bg-bg-surface-alt border-border-warm text-text-muted hover:text-primary hover:border-primary/40'}"
+            >
+              {#if isSpeaking}
+                <div class="absolute -inset-1 rounded-full border-2 border-primary/40 animate-pulse-ring pointer-events-none"></div>
+              {/if}
+              <svg viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5 relative">
+                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 00-2.5-4.03v8.06A4.5 4.5 0 0016.5 12zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+              </svg>
+            </button>
+          {/if}
+        </div>
+
+        <!-- Speed toggle — only shown while actively speaking -->
+        {#if isSpeaking}
+          <div class="flex items-center rounded-full border border-border-warm bg-bg-surface-alt p-0.5 animate-[fade-in_0.2s_ease-out]">
+            <button
+              onclick={(e) => setRate(e, "slow")}
+              class="px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide transition-all
+                {rate === 'slow' ? 'bg-primary text-bg-base shadow-sm' : 'text-text-muted hover:text-text-primary'}"
+            >
+              Slow
+            </button>
+            <button
+              onclick={(e) => setRate(e, "normal")}
+              class="px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide transition-all
+                {rate === 'normal' ? 'bg-primary text-bg-base shadow-sm' : 'text-text-muted hover:text-text-primary'}"
+            >
+              Normal
+            </button>
+          </div>
+        {/if}
+      </div>
 
       <!-- Tap hint -->
       <div class="flex items-center gap-1.5 mt-2 text-text-muted/50 z-10">
@@ -125,7 +220,7 @@
       </p>
 
       <!-- Divider -->
-      <div class="w-12 h-px bg-slate-700 z-10"></div>
+      <div class="w-12 h-px bg-border-warm z-10"></div>
 
       <!-- Part of speech pill -->
       <span
@@ -140,6 +235,11 @@
       <p class="text-sm text-primary/50 font-cinzel italic z-10">
         {word.devanagari}
       </p>
+
+      <!-- English phonetic breakdown -->
+      <p class="text-[10px] text-text-muted tracking-wide z-10">
+        {getSanskritDisplay(word.word).englishSyllables}
+      </p>
     </div>
   </div>
 </div>
@@ -152,7 +252,7 @@
         e.stopPropagation();
         onNext();
       }}
-      class="w-full max-w-xs mx-auto flex items-center justify-center gap-2 p-4 bg-primary hover:bg-primary-dark text-bg-base font-black text-sm rounded-2xl shadow-lg btn-3d border-b-4 border-amber-900 active:scale-[0.98] transition-all"
+      class="w-full max-w-xs mx-auto flex items-center justify-center gap-2 p-4 bg-primary hover:bg-primary-dark text-bg-base font-black text-sm rounded-2xl shadow-lg btn-3d border-b-4 border-accent active:scale-[0.98] transition-all"
     >
       <span>Got it!</span>
       <svg

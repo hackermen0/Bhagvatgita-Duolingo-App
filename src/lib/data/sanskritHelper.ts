@@ -110,6 +110,18 @@ export function getSanskritDisplay(input: string): SanskritDisplay {
     };
   }
 
+  // Multi-word phrase not registered as its own dictionary key \u2014 resolve each word on its
+  // own (which usually IS in the dictionary) and join, rather than falling through to the
+  // single-word regex substitution below, which garbles multi-word input (a short pattern
+  // like /m\u0101/ can match mid-word inside an unrelated neighbouring word, e.g. "karm\u0101\u1E47i").
+  if (/\s/.test(cleanInput)) {
+    const parts = cleanInput.split(/\s+/).filter(Boolean).map((w) => getSanskritDisplay(w));
+    return {
+      englishSyllables: parts.map((p) => p.englishSyllables).join('   '),
+      devanagari: parts.map((p) => p.devanagari).join(' ')
+    };
+  }
+
   // Fallback: generate syllable separators for English transliteration
   const syllables = cleanInput.replace(/([aeiouāīūēōṛḷṁḥñṅṇtṭdḍsṣś])/gi, '$1 · ').replace(/ · $/g, '').replace(/ ·\s+/g, '   ');
 

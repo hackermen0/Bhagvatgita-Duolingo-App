@@ -155,14 +155,14 @@
   <!-- ═══════════════════════════════════════════════════════
        TOP BAR — Compact, high-density with clean Vector Icons
   ═══════════════════════════════════════════════════════ -->
-  <header class="flex items-center justify-between px-3 py-2 bg-bg-surface/95 backdrop-blur-md border-b border-slate-800/80 sticky top-0 z-40 shadow-lg">
+  <header class="flex items-center justify-between px-3 py-2 bg-bg-surface/95 backdrop-blur-md border-b border-border-warm sticky top-0 z-40 shadow-sm">
 
     <!-- Brand mark -->
     <div class="flex items-center gap-2">
-      <div class="w-7 h-7 rounded-xl bg-gradient-to-br from-primary/30 to-emerald-500/20 border border-primary/40 flex items-center justify-center text-primary font-cinzel font-bold text-xs shadow-sm">
+      <div class="w-7 h-7 rounded-xl bg-gradient-to-br from-primary/30 to-success/20 border border-primary/40 flex items-center justify-center text-primary font-cinzel font-bold text-xs shadow-sm">
         ॐ
       </div>
-      <h1 class="text-xs font-black font-cinzel tracking-widest bg-gradient-to-r from-primary via-emerald-300 to-amber-200 bg-clip-text text-transparent leading-none">
+      <h1 class="text-xs font-black font-cinzel tracking-widest bg-gradient-to-r from-primary via-accent to-primary-dark bg-clip-text text-transparent leading-none">
         GITA YOGA
       </h1>
     </div>
@@ -171,15 +171,15 @@
     <div class="flex items-center gap-1.5">
 
       <!-- Streak -->
-      <div class="flex items-center gap-1 px-2 py-1 rounded-lg bg-bg-base border border-slate-800 shadow-inner" title="Daily Streak">
-        <svg viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5 text-amber-500 animate-pulse">
+      <div class="flex items-center gap-1 px-2 py-1 rounded-lg bg-bg-surface-alt border border-border-warm shadow-inner" title="Daily Streak">
+        <svg viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5 text-primary animate-pulse">
           <path d="M12 23c-4.97 0-9-4.03-9-9 0-4.13 2.84-7.58 6.72-8.62.44-.12.88.2.88.66v.83c0 2.21 1.79 4 4 4s4-1.79 4-4v-.83c0-.46.44-.78.88-.66C20.16 6.42 23 9.87 23 14c0 4.97-4.03 9-9 9z"/>
         </svg>
         <span class="font-extrabold text-primary text-[11px] tabular-nums">{gameState.streak}</span>
       </div>
 
       <!-- XP -->
-      <div class="flex items-center gap-1 px-2 py-1 rounded-lg bg-bg-base border border-slate-800 shadow-inner" title="Total XP">
+      <div class="flex items-center gap-1 px-2 py-1 rounded-lg bg-bg-surface-alt border border-border-warm shadow-inner" title="Total XP">
         <svg viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5 text-primary">
           <path d="M13 2L3 14h7v8l10-12h-7V2z"/>
         </svg>
@@ -187,24 +187,43 @@
       </div>
 
       <!-- Hearts -->
-      <div class="flex items-center gap-1 px-2 py-1 rounded-lg bg-bg-base border border-slate-800 shadow-inner" title="Hearts">
-        <svg viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5 text-rose-500">
+      <div class="flex items-center gap-1 px-2 py-1 rounded-lg bg-bg-surface-alt border border-border-warm shadow-inner" title="Hearts">
+        <svg viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5 text-error">
           <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
         </svg>
         <span class="font-extrabold text-error text-[11px] tabular-nums">{gameState.hearts}</span>
         {#if gameState.hearts < 5}
           <button
             onclick={() => gameState.refillHearts()}
-            class="text-[8px] bg-error/20 hover:bg-error/30 text-rose-300 font-bold px-1 py-0.5 rounded border border-error/30 transition-colors leading-none"
+            class="text-[8px] bg-error/20 hover:bg-error/30 text-error font-bold px-1 py-0.5 rounded border border-error/30 transition-colors leading-none"
             type="button"
           >+</button>
         {/if}
       </div>
 
+      <!-- Theme toggle -->
+      <button
+        onclick={() => gameState.toggleTheme()}
+        class="p-1.5 rounded-lg bg-bg-surface-alt hover:bg-border-warm text-text-muted hover:text-text-primary border border-border-warm transition-all active:scale-95"
+        title="Toggle theme"
+        aria-label="Toggle light/dark theme"
+        type="button"
+      >
+        {#if gameState.themeMode === 'dark'}
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" />
+          </svg>
+        {:else}
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" />
+          </svg>
+        {/if}
+      </button>
+
       <!-- Settings -->
       <button
         onclick={() => showSettingsModal = true}
-        class="p-1.5 rounded-lg bg-bg-base hover:bg-slate-800 text-text-muted hover:text-text-primary border border-slate-800 transition-all active:scale-95"
+        class="p-1.5 rounded-lg bg-bg-surface-alt hover:bg-border-warm text-text-muted hover:text-text-primary border border-border-warm transition-all active:scale-95"
         title="Settings"
         aria-label="Settings"
         type="button"
@@ -250,7 +269,7 @@
           <!-- Hero Continue Card -->
           <button
             onclick={() => handleNodeClick(nextLesson, true)}
-            class="w-full bg-gradient-to-br from-amber-950/70 via-bg-surface to-slate-900/90 border border-primary/50 rounded-2xl p-4 shadow-2xl text-left relative overflow-hidden group transition-all duration-200 hover:border-primary/80 hover:shadow-primary/20 active:scale-[0.98] cursor-pointer"
+            class="w-full bg-gradient-to-br from-primary/15 via-bg-surface to-bg-surface-alt border border-primary/50 rounded-2xl p-4 shadow-lg shadow-primary/5 text-left relative overflow-hidden group transition-all duration-200 hover:border-primary/80 hover:shadow-primary/20 active:scale-[0.98] cursor-pointer"
             id="continue-learning-btn"
             aria-label="Continue Learning"
             type="button"
@@ -260,7 +279,7 @@
 
             <div class="flex items-center gap-3 relative z-10">
               <!-- Play icon circle -->
-              <div class="w-12 h-12 rounded-full bg-gradient-to-b from-primary to-primary-dark border-b-[3px] border-amber-900 flex items-center justify-center shadow-lg flex-shrink-0 animate-node-glow">
+              <div class="w-12 h-12 rounded-full bg-gradient-to-b from-primary to-primary-dark border-b-[3px] border-accent flex items-center justify-center shadow-lg flex-shrink-0 animate-node-glow">
                 <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-bg-base ml-0.5">
                   <path d="M8 5v14l11-7z" />
                 </svg>
@@ -278,9 +297,9 @@
                 {#each chapterStats as stat}
                   {#if stat.chapter.sections.flatMap(s => s.lessons).some(l => l.id === nextLesson.id)}
                     <div class="mt-2 flex items-center gap-2">
-                      <div class="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                      <div class="flex-1 h-1.5 bg-border-warm rounded-full overflow-hidden">
                         <div
-                          class="h-full bg-gradient-to-r from-primary to-amber-300 rounded-full transition-all duration-700"
+                          class="h-full bg-gradient-to-r from-primary to-primary-dark rounded-full transition-all duration-700"
                           style="width: {stat.pct}%"
                         ></div>
                       </div>
@@ -301,8 +320,8 @@
         </div>
       {:else}
         <!-- All complete state -->
-        <div class="w-full max-w-sm animate-fade-up bg-gradient-to-br from-success/20 via-bg-surface to-bg-surface border border-success/40 rounded-2xl p-4 text-center shadow-xl">
-          <div class="w-10 h-10 mx-auto rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center mb-1 text-amber-400">
+        <div class="w-full max-w-sm animate-fade-up bg-gradient-to-br from-success/15 via-bg-surface to-bg-surface border border-success/40 rounded-2xl p-4 text-center shadow-lg">
+          <div class="w-10 h-10 mx-auto rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center mb-1 text-primary">
             <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94A5.01 5.01 0 0011 15.9V18H8v2h8v-2h-3v-2.1c2.12-.39 3.75-2.07 4.39-4.24C19.7 11.23 21 9.27 21 7V5c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z"/></svg>
           </div>
           <div class="text-sm font-black font-cinzel text-text-primary">All Lessons Complete!</div>
@@ -314,10 +333,10 @@
            TODAY'S SADHANA — Daily Goal Card
       ───────────────────────────────────────────────── -->
       <div class="w-full max-w-sm animate-fade-up" style="animation-delay: 60ms;">
-        <div class="bg-bg-surface/80 border border-slate-800 rounded-2xl p-3.5 shadow-lg">
+        <div class="bg-bg-surface border border-border-warm rounded-2xl p-3.5 shadow-sm">
           <div class="flex items-center justify-between mb-3">
             <div class="flex items-center gap-2">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-amber-400">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-primary">
                 <path d="M12 2v6M4.93 10.93l4.24 4.24M2 18h20M20 18a8 8 0 0 0-16 0"/><path d="M19.07 10.93l-4.24 4.24"/>
               </svg>
               <span class="text-xs font-black uppercase tracking-wider text-text-primary font-cinzel">Today's Sadhana</span>
@@ -329,7 +348,7 @@
           <div class="flex flex-col gap-2">
             <!-- Task 1 -->
             <div class="flex items-center gap-2.5">
-              <div class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 {sadhanaTask1Done ? 'bg-success text-white animate-check-pop' : 'border-2 border-slate-700'}">
+              <div class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 {sadhanaTask1Done ? 'bg-success text-white animate-check-pop' : 'border-2 border-border-warm'}">
                 {#if sadhanaTask1Done}<svg viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3"><path fill-rule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clip-rule="evenodd" /></svg>{/if}
               </div>
               <span class="text-xs {sadhanaTask1Done ? 'text-text-muted line-through' : 'text-text-primary'}">Read one verse</span>
@@ -337,7 +356,7 @@
             </div>
             <!-- Task 2 -->
             <div class="flex items-center gap-2.5">
-              <div class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 {sadhanaTask2Done ? 'bg-success text-white animate-check-pop' : 'border-2 border-slate-700'}">
+              <div class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 {sadhanaTask2Done ? 'bg-success text-white animate-check-pop' : 'border-2 border-border-warm'}">
                 {#if sadhanaTask2Done}<svg viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3"><path fill-rule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clip-rule="evenodd" /></svg>{/if}
               </div>
               <span class="text-xs {sadhanaTask2Done ? 'text-text-muted line-through' : 'text-text-primary'}">Complete a practice</span>
@@ -345,7 +364,7 @@
             </div>
             <!-- Task 3 -->
             <div class="flex items-center gap-2.5">
-              <div class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 {sadhanaTask3Done ? 'bg-success text-white animate-check-pop' : 'border-2 border-slate-700'}">
+              <div class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 {sadhanaTask3Done ? 'bg-success text-white animate-check-pop' : 'border-2 border-border-warm'}">
                 {#if sadhanaTask3Done}<svg viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3"><path fill-rule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clip-rule="evenodd" /></svg>{/if}
               </div>
               <span class="text-xs {sadhanaTask3Done ? 'text-text-muted line-through' : 'text-text-primary'}">Write a reflection</span>
@@ -353,9 +372,9 @@
             </div>
           </div>
           <!-- Progress bar -->
-          <div class="mt-3 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+          <div class="mt-3 h-1.5 bg-border-warm rounded-full overflow-hidden">
             <div
-              class="h-full bg-gradient-to-r from-success to-emerald-400 rounded-full transition-all duration-700"
+              class="h-full bg-gradient-to-r from-success to-primary rounded-full transition-all duration-700"
               style="width: {Math.round((sadhanaXP / 25) * 100)}%"
             ></div>
           </div>
@@ -401,8 +420,8 @@
         <div class="w-full flex flex-col items-center gap-3 z-10 animate-fade-up" style="animation-delay: {80 + chIdx * 30}ms;">
 
           <!-- ─── Compact Chapter Summary Card (shrunk ~40%) ─── -->
-          <div class="w-full max-w-sm bg-gradient-to-r from-teal-950/80 via-bg-surface to-slate-900 border border-primary/25 rounded-xl px-4 py-3 shadow-lg relative overflow-hidden">
-            <div class="absolute -right-3 -bottom-3 text-5xl font-cinzel text-text-primary/4 pointer-events-none select-none">श्री</div>
+          <div class="w-full max-w-sm bg-gradient-to-r from-success/10 via-bg-surface to-bg-surface-alt border border-primary/25 rounded-xl px-4 py-3 shadow-sm relative overflow-hidden">
+            <div class="absolute -right-3 -bottom-3 text-5xl font-cinzel text-text-primary/5 pointer-events-none select-none">श्री</div>
             <div class="flex items-center gap-3 relative z-10">
               <!-- Chapter badge -->
               <div class="w-9 h-9 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center flex-shrink-0">
@@ -414,9 +433,9 @@
                 <div class="text-[10px] text-text-muted leading-tight mt-0.5 truncate">{chapter.summary.slice(0, 55)}…</div>
                 <!-- Progress -->
                 <div class="flex items-center gap-2 mt-1.5">
-                  <div class="flex-1 h-1 bg-slate-800 rounded-full overflow-hidden">
+                  <div class="flex-1 h-1 bg-border-warm rounded-full overflow-hidden">
                     <div
-                      class="h-full bg-gradient-to-r from-primary to-amber-300 rounded-full transition-all duration-700"
+                      class="h-full bg-gradient-to-r from-primary to-primary-dark rounded-full transition-all duration-700"
                       style="width: {pct}%"
                     ></div>
                   </div>
@@ -436,14 +455,14 @@
 
               <!-- Section Milestone Header -->
               <div class="flex items-center gap-3 w-full max-w-sm my-2 select-none">
-                <div class="flex-1 h-px bg-gradient-to-r from-transparent to-slate-700/80"></div>
-                <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-bg-surface border border-slate-700/60 shadow-sm">
-                  <svg viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5 text-emerald-400">
+                <div class="flex-1 h-px bg-gradient-to-r from-transparent to-border-warm"></div>
+                <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-bg-surface border border-border-warm shadow-sm">
+                  <svg viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5 text-success">
                     <path d="M12 3c-1.5 2.5-3 5.5-3 8 0 2.5 1.5 4.5 3 4.5s3-2 3-4.5c0-2.5-1.5-5.5-3-8zm-5 4c-1.5 2-3 5-3 7 0 2.5 2 4.5 4.5 4.5 2 0 3.5-1.5 3.5-3.5-2 0-3.5-1.5-4-3.5-.5-1.5-.5-3 0-4.5zm10 0c.5 1.5.5 3 0 4.5-.5 2-2 3.5-4 3.5 0 2 1.5 3.5 3.5 3.5 2.5 0 4.5-2 4.5-4.5 0-2-1.5-5-3-7z"/>
                   </svg>
                   <span class="text-[10px] font-black text-text-muted tracking-widest uppercase">{section.title}</span>
                 </div>
-                <div class="flex-1 h-px bg-gradient-to-l from-transparent to-slate-700/80"></div>
+                <div class="flex-1 h-px bg-gradient-to-l from-transparent to-border-warm"></div>
               </div>
 
               <!-- ─── Roadmap Canvas ─── -->
@@ -454,11 +473,11 @@
 
                 <!-- Background track SVG (full path) -->
                 <svg class="absolute inset-0 w-full h-full pointer-events-none z-0 overflow-visible">
-                  <!-- Base dark road -->
+                  <!-- Base road -->
                   <path
                     d={generatePathD(section.lessons.length)}
                     fill="none"
-                    stroke="#0D1130"
+                    stroke="var(--color-track-base)"
                     stroke-width="18"
                     stroke-linecap="round"
                     stroke-linejoin="round"
@@ -477,7 +496,7 @@
                         <path
                           d={generateSegmentD(idx)}
                           fill="none"
-                          stroke="#F4A428"
+                          stroke="var(--color-primary)"
                           stroke-width="5"
                           stroke-linecap="round"
                           opacity="0.9"
@@ -485,7 +504,7 @@
                         <path
                           d={generateSegmentD(idx)}
                           fill="none"
-                          stroke="#FCD34D"
+                          stroke="var(--color-primary-dark)"
                           stroke-width="2"
                           stroke-linecap="round"
                           stroke-dasharray="4 10"
@@ -496,7 +515,7 @@
                         <path
                           d={generateSegmentD(idx)}
                           fill="none"
-                          stroke="#F4A428"
+                          stroke="var(--color-primary)"
                           stroke-width="4"
                           stroke-linecap="round"
                           stroke-dasharray="8 8"
@@ -508,11 +527,11 @@
                         <path
                           d={generateSegmentD(idx)}
                           fill="none"
-                          stroke="#253060"
+                          stroke="var(--color-track-locked)"
                           stroke-width="4"
                           stroke-linecap="round"
                           stroke-dasharray="5 7"
-                          opacity="0.5"
+                          opacity="0.7"
                         />
                       {/if}
                     {/if}
@@ -550,14 +569,14 @@
                           <div class="absolute -inset-1.5 rounded-full border-2 border-primary/80 pointer-events-none"></div>
 
                           <!-- Node body -->
-                          <div class="w-[64px] h-[64px] rounded-full bg-gradient-to-b from-primary to-primary-dark border-b-[5px] border-amber-900 text-bg-base flex items-center justify-center shadow-lg animate-node-glow group-hover:brightness-110 relative z-10">
+                          <div class="w-[64px] h-[64px] rounded-full bg-gradient-to-b from-primary to-primary-dark border-b-[5px] border-accent text-bg-base flex items-center justify-center shadow-lg animate-node-glow group-hover:brightness-110 relative z-10">
                             {@render NodeIcon(nodeType)}
                           </div>
                         </div>
 
                         <!-- "CONTINUE" label above -->
                         <div class="absolute -top-8 z-30 flex flex-col items-center pointer-events-none">
-                          <div class="bg-primary text-bg-base font-black text-[9px] uppercase tracking-wider px-2.5 py-0.5 rounded-lg shadow-2xl flex items-center gap-1">
+                          <div class="bg-primary text-bg-base font-black text-[9px] uppercase tracking-wider px-2.5 py-0.5 rounded-lg shadow-lg flex items-center gap-1">
                             <span class="w-1.5 h-1.5 rounded-full bg-bg-base/60 animate-ping absolute"></span>
                             <span class="relative">CONTINUE</span>
                           </div>
@@ -566,16 +585,16 @@
 
                       {:else if completed}
                         <!-- ── COMPLETED NODE ── Gold with checkmark -->
-                        <div class="w-[58px] h-[58px] rounded-full bg-gradient-to-b from-amber-400 to-amber-600 border-b-4 border-amber-900 text-bg-base flex items-center justify-center shadow-md relative z-10 transition-all duration-150 group-hover:brightness-110">
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 text-amber-950">
+                        <div class="w-[58px] h-[58px] rounded-full bg-gradient-to-b from-primary to-primary-dark border-b-4 border-accent text-bg-base flex items-center justify-center shadow-md relative z-10 transition-all duration-150 group-hover:brightness-110">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 text-bg-base">
                             <path fill-rule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clip-rule="evenodd" />
                           </svg>
                         </div>
 
                       {:else}
-                        <!-- ── LOCKED NODE ── Muted, dark -->
-                        <div class="w-[54px] h-[54px] rounded-full bg-[#0E1234] border border-slate-700/40 border-b-4 border-b-[#080B1E] flex items-center justify-center shadow-sm opacity-55 relative z-10">
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4.5 h-4.5 text-slate-500">
+                        <!-- ── LOCKED NODE ── Muted -->
+                        <div class="w-[54px] h-[54px] rounded-full bg-node-locked border border-border-warm border-b-4 flex items-center justify-center shadow-sm opacity-70 relative z-10">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4.5 h-4.5 text-text-muted">
                             <path fill-rule="evenodd" d="M12 1.5a5.25 5.25 0 00-5.25 5.25v3a3 3 0 00-3 3v6.75a3 3 0 003 3h10.5a3 3 0 003-3v-6.75a3 3 0 00-3-3v-3c0-2.9-2.35-5.25-5.25-5.25zm3.75 8.25v-3a3.75 3.75 0 10-7.5 0v3h7.5z" clip-rule="evenodd" />
                           </svg>
                         </div>
@@ -583,7 +602,7 @@
 
                       <!-- Verse ref label below node -->
                       <span class="text-[10px] font-extrabold tracking-wide mt-2 max-w-[96px] text-center truncate
-                        {isCurrentActive ? 'text-primary font-black' : completed ? 'text-amber-500/80' : 'text-text-muted/50'}">
+                        {isCurrentActive ? 'text-primary font-black' : completed ? 'text-primary-dark' : 'text-text-muted/60'}">
                         {lesson.verseRef}
                       </span>
 
@@ -615,7 +634,7 @@
       <div class="w-full max-w-sm flex flex-col gap-3 mt-2 mb-8 z-10">
 
         <!-- Daily Wisdom Quote -->
-        <div class="bg-bg-surface/90 border border-slate-800 rounded-2xl p-4 shadow-xl relative overflow-hidden">
+        <div class="bg-bg-surface border border-border-warm rounded-2xl p-4 shadow-sm relative overflow-hidden">
           <div class="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none rounded-2xl"></div>
           <div class="flex items-start gap-3 relative z-10">
             <div class="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary flex-shrink-0 mt-0.5">
@@ -634,25 +653,25 @@
         </div>
 
         <!-- Recent Achievement / Progress Summary -->
-        <div class="bg-bg-surface/80 border border-slate-800 rounded-2xl p-4 shadow-lg">
+        <div class="bg-bg-surface border border-border-warm rounded-2xl p-4 shadow-sm">
           <div class="text-[9px] uppercase font-black tracking-widest text-text-muted mb-3">Your Journey</div>
           <div class="grid grid-cols-3 gap-3">
-            <div class="flex flex-col items-center gap-1 p-2 bg-bg-base/60 rounded-xl border border-slate-800/60">
-              <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-amber-500">
+            <div class="flex flex-col items-center gap-1 p-2 bg-bg-surface-alt rounded-xl border border-border-warm">
+              <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-primary">
                 <path d="M12 23c-4.97 0-9-4.03-9-9 0-4.13 2.84-7.58 6.72-8.62.44-.12.88.2.88.66v.83c0 2.21 1.79 4 4 4s4-1.79 4-4v-.83c0-.46.44-.78.88-.66C20.16 6.42 23 9.87 23 14c0 4.97-4.03 9-9 9z"/>
               </svg>
               <span class="text-sm font-black text-primary tabular-nums">{gameState.streak}</span>
               <span class="text-[9px] text-text-muted text-center leading-tight">Day Streak</span>
             </div>
-            <div class="flex flex-col items-center gap-1 p-2 bg-bg-base/60 rounded-xl border border-slate-800/60">
+            <div class="flex flex-col items-center gap-1 p-2 bg-bg-surface-alt rounded-xl border border-border-warm">
               <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-primary">
                 <path d="M13 2L3 14h7v8l10-12h-7V2z"/>
               </svg>
               <span class="text-sm font-black text-primary tabular-nums">{gameState.xp}</span>
               <span class="text-[9px] text-text-muted text-center leading-tight">Total XP</span>
             </div>
-            <div class="flex flex-col items-center gap-1 p-2 bg-bg-base/60 rounded-xl border border-slate-800/60">
-              <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-emerald-400">
+            <div class="flex flex-col items-center gap-1 p-2 bg-bg-surface-alt rounded-xl border border-border-warm">
+              <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-success">
                 <path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.35-.75-2-1zm0 13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z"/>
               </svg>
               <span class="text-sm font-black text-primary tabular-nums">{gameState.completedLessons.length}</span>
@@ -662,8 +681,8 @@
 
           <!-- Achievement unlock teaser -->
           {#if gameState.completedLessons.length >= 3}
-            <div class="mt-3 flex items-center gap-2.5 p-2.5 bg-amber-950/30 border border-primary/20 rounded-xl">
-              <div class="w-7 h-7 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-400">
+            <div class="mt-3 flex items-center gap-2.5 p-2.5 bg-primary/10 border border-primary/20 rounded-xl">
+              <div class="w-7 h-7 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
                 <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M12 2a5 5 0 0 0-5 5c0 2.11 1.31 3.92 3.17 4.67L8.1 19.46a1 1 0 0 0 .42 1.22l2.9 1.74a1 1 0 0 0 1.16 0l2.9-1.74a1 1 0 0 0 .42-1.22l-2.07-7.79A5.002 5.002 0 0 0 17 7a5 5 0 0 0-5-5zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/></svg>
               </div>
               <div>
@@ -677,15 +696,15 @@
               </div>
             </div>
           {:else}
-            <div class="mt-3 flex items-center gap-2.5 p-2.5 bg-slate-900/60 border border-slate-800 rounded-xl opacity-70">
-              <div class="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center text-slate-500">
+            <div class="mt-3 flex items-center gap-2.5 p-2.5 bg-bg-surface-alt border border-border-warm rounded-xl opacity-70">
+              <div class="w-7 h-7 rounded-lg bg-border-warm flex items-center justify-center text-text-muted">
                 <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M12 2a5 5 0 0 0-5 5c0 2.11 1.31 3.92 3.17 4.67L8.1 19.46a1 1 0 0 0 .42 1.22l2.9 1.74a1 1 0 0 0 1.16 0l2.9-1.74a1 1 0 0 0 .42-1.22l-2.07-7.79A5.002 5.002 0 0 0 17 7a5 5 0 0 0-5-5zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/></svg>
               </div>
               <div>
                 <div class="text-[10px] font-bold text-text-muted">Karma Seeker</div>
                 <div class="text-[9px] text-text-muted">Complete {3 - gameState.completedLessons.length} more lesson{3 - gameState.completedLessons.length !== 1 ? 's' : ''} to unlock</div>
               </div>
-              <div class="ml-auto text-[9px] text-text-muted font-bold px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700">
+              <div class="ml-auto text-[9px] text-text-muted font-bold px-1.5 py-0.5 bg-border-warm rounded">
                 {gameState.completedLessons.length}/3
               </div>
             </div>
@@ -707,7 +726,7 @@
       aria-modal="true"
       aria-label="Lesson Preview"
     >
-      <div class="w-full max-w-sm bg-bg-surface border border-slate-750 rounded-3xl p-6 flex flex-col gap-4 shadow-2xl">
+      <div class="w-full max-w-sm bg-bg-surface border border-border-warm rounded-3xl p-6 flex flex-col gap-4 shadow-2xl">
 
         <div class="flex justify-between items-start">
           <div class="flex flex-col">
@@ -720,7 +739,7 @@
           </div>
           <button
             onclick={() => activeLessonModal = null}
-            class="text-text-muted hover:text-text-primary bg-bg-base p-2 rounded-full cursor-pointer"
+            class="text-text-muted hover:text-text-primary bg-bg-surface-alt p-2 rounded-full cursor-pointer"
             aria-label="Close"
             type="button"
           >
@@ -730,20 +749,43 @@
           </button>
         </div>
 
-        <div class="h-px bg-slate-800"></div>
+        <div class="h-px bg-border-warm"></div>
 
-        <div class="bg-bg-base/60 border border-slate-800 p-4 rounded-2xl flex flex-col gap-2">
-          <p class="text-sm font-cinzel text-amber-200 leading-snug whitespace-pre-line">
+        <div class="bg-bg-surface-alt border border-border-warm p-4 rounded-2xl flex flex-col gap-3">
+          <p class="text-base font-cinzel text-primary-dark dark:text-primary leading-relaxed whitespace-pre-line text-center">
             {activeLessonModal.verseSanskrit}
           </p>
-          <p class="text-xs text-text-muted italic leading-relaxed pt-2 border-t border-slate-800">
-            "{activeLessonModal.translation}"
-          </p>
+          <div class="flex items-center justify-center gap-1.5 text-text-muted/70">
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5"><path fill-rule="evenodd" d="M12 1.5a5.25 5.25 0 00-5.25 5.25v3a3 3 0 00-3 3v6.75a3 3 0 003 3h10.5a3 3 0 003-3v-6.75a3 3 0 00-3-3v-3c0-2.9-2.35-5.25-5.25-5.25zm3.75 8.25v-3a3.75 3.75 0 10-7.5 0v3h7.5z" clip-rule="evenodd" /></svg>
+            <span class="text-[10px] font-bold uppercase tracking-wider">Meaning revealed as you learn</span>
+          </div>
+        </div>
+
+        <!-- What's inside teaser -->
+        <div class="grid grid-cols-3 gap-2 text-center">
+          <div class="flex flex-col items-center gap-1.5">
+            <div class="w-8 h-8 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center text-primary">
+              <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M12 2a5 5 0 0 0-5 5c0 2.11 1.31 3.92 3.17 4.67L8.1 19.46a1 1 0 0 0 .42 1.22l2.9 1.74a1 1 0 0 0 1.16 0l2.9-1.74a1 1 0 0 0 .42-1.22l-2.07-7.79A5.002 5.002 0 0 0 17 7a5 5 0 0 0-5-5zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/></svg>
+            </div>
+            <span class="text-[9px] text-text-muted font-bold leading-tight">{activeLessonModal.parts?.length || 1} word{(activeLessonModal.parts?.length || 1) !== 1 ? 's' : ''} to discover</span>
+          </div>
+          <div class="flex flex-col items-center gap-1.5">
+            <div class="w-8 h-8 rounded-full bg-success/15 border border-success/30 flex items-center justify-center text-success">
+              <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" /></svg>
+            </div>
+            <span class="text-[9px] text-text-muted font-bold leading-tight">Practice exercises</span>
+          </div>
+          <div class="flex flex-col items-center gap-1.5">
+            <div class="w-8 h-8 rounded-full bg-accent/15 border border-accent/30 flex items-center justify-center text-accent">
+              <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M13 2L3 14h7v8l10-12h-7V2z"/></svg>
+            </div>
+            <span class="text-[9px] text-text-muted font-bold leading-tight">+50 XP</span>
+          </div>
         </div>
 
         <button
           onclick={() => startLesson(activeLessonModal!.id)}
-          class="w-full py-4 bg-primary hover:bg-primary-dark text-bg-base font-black text-sm rounded-2xl shadow-lg btn-3d border-b-4 border-amber-950 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2"
+          class="w-full py-4 bg-primary hover:bg-primary-dark text-bg-base font-black text-sm rounded-2xl shadow-lg btn-3d border-b-4 border-accent active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2"
           id="start-lesson-btn"
           type="button"
         >
@@ -764,12 +806,12 @@
       aria-modal="true"
       aria-label="Settings"
     >
-      <div class="w-full max-w-sm bg-bg-surface border border-slate-750 rounded-3xl p-6 flex flex-col gap-4 shadow-2xl">
+      <div class="w-full max-w-sm bg-bg-surface border border-border-warm rounded-3xl p-6 flex flex-col gap-4 shadow-2xl">
         <div class="flex justify-between items-center">
           <h3 class="text-lg font-black font-cinzel text-text-primary">App Settings</h3>
           <button
             onclick={() => showSettingsModal = false}
-            class="text-text-muted hover:text-text-primary bg-bg-base p-2 rounded-full cursor-pointer"
+            class="text-text-muted hover:text-text-primary bg-bg-surface-alt p-2 rounded-full cursor-pointer"
             aria-label="Close"
             type="button"
           >
@@ -779,17 +821,26 @@
           </button>
         </div>
 
-        <div class="h-px bg-slate-800"></div>
+        <div class="h-px bg-border-warm"></div>
 
         <div class="flex flex-col gap-3">
           <button
+            onclick={() => gameState.setThemeMode(gameState.themeMode === 'light' ? 'dark' : 'light')}
+            class="w-full py-3 bg-bg-surface-alt hover:bg-border-warm border border-border-warm text-text-primary font-bold text-xs rounded-xl flex items-center justify-between px-4 transition-colors cursor-pointer"
+            type="button"
+          >
+            <span>Appearance</span>
+            <span class="text-primary font-extrabold">{gameState.themeMode === 'light' ? 'Light' : 'Dark'}</span>
+          </button>
+
+          <button
             onclick={() => gameState.refillHearts()}
-            class="w-full py-3 bg-bg-base hover:bg-slate-800 border border-slate-700 text-text-primary font-bold text-xs rounded-xl flex items-center justify-between px-4 transition-colors cursor-pointer"
+            class="w-full py-3 bg-bg-surface-alt hover:bg-border-warm border border-border-warm text-text-primary font-bold text-xs rounded-xl flex items-center justify-between px-4 transition-colors cursor-pointer"
             type="button"
           >
             <span>Refill Hearts</span>
             <span class="text-error font-extrabold flex items-center gap-1">
-              <svg viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5 text-rose-500"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+              <svg viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5 text-error"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
               5
             </span>
           </button>
@@ -800,7 +851,7 @@
             type="button"
           >
             <span>Reset Progress Data</span>
-            <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 text-amber-400"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 text-error"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
           </button>
         </div>
       </div>

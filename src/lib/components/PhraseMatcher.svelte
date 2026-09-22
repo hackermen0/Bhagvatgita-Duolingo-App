@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import type { PhrasePair } from '../data/gitaData';
   import { getSanskritDisplay } from '../data/sanskritHelper';
   import { playPopSound, playSuccessSound, playErrorSound } from '../utils/soundEffects';
@@ -22,9 +21,18 @@
   let errorSanskrit = $state<string | null>(null);
   let errorEnglish = $state<string | null>(null);
 
-  onMount(() => {
+  // Re-initialize whenever `pairs` changes — the same component instance is reused
+  // across consecutive phrase_matching questions rather than remounted, so onMount
+  // alone would leave stale matches/lists from the previous question on screen.
+  $effect(() => {
     sanskritList = pairs.map((p: PhrasePair) => p.sanskrit).sort(() => Math.random() - 0.5);
     englishList = pairs.map((p: PhrasePair) => p.english).sort(() => Math.random() - 0.5);
+    selectedSanskrit = null;
+    selectedEnglish = null;
+    matchedSanskrit = [];
+    matchedEnglish = [];
+    errorSanskrit = null;
+    errorEnglish = null;
   });
 
   function selectSanskrit(term: string) {
@@ -93,10 +101,10 @@
             {isMatched
               ? 'bg-success/10 border-success/30 text-success/50 cursor-default line-through'
               : isError
-                ? 'bg-error/20 border-error text-rose-200 animate-shake'
+                ? 'bg-error/20 border-error text-error animate-shake'
                 : isSelected
                   ? 'bg-primary/20 border-primary text-primary shadow-md'
-                  : 'bg-bg-surface hover:bg-slate-800 border-slate-700 border-b-slate-950 text-text-primary'}"
+                  : 'bg-bg-surface hover:bg-bg-surface-alt border-border-warm text-text-primary'}"
         >
           <span class="text-[9px] font-semibold text-text-muted tracking-wider">
             {display.englishSyllables}
@@ -123,10 +131,10 @@
             {isMatched
               ? 'bg-success/10 border-success/30 text-success/50 cursor-default line-through'
               : isError
-                ? 'bg-error/20 border-error text-rose-200 animate-shake'
+                ? 'bg-error/20 border-error text-error animate-shake'
                 : isSelected
                   ? 'bg-primary/20 border-primary text-primary shadow-md'
-                  : 'bg-bg-surface hover:bg-slate-800 border-slate-700 border-b-slate-950 text-text-primary'}"
+                  : 'bg-bg-surface hover:bg-bg-surface-alt border-border-warm text-text-primary'}"
         >
           {term}
         </button>

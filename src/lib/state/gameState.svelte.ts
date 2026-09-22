@@ -1,6 +1,7 @@
 import { browser } from '$app/environment';
 
 export type ScriptMode = 'devanagari' | 'english';
+export type ThemeMode = 'light' | 'dark';
 
 class GameState {
   // Svelte 5 reactive runes
@@ -11,6 +12,7 @@ class GameState {
   lastActiveDate = $state<string | null>(null);
   scriptMode = $state<ScriptMode>('devanagari');
   userReflections = $state<Record<string, string>>({});
+  themeMode = $state<ThemeMode>('light');
 
   constructor() {
     this.loadState();
@@ -29,6 +31,7 @@ class GameState {
         this.lastActiveDate = parsed.lastActiveDate ?? null;
         this.scriptMode = parsed.scriptMode ?? 'devanagari';
         this.userReflections = parsed.userReflections ?? {};
+        this.themeMode = parsed.themeMode ?? 'light';
       }
     } catch (e) {
       console.error('Failed to load game state:', e);
@@ -45,7 +48,8 @@ class GameState {
         completedLessons: $state.snapshot(this.completedLessons),
         lastActiveDate: this.lastActiveDate,
         scriptMode: this.scriptMode,
-        userReflections: $state.snapshot(this.userReflections)
+        userReflections: $state.snapshot(this.userReflections),
+        themeMode: this.themeMode
       };
       localStorage.setItem('gita_game_state', JSON.stringify(stateObj));
     } catch (e) {
@@ -65,6 +69,16 @@ class GameState {
 
   setScriptMode(mode: ScriptMode) {
     this.scriptMode = mode;
+    this.saveState();
+  }
+
+  toggleTheme() {
+    this.themeMode = this.themeMode === 'light' ? 'dark' : 'light';
+    this.saveState();
+  }
+
+  setThemeMode(mode: ThemeMode) {
+    this.themeMode = mode;
     this.saveState();
   }
 

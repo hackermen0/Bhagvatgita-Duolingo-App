@@ -63,14 +63,14 @@
             ? 'w-4 h-2 bg-primary/60'
             : i === wordIndex
               ? 'w-7 h-2 bg-primary shadow-sm shadow-primary/50'
-              : 'w-2 h-2 bg-slate-700'}"
+              : 'w-2 h-2 bg-border-warm'}"
       ></div>
     {/each}
   </div>
 
   <!-- Sanskrit context strip -->
-  <div class="mx-4 mb-4 px-4 py-2.5 bg-bg-surface/60 border border-slate-800 rounded-2xl text-center">
-    <p class="text-xs font-bold font-cinzel text-amber-200/70 leading-relaxed">
+  <div class="mx-4 mb-4 px-4 py-2.5 bg-bg-surface border border-border-warm rounded-2xl text-center">
+    <p class="text-xs font-bold font-cinzel text-primary/70 leading-relaxed">
       {part.sanskrit}
     </p>
   </div>

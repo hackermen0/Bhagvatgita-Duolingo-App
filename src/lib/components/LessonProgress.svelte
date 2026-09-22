@@ -26,11 +26,11 @@
   });
 </script>
 
-<div class="flex items-center gap-3 px-4 py-3 bg-bg-surface/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-30 select-none">
+<div class="flex items-center gap-3 px-4 py-3 bg-bg-surface/90 backdrop-blur-md border-b border-border-warm sticky top-0 z-30 select-none">
   <!-- Close -->
   <button
     onclick={onCancel}
-    class="text-text-muted hover:text-text-primary transition-colors p-1 rounded-lg hover:bg-slate-800 cursor-pointer"
+    class="text-text-muted hover:text-text-primary transition-colors p-1 rounded-lg hover:bg-bg-surface-alt cursor-pointer"
     aria-label="Exit Lesson"
     type="button"
   >
@@ -40,16 +40,16 @@
   </button>
 
   <!-- Progress bar -->
-  <div class="flex-1 h-3 bg-bg-base rounded-full overflow-hidden border border-slate-800 p-0.5">
+  <div class="flex-1 h-3 bg-bg-surface-alt rounded-full overflow-hidden border border-border-warm p-0.5">
     <div
-      class="h-full bg-gradient-to-r from-primary to-amber-300 rounded-full transition-all duration-300 ease-out"
+      class="h-full bg-gradient-to-r from-primary to-primary-dark rounded-full transition-all duration-300 ease-out"
       style="width: {progressPercent}%"
     ></div>
   </div>
 
   <!-- Hearts with pulse/shrink animation -->
   <div class="flex items-center gap-1.5 min-w-[50px] justify-end">
-    <span class="text-rose-500 transition-transform duration-200 {isHeartDecreasing ? 'scale-125 animate-bounce' : gameState.hearts <= 1 ? 'animate-bounce' : ''}">
+    <span class="text-error transition-transform duration-200 {isHeartDecreasing ? 'scale-125 animate-bounce' : gameState.hearts <= 1 ? 'animate-bounce' : ''}">
       <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
     </span>
     <span class="font-extrabold text-error text-sm tabular-nums">{gameState.hearts}</span>

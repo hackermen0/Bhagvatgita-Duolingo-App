@@ -44,7 +44,7 @@
       alpha: number;
     }> = [];
 
-    const colors = ['#F4A428', '#1DAA7C', '#E85D9A', '#38BDF8', '#F5EFE0'];
+    const colors = ['#F4972D', '#1B8A73', '#8C2F39', '#D97615', '#F5EAD6'];
 
     for (let i = 0; i < 35; i++) {
       particles.push({
@@ -93,7 +93,7 @@
 
 <!-- Bottom Drawer Container -->
 <div 
-  class="absolute bottom-0 left-0 right-0 border-t p-5 pb-6 transition-transform duration-300 ease-out z-50 select-none shadow-[0_-8px_30px_rgba(0,0,0,0.6)] backdrop-blur-md relative overflow-hidden
+  class="absolute bottom-0 left-0 right-0 border-t p-5 pb-6 transition-transform duration-300 ease-out z-50 select-none shadow-[0_-8px_30px_rgba(0,0,0,0.15)] dark:shadow-[0_-8px_30px_rgba(0,0,0,0.5)] backdrop-blur-md relative overflow-hidden
     {mounted ? 'translate-y-0' : 'translate-y-full'}
     {isCorrect 
       ? 'bg-bg-surface border-success/60 text-text-primary' 
@@ -130,7 +130,7 @@
 
     <!-- Correct Answer Display (if incorrect) -->
     {#if !isCorrect && correctAnswerText}
-      <div class="text-xs font-medium bg-bg-base/80 p-3 rounded-2xl border border-error/40">
+      <div class="text-xs font-medium bg-bg-surface-alt p-3 rounded-2xl border border-error/40">
         <span class="text-error font-bold block mb-1">Correct Answer:</span>
         <p class="text-text-primary font-cinzel italic leading-relaxed">
           {correctAnswerText}
@@ -140,7 +140,7 @@
 
     <!-- Explanatory Purport -->
     {#if explanation}
-      <div class="text-xs border-t border-slate-800 pt-2.5">
+      <div class="text-xs border-t border-border-warm pt-2.5">
         <span class="font-bold text-[10px] uppercase tracking-wider text-text-muted">Gita Insight:</span>
         <p class="text-text-muted mt-1 leading-relaxed">
           {explanation}
@@ -152,9 +152,9 @@
     <button
       onclick={onContinue}
       class="w-full py-3.5 px-6 rounded-2xl font-black text-base shadow-lg active:scale-[0.98] transition-all select-none btn-3d
-        {isCorrect 
-          ? 'bg-success hover:bg-emerald-400 text-bg-base border-b-4 border-emerald-900 shadow-success/20' 
-          : 'bg-error hover:bg-rose-500 text-bg-base border-b-4 border-rose-950 shadow-error/20'}"
+        {isCorrect
+          ? 'bg-success hover:brightness-110 text-bg-base border-b-4 border-success/60 shadow-success/20'
+          : 'bg-error hover:brightness-110 text-bg-base border-b-4 border-error/60 shadow-error/20'}"
     >
       Continue
     </button>
