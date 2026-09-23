@@ -1,13 +1,8 @@
 <script lang="ts">
   import { gameState } from '../state/gameState.svelte';
+  import Mascot from './Mascot.svelte';
 
-  let {
-    promptId,
-    prompt,
-    verseContext,
-    guidance,
-    onComplete
-  } = $props<{
+  let { promptId, prompt, verseContext, guidance, onComplete } = $props<{
     promptId: string;
     prompt: string;
     verseContext?: string;
@@ -15,135 +10,65 @@
     onComplete: () => void;
   }>();
 
-  // Load existing entry if previously reflected
+  // Load existing entry if previously reflected; the parent remounts this per question
+  // svelte-ignore state_referenced_locally
   let reflectionText = $state(gameState.userReflections[promptId] || '');
   let selectedTag = $state<string | null>(null);
   let isSaved = $state(false);
 
-  const INTENT_TAGS = [
-    { label: 'Detachment', value: 'detachment' },
-    { label: 'Clarity', value: 'clarity' },
-    { label: 'Equanimity', value: 'equanimity' },
-    { label: 'Self-Growth', value: 'growth' },
-    { label: 'Peace', value: 'peace' }
-  ];
+  const INTENT_TAGS = ['Detachment', 'Clarity', 'Equanimity', 'Self-Growth', 'Peace'];
 
   function handleSave() {
-    if (reflectionText.trim()) {
-      gameState.saveReflection(promptId, reflectionText.trim());
-      isSaved = true;
-      setTimeout(() => {
-        onComplete();
-      }, 400);
-    } else {
-      onComplete();
-    }
+    if (!reflectionText.trim()) return onComplete();
+    gameState.saveReflection(promptId, reflectionText.trim());
+    isSaved = true;
+    setTimeout(onComplete, 400);
   }
 </script>
 
-<div class="w-full max-w-xl mx-auto flex flex-col gap-6 p-4 sm:p-6 bg-bg-surface border border-border-warm rounded-3xl shadow-2xl select-none relative overflow-hidden">
-
-  <!-- Ambient background glow -->
-  <div class="absolute -top-12 -left-12 w-32 h-32 bg-success/10 rounded-full blur-2xl pointer-events-none"></div>
-
-  <!-- Header Banner -->
-  <div class="flex items-center justify-between border-b border-border-warm pb-3">
-    <div class="flex items-center gap-2">
-      <div class="w-8 h-8 rounded-full bg-success/15 border border-success/30 flex items-center justify-center text-success shadow-sm">
-        <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M12 3c-1.5 2.5-3 5.5-3 8 0 2.5 1.5 4.5 3 4.5s3-2 3-4.5c0-2.5-1.5-5.5-3-8zm-5 4c-1.5 2-3 5-3 7 0 2.5 2 4.5 4.5 4.5 2 0 3.5-1.5 3.5-3.5-2 0-3.5-1.5-4-3.5-.5-1.5-.5-3 0-4.5zm10 0c.5 1.5.5 3 0 4.5-.5 2-2 3.5-4 3.5 0 2 1.5 3.5 3.5 3.5 2.5 0 4.5-2 4.5-4.5 0-2-1.5-5-3-7z"/></svg>
-      </div>
-      <div class="flex flex-col">
-        <span class="text-[10px] font-black uppercase tracking-[0.2em] text-success">
-          Mindful Reflection
-        </span>
-        <span class="text-xs font-bold text-text-primary">
-          Personal Journaling · Non-Graded
-        </span>
-      </div>
-    </div>
-
-    <span class="text-[10px] font-bold text-primary bg-primary/10 border border-primary/30 px-2.5 py-1 rounded-full">
-      No Wrong Answers
-    </span>
+<div class="w-full flex flex-col gap-5 select-none">
+  <div>
+    <p class="text-sm font-extrabold uppercase tracking-wider text-success">Reflection · no wrong answers</p>
+    <h2 class="text-2xl font-black leading-tight mt-1">{prompt.replace(/:$/, '')}</h2>
   </div>
 
-  <!-- Verse Context Banner if provided -->
   {#if verseContext}
-    <div class="bg-bg-surface-alt border border-border-warm p-3.5 rounded-2xl flex flex-col gap-1">
-      <span class="text-[9px] font-black uppercase tracking-wider text-text-muted">Verse Context</span>
-      <p class="text-xs text-text-primary italic leading-relaxed">
-        {verseContext}
-      </p>
+    <div class="flex items-center gap-2">
+      <div class="shrink-0 -ml-1"><Mascot mood="thinking" size="md" /></div>
+      <div class="bubble bubble-left flex-1">
+        <p class="text-[15px] font-bold leading-relaxed">{verseContext}</p>
+      </div>
     </div>
   {/if}
 
-  <!-- Reflection Prompt Question -->
-  <div class="flex flex-col gap-2">
-    <h2 class="text-lg sm:text-xl font-extrabold font-cinzel text-primary-dark dark:text-primary tracking-wide leading-snug">
-      {prompt}
-    </h2>
-    {#if guidance}
-      <p class="text-xs text-text-muted leading-relaxed">
-        {guidance}
-      </p>
-    {/if}
-  </div>
+  {#if guidance}
+    <p class="text-base text-text-muted font-bold leading-relaxed">{guidance}</p>
+  {/if}
 
-  <!-- Intent / Sentiment Filter Tags -->
   <div class="flex flex-wrap gap-2">
     {#each INTENT_TAGS as tag}
       <button
         type="button"
-        onclick={() => selectedTag = selectedTag === tag.value ? null : tag.value}
-        class="px-3 py-1.5 rounded-xl text-xs font-bold border transition-all active:scale-95 {selectedTag === tag.value ? 'bg-success/20 text-success border-success/50 shadow-sm' : 'bg-bg-surface-alt text-text-muted border-border-warm hover:text-text-primary'}"
+        onclick={() => (selectedTag = selectedTag === tag ? null : tag)}
+        class="tile px-3 py-1.5 text-sm font-black {selectedTag === tag ? 'tile-selected' : ''}"
       >
-        {tag.label}
+        {tag}
       </button>
     {/each}
   </div>
 
-  <!-- Reflection Textarea -->
-  <div class="flex flex-col gap-1.5">
-    <label for="reflection-input" class="text-[10px] font-bold uppercase tracking-wider text-text-muted flex justify-between">
-      <span>Your Journal Entry</span>
-      <span>{reflectionText.length} characters</span>
-    </label>
-    <textarea
-      id="reflection-input"
-      bind:value={reflectionText}
-      placeholder="Write your reflection here... (e.g. How can you practice non-attachment in your daily responsibilities today?)"
-      rows="4"
-      class="w-full bg-bg-surface-alt border border-border-warm focus:border-success rounded-2xl p-4 text-xs sm:text-sm text-text-primary placeholder-text-muted/60 focus:outline-none focus:ring-2 focus:ring-success/20 transition-all resize-none leading-relaxed"
-    ></textarea>
-  </div>
+  <textarea
+    bind:value={reflectionText}
+    placeholder="Write your reflection here…"
+    rows="5"
+    aria-label="Your reflection"
+    class="w-full bg-bg-surface-alt border-2 border-border-warm focus:border-info rounded-2xl p-4 text-base font-bold text-text-primary placeholder-text-muted/60 focus:outline-none focus:ring-4 focus:ring-info/20 transition-all resize-none leading-relaxed"
+  ></textarea>
 
-  <!-- Save / Continue Action -->
-  <div class="flex items-center justify-between pt-2">
-    <button
-      type="button"
-      onclick={onComplete}
-      class="text-xs font-semibold text-text-muted hover:text-text-primary px-3 py-2"
-    >
-      Skip for now
-    </button>
-
-    <button
-      type="button"
-      onclick={handleSave}
-      class="py-3.5 px-6 bg-success hover:brightness-110 text-bg-base font-black text-xs sm:text-sm rounded-xl shadow-lg active:scale-95 transition-all flex items-center gap-2"
-    >
-      {#if isSaved}
-        <span>Saved!</span>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
-          <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
-        </svg>
-      {:else}
-        <span>SAVE REFLECTION & CONTINUE</span>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
-          <path fill-rule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clip-rule="evenodd" />
-        </svg>
-      {/if}
+  <div class="flex gap-3">
+    <button type="button" onclick={onComplete} class="btn btn-secondary flex-1">Skip</button>
+    <button type="button" onclick={handleSave} class="btn btn-success flex-[2]">
+      {isSaved ? 'Saved!' : 'Save'}
     </button>
   </div>
-
 </div>

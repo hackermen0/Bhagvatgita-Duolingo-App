@@ -8,7 +8,9 @@
     labelFor,
     type OnboardingProfile
   } from '../data/onboarding';
+  import { playPopSound } from '../utils/soundEffects';
   import Mascot from './Mascot.svelte';
+  import Icon from './Icon.svelte';
 
   let { onComplete } = $props<{
     onComplete: (profile: OnboardingProfile) => void;
@@ -21,19 +23,29 @@
   let answers = $state<Partial<OnboardingProfile>>({});
   // Where "Custom" was chosen from, so the back button on the minutes screen returns correctly
   let customFrom = $state<'recommend' | 'choosePlan'>('recommend');
+  let pendingPlan = $state<OnboardingProfile['plan'] | null>(null);
+
+  const question = $derived(ONBOARDING_QUESTIONS[qIndex]);
+  const currentAnswer = $derived((answers as Record<string, string>)[question.key]);
+
+  // Welcome counts as step 0, then each question, then the plan screen
+  const progress = $derived(
+    stage === 'welcome' ? 0 : stage === 'question' ? (qIndex + 1) / (ONBOARDING_QUESTIONS.length + 1) : 1
+  );
 
   function selectAnswer(value: string) {
-    const q = ONBOARDING_QUESTIONS[qIndex];
-    (answers as Record<string, string>)[q.key] = value;
+    playPopSound();
+    (answers as Record<string, string>)[question.key] = value;
+  }
 
-    setTimeout(() => {
-      if (qIndex < ONBOARDING_QUESTIONS.length - 1) {
-        qIndex += 1;
-      } else {
-        answers.plan = recommendPlan(answers.timeBudget!);
-        stage = 'recommend';
-      }
-    }, 200);
+  function continueQuestion() {
+    if (!currentAnswer) return;
+    if (qIndex < ONBOARDING_QUESTIONS.length - 1) {
+      qIndex += 1;
+    } else {
+      answers.plan = recommendPlan(answers.timeBudget!);
+      stage = 'recommend';
+    }
   }
 
   function confirmRecommendedPlan() {
@@ -45,19 +57,15 @@
     }
   }
 
-  function choosePlan(id: OnboardingProfile['plan']) {
-    answers.plan = id;
-    if (id === 'custom') {
+  function confirmChosenPlan() {
+    if (!pendingPlan) return;
+    answers.plan = pendingPlan;
+    if (pendingPlan === 'custom') {
       customFrom = 'choosePlan';
       stage = 'customTime';
     } else {
       finish();
     }
-  }
-
-  function selectCustomMinutes(minutes: number) {
-    answers.customMinutes = minutes;
-    finish();
   }
 
   function finish() {
@@ -77,184 +85,140 @@
       stage = customFrom;
     }
   }
+
+  function onKey(e: KeyboardEvent) {
+    if (e.key !== 'Enter' || (e.target as HTMLElement | null)?.closest?.('button')) return;
+    if (stage === 'welcome') stage = 'question';
+    else if (stage === 'question') continueQuestion();
+    else if (stage === 'recommend') confirmRecommendedPlan();
+    else if (stage === 'choosePlan') confirmChosenPlan();
+    else if (stage === 'customTime' && answers.customMinutes) finish();
+  }
 </script>
 
-<div class="w-full h-full flex flex-col bg-bg-base text-text-primary relative select-none overflow-hidden">
-  <!-- Ambient Om watermark, consistent with the rest of the app -->
-  <div class="absolute inset-0 pointer-events-none opacity-[0.02] flex items-center justify-center">
-    <div class="text-[16rem] font-cinzel text-primary">ॐ</div>
+<svelte:window onkeydown={onKey} />
+
+{#snippet askBubble(text: string, helper?: string)}
+  <div class="flex items-center gap-2">
+    <div class="shrink-0 -ml-1"><Mascot mood="guide" size="lg" /></div>
+    <div class="bubble bubble-left flex-1">
+      <p class="text-lg font-black leading-snug">{text}</p>
+      {#if helper}<p class="text-sm font-bold text-text-muted mt-1">{helper}</p>{/if}
+    </div>
   </div>
+{/snippet}
 
-  <!-- Back button -->
+<div class="w-full h-full flex flex-col bg-bg-base text-text-primary select-none">
   {#if stage !== 'welcome'}
-    <div class="relative z-10 flex items-center px-3 pt-3">
-      <button
-        type="button"
-        onclick={back}
-        aria-label="Back"
-        class="p-2 -ml-1 rounded-full text-text-muted hover:text-text-primary hover:bg-bg-surface-alt transition-colors"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-        </svg>
+    <div class="shrink-0 flex items-center gap-3 px-4 pt-4 pb-2">
+      <button type="button" onclick={back} aria-label="Back" class="shrink-0 text-node-locked-edge hover:text-text-muted">
+        <Icon name="back" class="w-7 h-7" />
       </button>
+      <div class="progress-track flex-1">
+        <div class="progress-fill" style="width: {progress * 100}%"></div>
+      </div>
     </div>
   {/if}
 
-  {#if stage === 'question'}
-    <div class="relative z-10 flex items-center gap-1.5 justify-center pt-1 pb-2">
-      {#each ONBOARDING_QUESTIONS as _, i}
-        <div
-          class="h-1.5 rounded-full transition-all duration-300
-            {i === qIndex ? 'w-6 bg-primary' : i < qIndex ? 'w-1.5 bg-primary/50' : 'w-1.5 bg-border-warm'}"
-        ></div>
-      {/each}
-    </div>
-  {/if}
-
-  <div class="relative z-10 flex-1 overflow-y-auto scrollbar-none">
+  <div class="flex-1 overflow-y-auto scrollbar-none px-5 py-4">
     {#if stage === 'welcome'}
-      <div class="h-full flex flex-col items-center justify-center px-6 text-center gap-5">
-        <Mascot mood="guide" size="lg" animate={true} />
-        <h1 class="text-2xl font-black font-cinzel text-primary tracking-wide">Welcome to Gita Yoga</h1>
-        <p class="text-sm text-text-muted max-w-xs leading-relaxed">
-          A few quick questions help us tailor your daily practice — your goals, your pace, and how you like to learn.
+      <div class="h-full flex flex-col items-center justify-center text-center gap-6">
+        <div class="bubble px-5 py-4 max-w-xs animate-pop-in">
+          <p class="text-xl font-black">Namaste! Let's begin your Gītā journey.</p>
+          <span class="absolute left-1/2 -bottom-[9px] -translate-x-1/2 w-4 h-4 rotate-45 bg-bg-surface border-r-2 border-b-2 border-border-warm"></span>
+        </div>
+        <Mascot mood="happy" size="xl" animate={true} />
+        <p class="text-base font-bold text-text-muted max-w-xs">
+          Answer {ONBOARDING_QUESTIONS.length} quick questions and we'll shape your daily practice around you.
         </p>
-        <button
-          type="button"
-          onclick={() => (stage = 'question')}
-          class="w-full max-w-xs bg-primary hover:bg-primary-dark text-bg-base font-black py-4 rounded-2xl shadow-lg btn-3d border-b-4 border-accent transition-all text-sm"
-        >
-          Get Started
-        </button>
       </div>
 
     {:else if stage === 'question'}
-      {@const q = ONBOARDING_QUESTIONS[qIndex]}
-      <div class="flex flex-col px-6 pb-6">
-        <span class="text-[10px] font-black uppercase tracking-widest text-primary/70 text-center mt-2">
-          Question {qIndex + 1} of {ONBOARDING_QUESTIONS.length}
-        </span>
-        <h2 class="text-xl font-black font-cinzel text-text-primary text-center mt-1 mb-1 leading-snug">
-          {q.question}
-        </h2>
-        {#if q.helper}
-          <p class="text-xs text-text-muted text-center mb-5">{q.helper}</p>
-        {:else}
-          <div class="mb-5"></div>
-        {/if}
-
-        <div class="flex flex-col gap-2.5 w-full max-w-sm mx-auto">
-          {#each q.options as option}
-            {@const isSelected = (answers as Record<string, string>)[q.key] === option.value}
-            <button
-              type="button"
-              onclick={() => selectAnswer(option.value)}
-              class="w-full text-left p-4 rounded-2xl border border-b-4 tile-3d transition-all duration-150 select-none flex items-center justify-between gap-3
-                {isSelected
-                  ? 'bg-primary/20 border-primary text-text-primary shadow-md'
-                  : 'bg-bg-surface hover:bg-bg-surface-alt border-border-warm text-text-primary'}"
-            >
-              <span class="text-sm font-semibold leading-relaxed">{option.label}</span>
-              <div
-                class="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors
-                  {isSelected ? 'border-primary bg-primary text-bg-base' : 'border-text-muted/40'}"
-              >
-                {#if isSelected}
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor" class="w-3.5 h-3.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                  </svg>
-                {/if}
-              </div>
-            </button>
-          {/each}
-        </div>
+      {@render askBubble(question.question, question.helper)}
+      <div class="flex flex-col gap-3 mt-7">
+        {#each question.options as option}
+          <button
+            type="button"
+            onclick={() => selectAnswer(option.value)}
+            class="tile w-full text-left px-4 py-4 text-base font-bold {currentAnswer === option.value ? 'tile-selected' : ''}"
+          >
+            {option.label}
+          </button>
+        {/each}
       </div>
 
     {:else if stage === 'recommend'}
       {@const plan = planById(answers.plan!)}
-      <div class="h-full flex flex-col items-center justify-center px-6 text-center gap-5">
-        <span class="text-[10px] font-black uppercase tracking-[0.25em] text-primary/80">Your Recommended Plan</span>
-
-        <div class="w-full max-w-xs bg-bg-surface border border-primary/30 rounded-3xl p-6 shadow-xl flex flex-col items-center gap-1.5">
-          <h2 class="text-2xl font-black font-cinzel text-primary">{plan.name}</h2>
-          <p class="text-sm font-bold text-text-primary">{plan.timeLabel}</p>
-
-          <div class="h-px w-full bg-border-warm my-3"></div>
-
-          <div class="w-full text-left flex flex-col gap-1.5">
-            <span class="text-[10px] font-black uppercase tracking-wider text-text-muted mb-0.5">Why?</span>
-            <p class="text-xs text-text-muted">• Goal: {labelFor('goal', answers.goal)}</p>
-            <p class="text-xs text-text-muted">• Level: {labelFor('sanskritFamiliarity', answers.sanskritFamiliarity)}</p>
-            <p class="text-xs text-text-muted">• Available time: {labelFor('timeBudget', answers.timeBudget)}</p>
-          </div>
+      {@render askBubble("Here's the plan I recommend for you!")}
+      <div class="card border-primary-edge! mt-7 p-5">
+        <p class="text-xs font-black uppercase tracking-wider text-primary">Recommended plan</p>
+        <div class="flex items-baseline justify-between mt-1">
+          <h2 class="text-3xl font-black">{plan.name}</h2>
+          <span class="text-lg font-black text-primary">{plan.timeLabel}</span>
         </div>
-
-        <div class="w-full max-w-xs flex flex-col gap-2.5">
-          <button
-            type="button"
-            onclick={confirmRecommendedPlan}
-            class="w-full bg-primary hover:bg-primary-dark text-bg-base font-black py-4 rounded-2xl shadow-lg btn-3d border-b-4 border-accent transition-all text-sm"
-          >
-            Start {plan.name} Plan
-          </button>
-          <button
-            type="button"
-            onclick={() => (stage = 'choosePlan')}
-            class="w-full py-3.5 bg-bg-surface hover:bg-bg-surface-alt text-text-muted hover:text-text-primary font-bold rounded-2xl border border-border-warm active:scale-[0.98] transition-all text-xs"
-          >
-            Choose Another Plan
-          </button>
-        </div>
+        <p class="text-base font-bold text-text-muted">{plan.purpose}</p>
+        <ul class="mt-4 pt-4 border-t-2 border-border-warm flex flex-col gap-2.5">
+          <li class="flex items-start gap-2.5 text-[15px] font-bold"><Icon name="target" class="w-5 h-5 text-primary shrink-0" /> {labelFor('goal', answers.goal)}</li>
+          <li class="flex items-start gap-2.5 text-[15px] font-bold"><Icon name="book" class="w-5 h-5 text-primary shrink-0" /> {labelFor('sanskritFamiliarity', answers.sanskritFamiliarity)} in Sanskrit</li>
+          <li class="flex items-start gap-2.5 text-[15px] font-bold"><Icon name="clock" class="w-5 h-5 text-primary shrink-0" /> {labelFor('timeBudget', answers.timeBudget)} a day</li>
+        </ul>
       </div>
 
     {:else if stage === 'choosePlan'}
-      <div class="flex flex-col px-6 pb-6">
-        <h2 class="text-xl font-black font-cinzel text-text-primary text-center mt-2 mb-5">Choose your plan</h2>
-        <div class="flex flex-col gap-2.5 w-full max-w-sm mx-auto">
-          {#each PLANS as plan}
-            <button
-              type="button"
-              onclick={() => choosePlan(plan.id)}
-              class="w-full text-left p-4 rounded-2xl border border-b-4 tile-3d transition-all duration-150
-                {answers.plan === plan.id
-                  ? 'bg-primary/20 border-primary'
-                  : 'bg-bg-surface hover:bg-bg-surface-alt border-border-warm'}"
-            >
-              <div class="flex items-center justify-between">
-                <span class="font-black font-cinzel text-text-primary">{plan.name}</span>
-                <span class="text-xs font-bold text-primary shrink-0">{plan.timeLabel}</span>
-              </div>
-              <p class="text-[11px] text-text-muted mt-1">{plan.purpose}</p>
-            </button>
-          {/each}
-        </div>
+      {@render askBubble('Which plan fits you best?')}
+      <div class="flex flex-col gap-3 mt-7">
+        {#each PLANS as plan}
+          <button
+            type="button"
+            onclick={() => { playPopSound(); pendingPlan = plan.id; }}
+            class="tile w-full text-left px-4 py-4 {pendingPlan === plan.id ? 'tile-selected' : ''}"
+          >
+            <span class="flex items-center justify-between">
+              <span class="text-lg font-black">{plan.name}</span>
+              <span class="text-sm font-black text-primary">{plan.timeLabel}</span>
+            </span>
+            <span class="block text-sm font-bold text-text-muted mt-0.5">{plan.purpose}</span>
+          </button>
+        {/each}
       </div>
 
     {:else if stage === 'customTime'}
-      <div class="h-full flex flex-col items-center justify-center px-6 text-center gap-5">
-        <h2 class="text-xl font-black font-cinzel text-text-primary">How many minutes?</h2>
-        <p class="text-xs text-text-muted max-w-xs leading-relaxed">
-          Custom sessions adapt within your chosen time budget.
-        </p>
-        <div class="grid grid-cols-4 gap-2 w-full max-w-xs">
-          {#each CUSTOM_MINUTES_OPTIONS as m}
-            <button
-              type="button"
-              onclick={() => selectCustomMinutes(m)}
-              class="flex flex-col items-center justify-center py-3 rounded-2xl border border-b-4 tile-3d bg-bg-surface hover:bg-bg-surface-alt border-border-warm text-text-primary transition-all"
-            >
-              <span class="text-base font-black tabular-nums">{m}</span>
-              <span class="text-[9px] text-text-muted font-bold">min</span>
-            </button>
-          {/each}
-        </div>
+      {@render askBubble('How many minutes a day?', 'Custom sessions adapt within your time budget.')}
+      <div class="grid grid-cols-4 gap-3 mt-7">
+        {#each CUSTOM_MINUTES_OPTIONS as m}
+          <button
+            type="button"
+            onclick={() => { playPopSound(); answers.customMinutes = m; }}
+            class="tile flex flex-col items-center py-3 {answers.customMinutes === m ? 'tile-selected' : ''}"
+          >
+            <span class="text-xl font-black tabular-nums">{m}</span>
+            <span class="text-xs font-bold text-text-muted">min</span>
+          </button>
+        {/each}
       </div>
     {/if}
   </div>
-</div>
 
-<style>
-  .scrollbar-none::-webkit-scrollbar { display: none; }
-  .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
-</style>
+  <div class="lesson-footer flex flex-col gap-3">
+    {#if stage === 'welcome'}
+      <button type="button" onclick={() => (stage = 'question')} class="btn btn-primary w-full">Get started</button>
+    {:else if stage === 'question'}
+      <button type="button" onclick={continueQuestion} disabled={!currentAnswer} class="btn w-full {currentAnswer ? 'btn-primary' : 'btn-disabled'}">
+        Continue
+      </button>
+    {:else if stage === 'recommend'}
+      <button type="button" onclick={confirmRecommendedPlan} class="btn btn-primary w-full">Start {planById(answers.plan!).name} plan</button>
+      <button type="button" onclick={() => { pendingPlan = answers.plan ?? null; stage = 'choosePlan'; }} class="btn btn-ghost w-full">
+        Choose another plan
+      </button>
+    {:else if stage === 'choosePlan'}
+      <button type="button" onclick={confirmChosenPlan} disabled={!pendingPlan} class="btn w-full {pendingPlan ? 'btn-primary' : 'btn-disabled'}">
+        Continue
+      </button>
+    {:else if stage === 'customTime'}
+      <button type="button" onclick={finish} disabled={!answers.customMinutes} class="btn w-full {answers.customMinutes ? 'btn-primary' : 'btn-disabled'}">
+        Continue
+      </button>
+    {/if}
+  </div>
+</div>

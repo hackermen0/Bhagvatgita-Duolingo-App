@@ -17,6 +17,9 @@
 
   let matchedSanskrit = $state<string[]>([]);
   let matchedEnglish = $state<string[]>([]);
+  // A correct pair flashes green briefly before greying out
+  let flashSanskrit = $state<string | null>(null);
+  let flashEnglish = $state<string | null>(null);
 
   let errorSanskrit = $state<string | null>(null);
   let errorEnglish = $state<string | null>(null);
@@ -31,111 +34,97 @@
     selectedEnglish = null;
     matchedSanskrit = [];
     matchedEnglish = [];
+    flashSanskrit = null;
+    flashEnglish = null;
     errorSanskrit = null;
     errorEnglish = null;
   });
 
+  const busy = () => !!(errorSanskrit || flashSanskrit);
+
   function selectSanskrit(term: string) {
-    if (errorSanskrit || matchedSanskrit.includes(term)) return;
+    if (busy() || matchedSanskrit.includes(term)) return;
     playPopSound();
-    selectedSanskrit = term;
+    selectedSanskrit = selectedSanskrit === term ? null : term;
     checkMatch();
   }
 
   function selectEnglish(term: string) {
-    if (errorEnglish || matchedEnglish.includes(term)) return;
+    if (busy() || matchedEnglish.includes(term)) return;
     playPopSound();
-    selectedEnglish = term;
+    selectedEnglish = selectedEnglish === term ? null : term;
     checkMatch();
   }
 
   function checkMatch() {
     if (!selectedSanskrit || !selectedEnglish) return;
+    const s = selectedSanskrit;
+    const e = selectedEnglish;
+    selectedSanskrit = null;
+    selectedEnglish = null;
 
-    const isPairCorrect = pairs.some(
-      (p: PhrasePair) => p.sanskrit === selectedSanskrit && p.english === selectedEnglish
-    );
-
-    if (isPairCorrect) {
+    if (pairs.some((p: PhrasePair) => p.sanskrit === s && p.english === e)) {
       playSuccessSound();
-      matchedSanskrit.push(selectedSanskrit);
-      matchedEnglish.push(selectedEnglish);
-      selectedSanskrit = null;
-      selectedEnglish = null;
-
-      if (matchedSanskrit.length === pairs.length) {
-        onAllMatched();
-      }
+      flashSanskrit = s;
+      flashEnglish = e;
+      setTimeout(() => {
+        matchedSanskrit.push(s);
+        matchedEnglish.push(e);
+        flashSanskrit = null;
+        flashEnglish = null;
+        if (matchedSanskrit.length === pairs.length) onAllMatched();
+      }, 350);
     } else {
       playErrorSound();
-      errorSanskrit = selectedSanskrit;
-      errorEnglish = selectedEnglish;
+      errorSanskrit = s;
+      errorEnglish = e;
       // Both the tapped term and the term that actually owns the tapped meaning were confused
-      const ownerOfMeaning = pairs.find((p: PhrasePair) => p.english === selectedEnglish)?.sanskrit;
-      onIncorrect([selectedSanskrit, ...(ownerOfMeaning ? [ownerOfMeaning] : [])]);
-
+      const ownerOfMeaning = pairs.find((p: PhrasePair) => p.english === e)?.sanskrit;
+      onIncorrect([s, ...(ownerOfMeaning ? [ownerOfMeaning] : [])]);
       setTimeout(() => {
         errorSanskrit = null;
         errorEnglish = null;
-        selectedSanskrit = null;
-        selectedEnglish = null;
       }, 700);
     }
   }
+
+  function stateClass(matched: boolean, flash: boolean, error: boolean, selected: boolean): string {
+    if (matched) return 'opacity-40 shadow-none! cursor-default';
+    if (flash) return 'tile-correct';
+    if (error) return 'tile-wrong animate-shake';
+    if (selected) return 'tile-selected';
+    return '';
+  }
 </script>
 
-<div class="flex flex-col gap-3 w-full select-none max-w-lg mx-auto">
-  <div class="grid grid-cols-2 gap-2.5">
+<div class="grid grid-cols-2 gap-3 w-full select-none">
+  <div class="flex flex-col gap-3">
+    {#each sanskritList as term, i}
+      {@const matched = matchedSanskrit.includes(term)}
+      <button
+        type="button"
+        onclick={() => selectSanskrit(term)}
+        disabled={matched}
+        class="tile min-h-[62px] px-3 py-2 flex items-center gap-2 {stateClass(matched, flashSanskrit === term, errorSanskrit === term, selectedSanskrit === term)}"
+      >
+        <span class="key-hint shrink-0">{i + 1}</span>
+        <span class="flex-1 flex flex-col items-center"><SanskritWord text={term} size="sm" /></span>
+      </button>
+    {/each}
+  </div>
 
-    <!-- Sanskrit Column -->
-    <div class="flex flex-col gap-2">
-      <span class="text-[10px] uppercase tracking-[0.15em] text-text-muted font-bold text-center">Sanskrit</span>
-      {#each sanskritList as term}
-        {@const isMatched = matchedSanskrit.includes(term)}
-        {@const isSelected = selectedSanskrit === term}
-        {@const isError = errorSanskrit === term}
-        <button
-          type="button"
-          onclick={() => selectSanskrit(term)}
-          disabled={isMatched}
-          class="min-h-[52px] p-2 text-xs font-semibold rounded-2xl border text-center transition-all duration-150 select-none flex flex-col items-center justify-center border-b-4 tile-3d
-            {isMatched
-              ? 'bg-success/10 border-success/30 text-success/50 cursor-default line-through'
-              : isError
-                ? 'bg-error/20 border-error text-error animate-shake'
-                : isSelected
-                  ? 'bg-primary/20 border-primary text-primary shadow-md'
-                  : 'bg-bg-surface hover:bg-bg-surface-alt border-border-warm text-text-primary'}"
-        >
-          <SanskritWord text={term} size="sm" />
-        </button>
-      {/each}
-    </div>
-
-    <!-- English Column -->
-    <div class="flex flex-col gap-2">
-      <span class="text-[10px] uppercase tracking-[0.15em] text-text-muted font-bold text-center">Meaning</span>
-      {#each englishList as term}
-        {@const isMatched = matchedEnglish.includes(term)}
-        {@const isSelected = selectedEnglish === term}
-        {@const isError = errorEnglish === term}
-        <button
-          type="button"
-          onclick={() => selectEnglish(term)}
-          disabled={isMatched}
-          class="min-h-[52px] p-2.5 text-xs font-semibold rounded-2xl border text-center transition-all duration-150 select-none flex items-center justify-center border-b-4 tile-3d
-            {isMatched
-              ? 'bg-success/10 border-success/30 text-success/50 cursor-default line-through'
-              : isError
-                ? 'bg-error/20 border-error text-error animate-shake'
-                : isSelected
-                  ? 'bg-primary/20 border-primary text-primary shadow-md'
-                  : 'bg-bg-surface hover:bg-bg-surface-alt border-border-warm text-text-primary'}"
-        >
-          {term}
-        </button>
-      {/each}
-    </div>
-
+  <div class="flex flex-col gap-3">
+    {#each englishList as term, i}
+      {@const matched = matchedEnglish.includes(term)}
+      <button
+        type="button"
+        onclick={() => selectEnglish(term)}
+        disabled={matched}
+        class="tile min-h-[62px] px-3 py-2 flex items-center gap-2 {stateClass(matched, flashEnglish === term, errorEnglish === term, selectedEnglish === term)}"
+      >
+        <span class="key-hint shrink-0">{sanskritList.length + i + 1}</span>
+        <span class="flex-1 text-center text-[15px] font-bold leading-snug">{term}</span>
+      </button>
+    {/each}
   </div>
 </div>

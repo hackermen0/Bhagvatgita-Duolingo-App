@@ -10,19 +10,20 @@
     animate = false
   } = $props<{
     mood?: MascotMood;
-    size?: 'sm' | 'md' | 'lg';
+    size?: 'sm' | 'md' | 'lg' | 'xl';
     speechBubble?: string;
     speechIconType?: 'flame' | 'lightning' | 'trophy' | 'om';
     bubblePosition?: 'top' | 'right' | 'left';
     animate?: boolean;
   }>();
 
-  const sizeClasses: Record<'sm' | 'md' | 'lg', string> = {
+  const sizeClasses: Record<'sm' | 'md' | 'lg' | 'xl', string> = {
     sm: 'w-12 h-12',
     md: 'w-16 h-16',
-    lg: 'w-24 h-24'
+    lg: 'w-24 h-24',
+    xl: 'w-36 h-36'
   };
-  let activeSize = $derived((size || 'md') as 'sm' | 'md' | 'lg');
+  let activeSize = $derived((size || 'md') as 'sm' | 'md' | 'lg' | 'xl');
 </script>
 
 <div class="relative flex flex-col items-center select-none group">
@@ -35,7 +36,7 @@
         {bubblePosition === 'right' ? 'left-full ml-2 top-1/2 -translate-y-1/2' : ''}
         {bubblePosition === 'left' ? 'right-full mr-2 top-1/2 -translate-y-1/2' : ''}"
     >
-      <div class="bg-bg-surface border border-primary/60 text-primary-dark dark:text-primary font-extrabold text-[10px] sm:text-[11px] px-3 py-1.5 rounded-xl shadow-lg shadow-black/10 dark:shadow-black/30 whitespace-nowrap flex items-center gap-1.5 max-w-[200px]">
+      <div class="bg-bg-surface border-2 border-border-warm text-text-primary font-extrabold text-sm px-3 py-2 rounded-2xl whitespace-nowrap flex items-center gap-1.5 max-w-[220px]">
         {#if speechIconType === 'flame'}
           <svg viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5 text-primary flex-shrink-0">
             <path d="M12 23c-4.97 0-9-4.03-9-9 0-4.13 2.84-7.58 6.72-8.62.44-.12.88.2.88.66v.83c0 2.21 1.79 4 4 4s4-1.79 4-4v-.83c0-.46.44-.78.88-.66C20.16 6.42 23 9.87 23 14c0 4.97-4.03 9-9 9z"/>
@@ -55,11 +56,11 @@
       </div>
       <!-- Triangle Arrow Pointer -->
       {#if bubblePosition === 'top'}
-        <div class="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[6px] border-t-primary/60 mx-auto -mt-[1px]"></div>
+        <div class="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[6px] border-t-border-warm mx-auto -mt-[1px]"></div>
       {:else if bubblePosition === 'left'}
-        <div class="w-0 h-0 border-t-[5px] border-t-transparent border-b-[5px] border-b-transparent border-l-[6px] border-l-primary/60 absolute top-1/2 -translate-y-1/2 -right-[6px]"></div>
+        <div class="w-0 h-0 border-t-[5px] border-t-transparent border-b-[5px] border-b-transparent border-l-[6px] border-l-border-warm absolute top-1/2 -translate-y-1/2 -right-[6px]"></div>
       {:else if bubblePosition === 'right'}
-        <div class="w-0 h-0 border-t-[5px] border-t-transparent border-b-[5px] border-b-transparent border-r-[6px] border-r-primary/60 absolute top-1/2 -translate-y-1/2 -left-[6px]"></div>
+        <div class="w-0 h-0 border-t-[5px] border-t-transparent border-b-[5px] border-b-transparent border-r-[6px] border-r-border-warm absolute top-1/2 -translate-y-1/2 -left-[6px]"></div>
       {/if}
     </div>
   {/if}

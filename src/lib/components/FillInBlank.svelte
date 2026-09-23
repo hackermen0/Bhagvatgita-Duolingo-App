@@ -2,13 +2,15 @@
   import { lookupMeaning } from '../data/practice';
   import { playPopSound } from '../utils/soundEffects';
   import SanskritWord from './SanskritWord.svelte';
+  import Mascot from './Mascot.svelte';
 
-  let { prompt, translation, options, onSelect, showTranslation = true } = $props<{
+  let { prompt, translation, options, onSelect, showTranslation = true, disabled = false } = $props<{
     prompt: string;
     translation: string;
     options: string[];
-    onSelect: (selectedWord: string) => void;
+    onSelect: (selectedWord: string | null) => void;
     showTranslation?: boolean;
+    disabled?: boolean;
   }>();
 
   let selectedWord = $state<string | null>(null);
@@ -19,128 +21,86 @@
     hintIndex = hintIndex === i ? null : i;
   }
 
-  function handleSelect(word: string) {
+  function choose(word: string | null) {
+    if (disabled) return;
     playPopSound();
     selectedWord = word;
     onSelect(word);
   }
 
-  let parsedPrompt = $derived(() => {
-    let instruction = '';
-    let template = prompt;
-
-    const quoteMatch = prompt.match(/^(.*?):?\s*["“](.*?)["”]\s*$/);
-    if (quoteMatch) {
-      instruction = quoteMatch[1].trim();
-      template = quoteMatch[2].trim();
-    } else if (prompt.includes(':')) {
-      const parts = prompt.split(':');
-      instruction = parts[0].trim();
-      template = parts.slice(1).join(':').trim();
-    }
-
-    const rawTokens = template.split(/\s+/).filter(Boolean);
-    const tokens = rawTokens.map((tok: string) => {
-      const isBlank = tok.includes('______') || tok === '___';
-      const cleanWord = tok.replace(/[^a-zA-Zāīūēōṛḷṁḥñṅṇtṭdḍsṣś']/g, '');
-      return {
-        raw: tok,
-        isBlank,
-        word: cleanWord || tok
-      };
-    });
-
-    return { instruction, tokens };
+  // Only the quoted verse fragment is shown; the instruction is the screen title
+  const tokens = $derived.by(() => {
+    const quoted = prompt.match(/["“](.*?)["”]\s*$/);
+    const template = quoted ? quoted[1].trim() : prompt.includes(':') ? prompt.split(':').slice(1).join(':').trim() : prompt;
+    return template.split(/\s+/).filter(Boolean).map((tok: string) => ({
+      isBlank: tok.includes('___'),
+      word: tok.replace(/[^a-zA-Zāīūēōṛḷṁḥñṅṇtṭdḍsṣś']/g, '') || tok
+    }));
   });
 </script>
 
-<div class="flex flex-col gap-4 w-full select-none max-w-lg mx-auto">
-  
-  <!-- Verse Display Box -->
-  <div class="bg-bg-surface border border-border-warm p-4 sm:p-5 rounded-3xl text-center shadow-lg flex flex-col gap-3 items-center justify-center min-h-[110px]">
-    
-    {#if parsedPrompt().instruction}
-      <span class="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
-        {parsedPrompt().instruction}
-      </span>
-    {/if}
-
-    <!-- Verse Token Cards Row -->
-    <div class="flex flex-wrap gap-2 items-center justify-center py-1">
-      {#each parsedPrompt().tokens as token, i}
-        {#if token.isBlank}
-          {#if selectedWord}
-            <div class="px-3.5 py-2 rounded-2xl bg-primary text-bg-base border-b-4 border-accent shadow-md flex flex-col items-center justify-center min-w-[70px] animate-[pop_0.12s_ease-out]">
-              <SanskritWord text={selectedWord} inverted />
-            </div>
-          {:else}
-            <div class="px-3.5 py-2 rounded-2xl bg-bg-surface-alt border-2 border-dashed border-primary/50 flex flex-col items-center justify-center min-w-[75px] min-h-[50px] shadow-inner animate-pulse">
-              <span class="text-xs font-black text-primary font-cinzel tracking-widest">
-                ______
-              </span>
-            </div>
-          {/if}
-        {:else}
-          {@const meaning = lookupMeaning(token.word)}
-          <button
-            type="button"
-            disabled={!meaning}
-            onclick={() => toggleHint(i)}
-            aria-label={meaning ? `Show meaning of ${token.word}` : undefined}
-            class="relative px-3.5 py-2 rounded-2xl bg-bg-surface-alt border border-border-warm shadow-sm border-b-4 flex flex-col items-center justify-center min-w-[65px] disabled:cursor-default
-              {meaning ? 'cursor-help active:scale-95 transition-transform border-b-primary/50' : ''}"
-          >
-            <SanskritWord text={token.word} />
-            {#if hintIndex === i && meaning}
-              <span class="absolute top-full mt-2 left-1/2 -translate-x-1/2 z-20 whitespace-nowrap px-2.5 py-1 rounded-lg bg-text-primary text-bg-base text-[11px] font-bold shadow-lg animate-[fade-in_0.15s_ease-out]">
-                {meaning}
-              </span>
+<div class="flex flex-col gap-8 w-full select-none">
+  <div class="flex items-center gap-2">
+    <div class="shrink-0 -ml-1"><Mascot mood="guide" size="md" /></div>
+    <div class="bubble bubble-left flex-1 min-w-0">
+      <div class="flex flex-wrap gap-x-2 gap-y-3 items-end">
+        {#each tokens as token, i}
+          {#if token.isBlank}
+            {#if selectedWord}
+              <button type="button" onclick={() => choose(null)} class="tile px-3 py-1.5 flex flex-col items-center animate-pop-in" aria-label="Remove answer">
+                <SanskritWord text={selectedWord} />
+              </button>
+            {:else}
+              <span class="inline-block w-20 h-10 border-b-2 border-text-muted/60"></span>
             {/if}
-          </button>
-        {/if}
-      {/each}
-    </div>
+          {:else}
+            {@const meaning = lookupMeaning(token.word)}
+            <button
+              type="button"
+              disabled={!meaning}
+              onclick={() => toggleHint(i)}
+              aria-label={meaning ? `Show meaning of ${token.word}` : undefined}
+              class="relative flex flex-col items-center px-1 border-b-2 disabled:cursor-default
+                {meaning ? 'border-dashed border-primary-edge cursor-help' : 'border-transparent'}"
+            >
+              <SanskritWord text={token.word} />
+              {#if hintIndex === i && meaning}
+                <span class="absolute top-full mt-2 left-1/2 -translate-x-1/2 z-20 whitespace-nowrap px-3 py-1.5 rounded-xl bg-bg-surface border-2 border-border-warm text-sm font-bold text-text-primary shadow-lg animate-pop-in">
+                  {meaning}
+                </span>
+              {/if}
+            </button>
+          {/if}
+        {/each}
+      </div>
 
-    {#if translation}
-      {#if showTranslation || translationRevealed}
-        <p class="text-xs text-text-muted italic leading-snug border-t border-border-warm pt-2 w-full max-w-md">
-          "{translation}"
-        </p>
-      {:else}
-        <button
-          type="button"
-          onclick={() => (translationRevealed = true)}
-          class="text-[10px] font-bold uppercase tracking-wider text-primary/80 hover:text-primary border-t border-border-warm pt-2 w-full max-w-md"
-        >
-          Show translation hint
-        </button>
+      {#if translation}
+        <div class="mt-3 pt-2 border-t-2 border-border-warm">
+          {#if showTranslation || translationRevealed}
+            <p class="text-sm text-text-muted font-bold leading-snug">{translation}</p>
+          {:else}
+            <button type="button" onclick={() => (translationRevealed = true)} class="text-xs font-black uppercase tracking-wider text-info">
+              Show translation hint
+            </button>
+          {/if}
+        </div>
       {/if}
-    {/if}
+    </div>
   </div>
 
-  <div class="h-px bg-border-warm"></div>
-
-  <!-- Options bank with 3D tactile buttons -->
-  <div class="flex flex-wrap justify-center gap-2.5">
+  <div class="flex flex-wrap justify-center gap-3">
     {#each options as option}
-      {@const isSelected = selectedWord === option}
+      {@const used = selectedWord === option}
       <button
         type="button"
-        onclick={() => handleSelect(option)}
-        class="min-w-[90px] px-4 py-2 rounded-2xl shadow border-b-4 tile-3d flex flex-col items-center justify-center transition-all
-          {isSelected
-            ? 'bg-primary text-bg-base border-accent shadow-primary/20'
-            : 'bg-bg-surface hover:bg-bg-surface-alt border-border-warm text-text-primary'}"
+        onclick={() => (used ? choose(null) : choose(option))}
+        class="tile min-w-24 px-4 py-2.5 flex flex-col items-center {used ? 'tile-spent' : ''}"
+        aria-label={used ? `Remove ${option}` : option}
       >
-        <SanskritWord text={option} inverted={isSelected} />
+        <span class={used ? 'invisible flex flex-col items-center' : 'flex flex-col items-center'}>
+          <SanskritWord text={option} />
+        </span>
       </button>
     {/each}
   </div>
 </div>
-
-<style>
-  @keyframes pop {
-    0% { transform: scale(0.85); opacity: 0; }
-    100% { transform: scale(1); opacity: 1; }
-  }
-</style>

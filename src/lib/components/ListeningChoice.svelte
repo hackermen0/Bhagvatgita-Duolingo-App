@@ -3,11 +3,13 @@
   import type { ListeningOption } from '../data/gitaData';
   import { playPopSound } from '../utils/soundEffects';
   import SanskritWord from './SanskritWord.svelte';
+  import Icon from './Icon.svelte';
 
-  let { audioText, options, onSelect } = $props<{
+  let { audioText, options, onSelect, disabled = false } = $props<{
     audioText: string;
     options: ListeningOption[];
     onSelect: (word: string) => void;
+    disabled?: boolean;
   }>();
 
   let selected = $state<string | null>(null);
@@ -21,6 +23,7 @@
     const t = setTimeout(play, 350);
     return () => {
       clearTimeout(t);
+      currentUtterance = null;
       if (speechSupported) window.speechSynthesis.cancel();
     };
   });
@@ -46,35 +49,35 @@
   }
 
   function choose(word: string) {
+    if (disabled) return;
     playPopSound();
     selected = word;
     onSelect(word);
   }
 </script>
 
-<div class="flex flex-col items-center gap-6 w-full max-w-lg mx-auto select-none">
+<div class="flex flex-col items-center gap-8 w-full select-none">
   <div class="flex flex-col items-center gap-3">
     <button
       type="button"
       onclick={play}
       aria-label="Play audio"
-      class="relative w-20 h-20 rounded-3xl bg-primary text-bg-base flex items-center justify-center shadow-lg btn-3d border-b-4 border-accent active:scale-95 transition-all"
+      class="relative w-24 h-24 rounded-3xl bg-info text-white flex items-center justify-center transition-transform active:translate-y-1"
+      style="box-shadow: 0 5px 0 var(--color-info-dark)"
     >
       {#if isSpeaking}
-        <div class="absolute -inset-1.5 rounded-[1.75rem] border-2 border-primary/40 animate-pulse-ring pointer-events-none"></div>
+        <span class="absolute -inset-2 rounded-[1.9rem] border-4 border-info/30 animate-pulse-ring pointer-events-none"></span>
       {/if}
-      <svg viewBox="0 0 24 24" fill="currentColor" class="w-9 h-9">
-        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 00-2.5-4.03v8.06A4.5 4.5 0 0016.5 12zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
-      </svg>
+      <Icon name="speaker" class="w-12 h-12" />
     </button>
 
-    <div class="flex items-center rounded-full border border-border-warm bg-bg-surface p-0.5">
+    <div class="flex items-center rounded-full border-2 border-border-warm bg-bg-surface p-0.5">
       {#each ['slow', 'normal'] as const as r}
         <button
           type="button"
           onclick={() => setRate(r)}
-          class="px-3.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide transition-all
-            {rate === r ? 'bg-primary text-bg-base shadow-sm' : 'text-text-muted hover:text-text-primary'}"
+          class="px-4 py-1 rounded-full text-xs font-black uppercase tracking-wide transition-all
+            {rate === r ? 'bg-info text-white' : 'text-text-muted hover:text-text-primary'}"
         >
           {r}
         </button>
@@ -84,14 +87,10 @@
 
   <div class="grid grid-cols-2 gap-3 w-full">
     {#each options as option (option.word)}
-      {@const isSelected = selected === option.word}
       <button
         type="button"
         onclick={() => choose(option.word)}
-        class="flex flex-col items-center justify-center gap-1 p-4 rounded-2xl border border-b-4 tile-3d transition-all
-          {isSelected
-            ? 'bg-primary/20 border-primary text-text-primary shadow-md'
-            : 'bg-bg-surface hover:bg-bg-surface-alt border-border-warm text-text-primary'}"
+        class="tile flex flex-col items-center justify-center gap-1 p-4 min-h-24 {selected === option.word ? 'tile-selected' : ''}"
       >
         <SanskritWord text={option.word} size="lg" />
       </button>

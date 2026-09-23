@@ -49,12 +49,23 @@ function learnedWords(): WordMeaning[] {
 
 export const MIN_PRACTICE_WORDS = 3;
 
-export function practiceStatus(): { available: boolean; dueCount: number } {
+export type PracticeKind = 'review' | 'listening' | 'mistakes';
+
+/** Words missed recently enough that their memory strength has dropped to zero */
+const isMistake = (w: WordMeaning) => gameState.wordMemory[w.word]?.strength === 0;
+
+export function learnedWordList(): WordMeaning[] {
+  return learnedWords();
+}
+
+export function practiceStatus(): { available: boolean; dueCount: number; mistakeCount: number; learnedCount: number } {
   const pool = learnedWords();
   const now = Date.now();
   return {
     available: pool.length >= MIN_PRACTICE_WORDS,
-    dueCount: pool.filter((w) => isDue(gameState.wordMemory[w.word], now)).length
+    dueCount: pool.filter((w) => isDue(gameState.wordMemory[w.word], now)).length,
+    mistakeCount: pool.filter(isMistake).length,
+    learnedCount: pool.length
   };
 }
 
@@ -88,7 +99,7 @@ function distractors(target: WordMeaning, count: number, preferred: WordMeaning[
  * once enough words are learned. Words sharing a meaning are skipped — identical
  * English tiles would make the matching exercise ambiguous.
  */
-function pickTargets(max: number): WordMeaning[] {
+function pickTargets(max: number, focusMistakes = false): WordMeaning[] {
   const now = Date.now();
   const weakness = (a: WordMeaning, b: WordMeaning) => {
     const ma = gameState.wordMemory[a.word];
@@ -96,8 +107,9 @@ function pickTargets(max: number): WordMeaning[] {
     return (ma?.strength ?? 0) - (mb?.strength ?? 0) || (ma?.lastPracticed ?? 0) - (mb?.lastPracticed ?? 0);
   };
   const pool = shuffle(learnedWords());
-  const due = pool.filter((w) => isDue(gameState.wordMemory[w.word], now)).sort(weakness);
-  const rest = pool.filter((w) => !isDue(gameState.wordMemory[w.word], now)).sort(weakness);
+  const first = focusMistakes ? isMistake : (w: WordMeaning) => isDue(gameState.wordMemory[w.word], now);
+  const due = pool.filter(first).sort(weakness);
+  const rest = pool.filter((w) => !first(w)).sort(weakness);
 
   const meanings = new Set<string>();
   const targets: WordMeaning[] = [];
@@ -159,22 +171,25 @@ export function listeningQuestion(w: WordMeaning, id: string | number, pool: Wor
  * directions, with listening — the hardest — saved for the end. Session size follows the
  * learner's plan and the exercise mix follows their listening preference.
  */
-export function buildPracticeLesson(opts: { listening: boolean }): Lesson | null {
+export function buildPracticeLesson(opts: { listening: boolean; kind?: PracticeKind }): Lesson | null {
+  const kind = opts.kind ?? 'review';
+  if (kind === 'listening' && !opts.listening) return null;
   const cfg = learningConfig(gameState.profile);
-  const targets = pickTargets(cfg.practiceSize);
+  const targets = pickTargets(cfg.practiceSize, kind === 'mistakes');
   if (targets.length < MIN_PRACTICE_WORDS) return null;
 
   const level = opts.listening ? cfg.listening : 'none';
   const kinds =
-    level === 'none' ? ['meaning', 'reverse']
+    kind === 'listening' ? ['listening']
+    : level === 'none' ? ['meaning', 'reverse']
     : level === 'heavy' ? ['listening', 'meaning', 'listening', 'reverse']
     : ['meaning', 'reverse', 'listening'];
   const rank: Record<string, number> = { meaning: 0, reverse: 1, listening: 2 };
   const perWord = targets
-    .map((w, i) => ({ w, i, kind: kinds[i % kinds.length] }))
-    .sort((a, b) => rank[a.kind] - rank[b.kind])
-    .map(({ w, i, kind }) =>
-      kind === 'meaning' ? meaningQuestion(w, i) : kind === 'reverse' ? reverseQuestion(w, i) : listeningQuestion(w, i)
+    .map((w, i) => ({ w, i, k: kinds[i % kinds.length] }))
+    .sort((a, b) => rank[a.k] - rank[b.k])
+    .map(({ w, i, k }) =>
+      k === 'meaning' ? meaningQuestion(w, i) : k === 'reverse' ? reverseQuestion(w, i) : listeningQuestion(w, i)
     );
 
   const matching: Question = {
@@ -185,9 +200,10 @@ export function buildPracticeLesson(opts: { listening: boolean }): Lesson | null
     pairs: targets.map((w) => ({ sanskrit: w.word, english: w.meaning }))
   };
 
+  const titles: Record<PracticeKind, string> = { review: 'Smart Review', listening: 'Listening', mistakes: 'Mistakes' };
   return {
     id: 'practice',
-    title: 'Practice',
+    title: titles[kind],
     verseRef: 'Review',
     verseSanskrit: '',
     verseTransliteration: '',
@@ -197,6 +213,6 @@ export function buildPracticeLesson(opts: { listening: boolean }): Lesson | null
     teachingSlides: [],
     questions: [],
     parts: [],
-    finalSynthesisQuestions: [matching, ...perWord]
+    finalSynthesisQuestions: kind === 'listening' ? perWord : [matching, ...perWord]
   };
 }

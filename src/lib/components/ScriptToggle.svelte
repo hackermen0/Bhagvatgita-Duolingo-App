@@ -3,23 +3,20 @@
 
   const OPTIONS: { value: ScriptDisplay; label: string; sample: string }[] = [
     { value: 'script', label: 'Devanāgarī', sample: 'कर्म' },
-    { value: 'both', label: 'Both', sample: 'कर्म + ka·rma' },
+    { value: 'both', label: 'Both', sample: 'कर्म · karma' },
     { value: 'roman', label: 'Roman', sample: 'karma' }
   ];
 </script>
 
-<div class="grid grid-cols-3 gap-1.5">
+<div class="grid grid-cols-3 gap-2">
   {#each OPTIONS as option}
     <button
       type="button"
       onclick={() => gameState.setScriptDisplay(option.value)}
-      class="flex flex-col items-center py-2 rounded-xl border transition-colors
-        {gameState.scriptDisplay === option.value
-          ? 'bg-primary/15 border-primary text-primary'
-          : 'bg-bg-surface-alt border-border-warm text-text-muted hover:text-text-primary'}"
+      class="tile flex flex-col items-center py-2.5 {gameState.scriptDisplay === option.value ? 'tile-selected' : ''}"
     >
-      <span class="text-[11px] font-black">{option.label}</span>
-      <span class="text-[9px] font-bold font-cinzel">{option.sample}</span>
+      <span class="text-sm font-black">{option.label}</span>
+      <span class="text-xs font-bold text-text-muted">{option.sample}</span>
     </button>
   {/each}
 </div>

@@ -83,6 +83,8 @@ class GameState {
   daily = $state<DailyStats>(emptyDaily(dateKey()));
   onboardingComplete = $state(false);
   profile = $state<OnboardingProfile | null>(null);
+  joinedDate = $state(dateKey());
+  claimedQuests = $state<{ date: string; ids: string[] }>({ date: dateKey(), ids: [] });
 
   constructor() {
     this.loadState();
@@ -113,6 +115,9 @@ class GameState {
         this.daily = { ...emptyDaily(dateKey()), ...parsed.daily };
         this.onboardingComplete = parsed.onboardingComplete ?? false;
         this.profile = parsed.profile ?? null;
+        // Saves from before join dates were tracked: the earliest active day is the best guess
+        this.joinedDate = parsed.joinedDate ?? [...(parsed.activeDays ?? [])].sort()[0] ?? dateKey();
+        this.claimedQuests = parsed.claimedQuests ?? { date: dateKey(), ids: [] };
 
         // Older saves stored Date.toDateString(); normalize to YYYY-MM-DD
         const last: string | null = parsed.lastActiveDate ?? null;
@@ -146,7 +151,9 @@ class GameState {
         dailyGoal: this.dailyGoal,
         daily: $state.snapshot(this.daily),
         onboardingComplete: this.onboardingComplete,
-        profile: this.profile ? $state.snapshot(this.profile) : null
+        profile: this.profile ? $state.snapshot(this.profile) : null,
+        joinedDate: this.joinedDate,
+        claimedQuests: $state.snapshot(this.claimedQuests)
       };
       localStorage.setItem('gita_game_state', JSON.stringify(stateObj));
     } catch (e) {
@@ -291,6 +298,18 @@ class GameState {
     const streakExtended = this.recordActivity();
     const goalJustMet = this.addXP(PRACTICE_XP);
     return { xpEarned: PRACTICE_XP, streakExtended, goalJustMet };
+  }
+
+  isQuestClaimed(id: string): boolean {
+    return this.claimedQuests.date === dateKey() && this.claimedQuests.ids.includes(id);
+  }
+
+  claimQuest(id: string, rewardXP: number) {
+    if (this.isQuestClaimed(id)) return;
+    const today = dateKey();
+    const ids = this.claimedQuests.date === today ? this.claimedQuests.ids : [];
+    this.claimedQuests = { date: today, ids: [...ids, id] };
+    this.addXP(rewardXP);
   }
 
   /** Passing a "Jump here?" test marks every skipped lesson complete, like a placement test. */
