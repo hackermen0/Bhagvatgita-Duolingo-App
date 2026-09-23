@@ -1,15 +1,26 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import { gitaData } from '$lib/data/gitaData';
+  import { gameState } from '$lib/state/gameState.svelte';
+  import { learningConfig } from '$lib/data/learningConfig';
+  import { personalizeLesson } from '$lib/data/personalization';
   import QuizScreen from '$lib/components/QuizScreen.svelte';
 
-  // Reactively derive active lesson based on URL param
+  // Personalized once per lesson visit (untracked): it picks random exercise targets, and
+  // progress saved mid-lesson must not regenerate the lesson underneath the learner.
   let activeLesson = $derived.by(() => {
     const lessonId = $page.params.lessonId;
-    return gitaData.chapters
+    const base = gitaData.chapters
       .flatMap(c => c.sections.flatMap(s => s.lessons))
       .find(l => l.id === lessonId);
+    if (!base) return undefined;
+    return untrack(() =>
+      personalizeLesson(base, learningConfig(gameState.profile), {
+        speech: typeof window !== 'undefined' && 'speechSynthesis' in window
+      })
+    );
   });
 
   function handleExit() {
@@ -18,7 +29,9 @@
 </script>
 
 {#if activeLesson}
-  <QuizScreen lesson={activeLesson} onExit={handleExit} />
+  {#key activeLesson.id}
+    <QuizScreen lesson={activeLesson} onExit={handleExit} />
+  {/key}
 {:else}
   <div class="min-h-screen bg-bg-base flex flex-col items-center justify-center p-6 text-center select-none">
     <div class="w-16 h-16 bg-error/10 border border-error/30 rounded-full flex items-center justify-center mb-6 text-error">

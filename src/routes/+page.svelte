@@ -1,11 +1,25 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { gameState } from '$lib/state/gameState.svelte';
+  import { gameState, DAILY_GOAL_OPTIONS } from '$lib/state/gameState.svelte';
   import { gitaData, type Lesson } from '$lib/data/gitaData';
+  import { practiceStatus } from '$lib/data/practice';
+  import { planById, type PracticePreference } from '$lib/data/onboarding';
+  import { learningConfig, newContentAdvice, goalGreeting } from '$lib/data/learningConfig';
   import Mascot from '$lib/components/Mascot.svelte';
+  import VerseText from '$lib/components/VerseText.svelte';
+  import ScriptToggle from '$lib/components/ScriptToggle.svelte';
 
   let activeLessonModal = $state<Lesson | null>(null);
+  let jumpTarget = $state<Lesson | null>(null);
   let showSettingsModal = $state(false);
+
+  const cfg = $derived(learningConfig(gameState.profile));
+
+  const PRACTICE_STYLES: { value: PracticePreference; label: string }[] = [
+    { value: 'listening', label: 'Listening' },
+    { value: 'balanced', label: 'Balanced' },
+    { value: 'reading', label: 'Reading' }
+  ];
 
   // ─── Derived: All lessons flattened ───────────────────────────────────────
   const allLessons = $derived(
@@ -14,12 +28,14 @@
 
   // ─── Derived: Next lesson to do (first unlocked & not completed) ──────────
   const nextLesson = $derived(
-    allLessons.find((lesson, idx) => {
-      const completed = gameState.completedLessons.includes(lesson.id);
-      if (completed) return false;
-      if (idx === 0) return true;
-      return gameState.completedLessons.includes(allLessons[idx - 1].id);
-    }) ?? null
+    allLessons.find(
+      (lesson) => !gameState.completedLessons.includes(lesson.id) && isLessonUnlocked(lesson.id)
+    ) ?? null
+  );
+
+  // Where the "Jump here?" invitation sits: the first lesson past the learner's next one
+  const firstLockedId = $derived(
+    allLessons.find((l) => !gameState.completedLessons.includes(l.id) && !isLessonUnlocked(l.id))?.id ?? null
   );
 
   // ─── Derived: Chapter progress stats ─────────────────────────────────────
@@ -46,21 +62,27 @@
       return { msg: `${gameState.streak} days strong!`, iconType: 'lightning' };
     if (!nextLesson)
       return { msg: 'All lessons complete!', iconType: 'trophy' };
-    return { msg: `Ready for ${nextLesson.verseRef}?`, iconType: 'om' };
+    if (advice)
+      return { msg: 'Review first — it makes new verses stick!', iconType: 'lightning' };
+    return { msg: goalGreeting(gameState.profile, nextLesson.verseRef), iconType: 'om' };
   });
 
-  // ─── Derived: Daily Sadhana tasks ────────────────────────────────────────
-  const todayStr = new Date().toDateString();
-  const sadhanaTask1Done = $derived(
-    gameState.lastActiveDate === todayStr && gameState.completedLessons.length > 0
+  // ─── Derived: Daily Sadhana (today's real activity + self-set goal) ─────
+  const sadhanaTask1Done = $derived(gameState.today.lessons > 0);
+  const sadhanaTask2Done = $derived(gameState.today.practices > 0);
+  const sadhanaTask3Done = $derived(gameState.today.reflections > 0);
+  const goalPct = $derived(Math.min(100, Math.round((gameState.today.xp / gameState.dailyGoal) * 100)));
+
+  // ─── Derived: Spaced-repetition practice ─────────────────────────────────
+  const practice = $derived(practiceStatus());
+
+  // The plan's new-content rule, applied as a recommendation rather than a lock
+  const advice = $derived(
+    nextLesson && practice.available
+      ? newContentAdvice(cfg, practice.dueCount, gameState.today.newLessons)
+      : null
   );
-  const sadhanaTask2Done = $derived(gameState.completedLessons.length >= 2);
-  const sadhanaTask3Done = $derived(
-    Object.keys(gameState.userReflections).length > 0
-  );
-  const sadhanaXP = $derived(
-    (sadhanaTask1Done ? 10 : 0) + (sadhanaTask2Done ? 10 : 0) + (sadhanaTask3Done ? 5 : 0)
-  );
+  const planName = $derived(gameState.profile ? planById(gameState.profile.plan).name : '');
 
   // ─── Roadmap geometry ────────────────────────────────────────────────────
   const S_CURVE_OFFSETS = [0, -80, 80, -80, 80, -80];
@@ -123,19 +145,26 @@
     return `M ${prevX} ${prevY} C ${prevX} ${cy1}, ${x} ${cy2}, ${x} ${y}`;
   }
 
-  function isLessonUnlocked(lessonId: string, index: number) {
-    if (index === 0) return true;
-    const prevLessonIdx = allLessons.findIndex((l) => l.id === lessonId) - 1;
-    if (prevLessonIdx >= 0) {
-      return gameState.completedLessons.includes(allLessons[prevLessonIdx].id);
-    }
-    return false;
+  function isLessonUnlocked(lessonId: string): boolean {
+    if (cfg.pathAccess === 'open') return true;
+    const i = allLessons.findIndex((l) => l.id === lessonId);
+    return i <= 0 || gameState.completedLessons.includes(allLessons[i - 1].id);
   }
 
   function handleNodeClick(lesson: Lesson, unlocked: boolean) {
-    if (!unlocked) return;
-    activeLessonModal = lesson;
+    if (unlocked) activeLessonModal = lesson;
+    else if (cfg.pathAccess === 'jump') jumpTarget = lesson;
   }
+
+  function startJump(lessonId: string) {
+    jumpTarget = null;
+    goto(`/jump/${lessonId}`);
+  }
+
+  const lessonsSkippedBy = (target: Lesson) =>
+    allLessons
+      .slice(0, allLessons.findIndex((l) => l.id === target.id))
+      .filter((l) => !gameState.completedLessons.includes(l.id)).length;
 
   function startLesson(lessonId: string) {
     activeLessonModal = null;
@@ -145,6 +174,13 @@
   function resetGame() {
     if (confirm('Reset all lesson progress, streak, and XP?')) {
       gameState.resetState();
+      showSettingsModal = false;
+    }
+  }
+
+  function redoOnboarding() {
+    if (confirm('Retake the onboarding questions? Your lesson progress will not be affected.')) {
+      gameState.resetOnboarding();
       showSettingsModal = false;
     }
   }
@@ -266,6 +302,47 @@
             />
           </div>
 
+          {#if advice}
+          <!-- Review-first card (plan's new-content rule) -->
+          <button
+            onclick={() => goto('/practice')}
+            class="w-full bg-gradient-to-br from-accent/15 via-bg-surface to-bg-surface-alt border border-accent/40 rounded-2xl p-4 shadow-lg text-left relative overflow-hidden group transition-all duration-200 hover:border-accent/70 active:scale-[0.98] cursor-pointer"
+            type="button"
+          >
+            <div class="flex items-center gap-3 relative z-10">
+              <div class="w-12 h-12 rounded-full bg-accent text-bg-base flex items-center justify-center shadow-lg flex-shrink-0">
+                <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                  <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/>
+                </svg>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="text-[10px] uppercase font-black tracking-widest text-accent mb-0.5">Review First</div>
+                <div class="text-sm font-black text-text-primary font-cinzel">
+                  {advice === 'review-due'
+                    ? `${practice.dueCount} word${practice.dueCount === 1 ? '' : 's'} ready for review`
+                    : "Today's new verse is done"}
+                </div>
+                <div class="text-[11px] text-text-muted leading-snug mt-0.5">
+                  {advice === 'review-due'
+                    ? `Your ${planName} plan clears reviews before adding new verses.`
+                    : `Your ${planName} plan adds ${cfg.newContent?.maxNewPerDay ?? 1} new verse${(cfg.newContent?.maxNewPerDay ?? 1) === 1 ? '' : 's'} a day — a review locks it in.`}
+                </div>
+              </div>
+              <div class="flex-shrink-0 text-accent/60 group-hover:text-accent transition-colors">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-4 h-4">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </div>
+          </button>
+          <button
+            type="button"
+            onclick={() => handleNodeClick(nextLesson, true)}
+            class="w-full mt-2 text-[11px] font-bold text-text-muted hover:text-primary transition-colors"
+          >
+            Or start {nextLesson.verseRef} anyway →
+          </button>
+          {:else}
           <!-- Hero Continue Card -->
           <button
             onclick={() => handleNodeClick(nextLesson, true)}
@@ -317,6 +394,7 @@
               </div>
             </div>
           </button>
+          {/if}
         </div>
       {:else}
         <!-- All complete state -->
@@ -341,9 +419,17 @@
               </svg>
               <span class="text-xs font-black uppercase tracking-wider text-text-primary font-cinzel">Today's Sadhana</span>
             </div>
-            <div class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/15 border border-primary/30">
-              <span class="text-[10px] text-primary font-black">+{25 - sadhanaXP} XP left</span>
-            </div>
+            <button
+              type="button"
+              onclick={() => (showSettingsModal = true)}
+              class="flex items-center gap-1 px-2 py-0.5 rounded-full border transition-colors
+                {goalPct >= 100 ? 'bg-success/15 border-success/30' : 'bg-primary/15 border-primary/30 hover:bg-primary/25'}"
+              title="Change daily goal"
+            >
+              <span class="text-[10px] font-black tabular-nums {goalPct >= 100 ? 'text-success' : 'text-primary'}">
+                {gameState.today.xp}/{gameState.dailyGoal} XP
+              </span>
+            </button>
           </div>
           <div class="flex flex-col gap-2">
             <!-- Task 1 -->
@@ -351,16 +437,14 @@
               <div class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 {sadhanaTask1Done ? 'bg-success text-white animate-check-pop' : 'border-2 border-border-warm'}">
                 {#if sadhanaTask1Done}<svg viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3"><path fill-rule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clip-rule="evenodd" /></svg>{/if}
               </div>
-              <span class="text-xs {sadhanaTask1Done ? 'text-text-muted line-through' : 'text-text-primary'}">Read one verse</span>
-              <span class="ml-auto text-[10px] text-primary font-bold">+10 XP</span>
+              <span class="text-xs {sadhanaTask1Done ? 'text-text-muted line-through' : 'text-text-primary'}">Complete a lesson</span>
             </div>
             <!-- Task 2 -->
             <div class="flex items-center gap-2.5">
               <div class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 {sadhanaTask2Done ? 'bg-success text-white animate-check-pop' : 'border-2 border-border-warm'}">
                 {#if sadhanaTask2Done}<svg viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3"><path fill-rule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clip-rule="evenodd" /></svg>{/if}
               </div>
-              <span class="text-xs {sadhanaTask2Done ? 'text-text-muted line-through' : 'text-text-primary'}">Complete a practice</span>
-              <span class="ml-auto text-[10px] text-primary font-bold">+10 XP</span>
+              <span class="text-xs {sadhanaTask2Done ? 'text-text-muted line-through' : 'text-text-primary'}">Do a practice session</span>
             </div>
             <!-- Task 3 -->
             <div class="flex items-center gap-2.5">
@@ -368,17 +452,60 @@
                 {#if sadhanaTask3Done}<svg viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3"><path fill-rule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clip-rule="evenodd" /></svg>{/if}
               </div>
               <span class="text-xs {sadhanaTask3Done ? 'text-text-muted line-through' : 'text-text-primary'}">Write a reflection</span>
-              <span class="ml-auto text-[10px] text-primary font-bold">+5 XP</span>
             </div>
           </div>
-          <!-- Progress bar -->
+          <!-- Daily XP goal progress -->
           <div class="mt-3 h-1.5 bg-border-warm rounded-full overflow-hidden">
             <div
-              class="h-full bg-gradient-to-r from-success to-primary rounded-full transition-all duration-700"
-              style="width: {Math.round((sadhanaXP / 25) * 100)}%"
+              class="h-full rounded-full transition-all duration-700 {goalPct >= 100 ? 'bg-success' : 'bg-gradient-to-r from-success to-primary'}"
+              style="width: {goalPct}%"
             ></div>
           </div>
+          <p class="mt-1.5 text-[10px] text-text-muted flex justify-between gap-2">
+            <span>{goalPct >= 100 ? 'Daily goal reached — wonderful consistency!' : 'Daily goal'}</span>
+            {#if gameState.profile}
+              <span class="font-bold text-primary/80 shrink-0">{planName} · {planById(gameState.profile.plan).timeLabel}</span>
+            {/if}
+          </p>
         </div>
+      </div>
+
+      <!-- ─────────────────────────────────────────────────
+           PRACTICE — spaced review of learned words
+      ───────────────────────────────────────────────── -->
+      <div class="w-full max-w-sm animate-fade-up" style="animation-delay: 90ms;">
+        <button
+          type="button"
+          onclick={() => goto('/practice')}
+          disabled={!practice.available}
+          class="w-full flex items-center gap-3 p-3.5 rounded-2xl border text-left transition-all
+            {practice.available
+              ? 'bg-bg-surface border-accent/30 hover:border-accent/60 shadow-sm active:scale-[0.98] cursor-pointer'
+              : 'bg-bg-surface-alt border-border-warm opacity-70 cursor-not-allowed'}"
+        >
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 {practice.available ? 'bg-accent/15 text-accent' : 'bg-border-warm text-text-muted'}">
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+              <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/>
+            </svg>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="text-xs font-black uppercase tracking-wider text-text-primary font-cinzel">Practice</div>
+            <div class="text-[11px] text-text-muted leading-snug">
+              {#if !practice.available}
+                Complete a lesson to unlock review
+              {:else if practice.dueCount > 0}
+                {practice.dueCount} word{practice.dueCount === 1 ? '' : 's'} ready for review
+              {:else}
+                All caught up — a quick review keeps words fresh
+              {/if}
+            </div>
+          </div>
+          {#if practice.available && practice.dueCount > 0}
+            <span class="shrink-0 min-w-6 h-6 px-1.5 rounded-full bg-accent text-bg-base text-[11px] font-black flex items-center justify-center tabular-nums">
+              {practice.dueCount}
+            </span>
+          {/if}
+        </button>
       </div>
 
       <!-- ═══════════════════════════════════════════════════════
@@ -540,10 +667,11 @@
 
                 <!-- ─── Nodes ─── -->
                 {#each section.lessons as lesson, idx}
-                  {@const unlocked = isLessonUnlocked(lesson.id, idx)}
+                  {@const unlocked = isLessonUnlocked(lesson.id)}
+                  {@const canJump = !unlocked && cfg.pathAccess === 'jump'}
                   {@const completed = gameState.completedLessons.includes(lesson.id)}
                   {@const offsetPx = getNodeOffset(idx)}
-                  {@const isCurrentActive = unlocked && !completed}
+                  {@const isCurrentActive = lesson.id === nextLesson?.id}
                   {@const nodeType = getNodeType(lesson, idx, section.lessons.length)}
 
                   <div
@@ -552,9 +680,9 @@
                   >
                     <button
                       onclick={() => handleNodeClick(lesson, unlocked)}
-                      disabled={!unlocked}
+                      disabled={!unlocked && !canJump}
                       class="relative group flex flex-col items-center select-none transition-all duration-150
-                        {unlocked ? 'cursor-pointer active:scale-95' : 'cursor-not-allowed'}"
+                        {unlocked || canJump ? 'cursor-pointer active:scale-95' : 'cursor-not-allowed'}"
                       aria-label="{lesson.verseRef} - {lesson.title}"
                       id="lesson-node-{lesson.id}"
                       type="button"
@@ -591,7 +719,20 @@
                           </svg>
                         </div>
 
+                      {:else if unlocked}
+                        <!-- ── OPEN NODE ── Available but not the suggested next step -->
+                        <div class="w-[58px] h-[58px] rounded-full bg-bg-surface border-2 border-primary/60 border-b-4 text-primary flex items-center justify-center shadow-md relative z-10 transition-all duration-150 group-hover:bg-primary/10">
+                          <div class="[&_svg]:text-primary">{@render NodeIcon(nodeType)}</div>
+                        </div>
+
                       {:else}
+                        {#if canJump && lesson.id === firstLockedId}
+                          <div class="absolute -top-7 z-30 pointer-events-none">
+                            <div class="bg-accent text-bg-base font-black text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-lg shadow whitespace-nowrap">
+                              Jump here?
+                            </div>
+                          </div>
+                        {/if}
                         <!-- ── LOCKED NODE ── Muted -->
                         <div class="w-[54px] h-[54px] rounded-full bg-node-locked border border-border-warm border-b-4 flex items-center justify-center shadow-sm opacity-70 relative z-10">
                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4.5 h-4.5 text-text-muted">
@@ -751,10 +892,14 @@
 
         <div class="h-px bg-border-warm"></div>
 
-        <div class="bg-bg-surface-alt border border-border-warm p-4 rounded-2xl flex flex-col gap-3">
-          <p class="text-base font-cinzel text-primary-dark dark:text-primary leading-relaxed whitespace-pre-line text-center">
-            {activeLessonModal.verseSanskrit}
-          </p>
+        <div class="bg-bg-surface-alt border border-border-warm p-4 rounded-2xl flex flex-col gap-3 text-center">
+          <div>
+            <VerseText
+              sanskrit={activeLessonModal.verseSanskrit}
+              transliteration={activeLessonModal.verseTransliteration}
+              class="text-base text-primary-dark dark:text-primary leading-relaxed"
+            />
+          </div>
           <div class="flex items-center justify-center gap-1.5 text-text-muted/70">
             <svg viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5"><path fill-rule="evenodd" d="M12 1.5a5.25 5.25 0 00-5.25 5.25v3a3 3 0 00-3 3v6.75a3 3 0 003 3h10.5a3 3 0 003-3v-6.75a3 3 0 00-3-3v-3c0-2.9-2.35-5.25-5.25-5.25zm3.75 8.25v-3a3.75 3.75 0 10-7.5 0v3h7.5z" clip-rule="evenodd" /></svg>
             <span class="text-[10px] font-bold uppercase tracking-wider">Meaning revealed as you learn</span>
@@ -767,7 +912,7 @@
             <div class="w-8 h-8 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center text-primary">
               <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M12 2a5 5 0 0 0-5 5c0 2.11 1.31 3.92 3.17 4.67L8.1 19.46a1 1 0 0 0 .42 1.22l2.9 1.74a1 1 0 0 0 1.16 0l2.9-1.74a1 1 0 0 0 .42-1.22l-2.07-7.79A5.002 5.002 0 0 0 17 7a5 5 0 0 0-5-5zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/></svg>
             </div>
-            <span class="text-[9px] text-text-muted font-bold leading-tight">{activeLessonModal.parts?.length || 1} word{(activeLessonModal.parts?.length || 1) !== 1 ? 's' : ''} to discover</span>
+            <span class="text-[9px] text-text-muted font-bold leading-tight">{activeLessonModal.parts?.length || 1} part{(activeLessonModal.parts?.length || 1) !== 1 ? 's' : ''} to discover</span>
           </div>
           <div class="flex flex-col items-center gap-1.5">
             <div class="w-8 h-8 rounded-full bg-success/15 border border-success/30 flex items-center justify-center text-success">
@@ -797,6 +942,47 @@
   {/if}
 
   <!-- ═══════════════════════════════════════════════════════
+       JUMP HERE? MODAL
+  ═══════════════════════════════════════════════════════ -->
+  {#if jumpTarget}
+    {@const skipCount = lessonsSkippedBy(jumpTarget)}
+    <div
+      class="fixed inset-0 bg-bg-base/85 backdrop-blur-md z-50 flex items-end sm:items-center justify-center p-4 animate-[fade-in_0.2s_ease-out]"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Jump ahead"
+    >
+      <div class="w-full max-w-sm bg-bg-surface border border-border-warm rounded-3xl p-6 flex flex-col items-center gap-4 shadow-2xl text-center">
+        <Mascot mood="guide" size="md" />
+        <div>
+          <span class="text-[10px] uppercase font-extrabold tracking-widest text-accent">Jump here?</span>
+          <h3 class="text-xl font-black text-text-primary font-cinzel mt-0.5">Skip to {jumpTarget.verseRef}</h3>
+        </div>
+        <p class="text-xs text-text-muted leading-relaxed max-w-xs">
+          Already know the earlier verses? Pass a short test covering the {skipCount} verse{skipCount === 1 ? '' : 's'}
+          before it to skip ahead. You can make up to 3 mistakes, and your hearts are safe.
+        </p>
+        <div class="w-full flex flex-col gap-2.5">
+          <button
+            onclick={() => startJump(jumpTarget!.id)}
+            class="w-full py-4 bg-accent hover:brightness-110 text-bg-base font-black text-sm rounded-2xl shadow-lg btn-3d border-b-4 border-accent/60 active:scale-95 transition-all"
+            type="button"
+          >
+            START JUMP TEST
+          </button>
+          <button
+            onclick={() => (jumpTarget = null)}
+            class="w-full py-3 bg-bg-surface-alt hover:bg-border-warm text-text-muted font-bold text-xs rounded-2xl border border-border-warm transition-all"
+            type="button"
+          >
+            Not now
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  <!-- ═══════════════════════════════════════════════════════
        SETTINGS MODAL
   ═══════════════════════════════════════════════════════ -->
   {#if showSettingsModal}
@@ -806,7 +992,7 @@
       aria-modal="true"
       aria-label="Settings"
     >
-      <div class="w-full max-w-sm bg-bg-surface border border-border-warm rounded-3xl p-6 flex flex-col gap-4 shadow-2xl">
+      <div class="w-full max-w-sm max-h-[90vh] overflow-y-auto scrollbar-none bg-bg-surface border border-border-warm rounded-3xl p-6 flex flex-col gap-4 shadow-2xl">
         <div class="flex justify-between items-center">
           <h3 class="text-lg font-black font-cinzel text-text-primary">App Settings</h3>
           <button
@@ -824,6 +1010,57 @@
         <div class="h-px bg-border-warm"></div>
 
         <div class="flex flex-col gap-3">
+          {#if gameState.profile}
+            <div class="w-full py-3 bg-bg-surface-alt border border-border-warm text-text-primary font-bold text-xs rounded-xl flex items-center justify-between px-4">
+              <span>Your Plan</span>
+              <span class="text-primary font-extrabold">{planById(gameState.profile.plan).name}</span>
+            </div>
+          {/if}
+
+          <div class="flex flex-col gap-2">
+            <span class="text-[10px] font-black uppercase tracking-wider text-text-muted">Daily goal</span>
+            <div class="grid grid-cols-4 gap-1.5">
+              {#each DAILY_GOAL_OPTIONS as option}
+                <button
+                  type="button"
+                  onclick={() => gameState.setDailyGoal(option.xp)}
+                  class="flex flex-col items-center py-2 rounded-xl border transition-colors
+                    {gameState.dailyGoal === option.xp
+                      ? 'bg-primary/15 border-primary text-primary'
+                      : 'bg-bg-surface-alt border-border-warm text-text-muted hover:text-text-primary'}"
+                >
+                  <span class="text-[11px] font-black">{option.label}</span>
+                  <span class="text-[9px] font-bold tabular-nums">{option.xp} XP</span>
+                </button>
+              {/each}
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <span class="text-[10px] font-black uppercase tracking-wider text-text-muted">Sanskrit script</span>
+            <ScriptToggle />
+          </div>
+
+          {#if gameState.profile}
+            <div class="flex flex-col gap-2">
+              <span class="text-[10px] font-black uppercase tracking-wider text-text-muted">Exercise style</span>
+              <div class="grid grid-cols-3 gap-1.5">
+                {#each PRACTICE_STYLES as style}
+                  <button
+                    type="button"
+                    onclick={() => gameState.setPracticePreference(style.value)}
+                    class="py-2 rounded-xl border text-[11px] font-black transition-colors
+                      {gameState.profile.practicePreference === style.value
+                        ? 'bg-primary/15 border-primary text-primary'
+                        : 'bg-bg-surface-alt border-border-warm text-text-muted hover:text-text-primary'}"
+                  >
+                    {style.label}
+                  </button>
+                {/each}
+              </div>
+            </div>
+          {/if}
+
           <button
             onclick={() => gameState.setThemeMode(gameState.themeMode === 'light' ? 'dark' : 'light')}
             class="w-full py-3 bg-bg-surface-alt hover:bg-border-warm border border-border-warm text-text-primary font-bold text-xs rounded-xl flex items-center justify-between px-4 transition-colors cursor-pointer"
@@ -843,6 +1080,17 @@
               <svg viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5 text-error"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
               5
             </span>
+          </button>
+
+          <button
+            onclick={redoOnboarding}
+            class="w-full py-3 bg-bg-surface-alt hover:bg-border-warm border border-border-warm text-text-primary font-bold text-xs rounded-xl flex items-center justify-between px-4 transition-colors cursor-pointer"
+            type="button"
+          >
+            <span>Redo Onboarding</span>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 text-text-muted">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+            </svg>
           </button>
 
           <button

@@ -1,32 +1,25 @@
 <script lang="ts">
-  import { gameState } from '../state/gameState.svelte';
+  import { gameState, type ScriptDisplay } from '../state/gameState.svelte';
+
+  const OPTIONS: { value: ScriptDisplay; label: string; sample: string }[] = [
+    { value: 'script', label: 'Devanāgarī', sample: 'कर्म' },
+    { value: 'both', label: 'Both', sample: 'कर्म + ka·rma' },
+    { value: 'roman', label: 'Roman', sample: 'karma' }
+  ];
 </script>
 
-<!-- Script Mode Toggle Switch -->
-<div class="inline-flex items-center bg-bg-surface-alt border border-border-warm p-0.5 rounded-full select-none shadow-inner">
-  <button
-    onclick={() => gameState.setScriptMode('devanagari')}
-    class="px-2.5 py-1 text-[10px] font-bold rounded-full transition-all duration-200 flex items-center gap-1 cursor-pointer
-      {gameState.scriptMode === 'devanagari'
-        ? 'bg-success/20 text-success border border-success/40 shadow-sm'
-        : 'text-text-muted hover:text-text-primary'}"
-    title="Switch to Devanagari Script (देवनागरी)"
-    type="button"
-  >
-    <span class="font-cinzel font-bold text-xs">ॐ</span>
-    <span class="font-cinzel">देव</span>
-  </button>
-
-  <button
-    onclick={() => gameState.setScriptMode('english')}
-    class="px-2.5 py-1 text-[10px] font-bold rounded-full transition-all duration-200 flex items-center gap-1 cursor-pointer
-      {gameState.scriptMode === 'english'
-        ? 'bg-success/20 text-success border border-success/40 shadow-sm'
-        : 'text-text-muted hover:text-text-primary'}"
-    title="Switch to English Phonetic (IAST / Roman)"
-    type="button"
-  >
-    <span class="font-black text-[9px]">Aa</span>
-    <span>Eng</span>
-  </button>
+<div class="grid grid-cols-3 gap-1.5">
+  {#each OPTIONS as option}
+    <button
+      type="button"
+      onclick={() => gameState.setScriptDisplay(option.value)}
+      class="flex flex-col items-center py-2 rounded-xl border transition-colors
+        {gameState.scriptDisplay === option.value
+          ? 'bg-primary/15 border-primary text-primary'
+          : 'bg-bg-surface-alt border-border-warm text-text-muted hover:text-text-primary'}"
+    >
+      <span class="text-[11px] font-black">{option.label}</span>
+      <span class="text-[9px] font-bold font-cinzel">{option.sample}</span>
+    </button>
+  {/each}
 </div>

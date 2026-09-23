@@ -15,7 +15,15 @@ function getAudioContext(): AudioContext | null {
   return audioCtx;
 }
 
+// Kept to short, low-intensity bursts — pleasant rather than alarming.
+function haptic(pattern: number | number[]) {
+  if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+    navigator.vibrate(pattern);
+  }
+}
+
 export function playSuccessSound() {
+  haptic(12);
   const ctx = getAudioContext();
   if (!ctx) return;
 
@@ -43,6 +51,7 @@ export function playSuccessSound() {
 }
 
 export function playErrorSound() {
+  haptic([20, 40, 20]);
   const ctx = getAudioContext();
   if (!ctx) return;
 

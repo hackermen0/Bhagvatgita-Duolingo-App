@@ -42,15 +42,16 @@
   body {
     background-color: var(--color-bg-base);
     color: var(--color-text-primary);
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Outfit', 'Tiro Devanagari Sanskrit', sans-serif;
     min-height: 100vh;
     overflow-x: hidden;
     transition: background-color 0.2s ease, color 0.2s ease;
   }
 }
 
+/* Cinzel has no Devanagari glyphs; the browser falls back per-glyph to Tiro for Sanskrit */
 @utility font-cinzel {
-  font-family: 'Cinzel', serif;
+  font-family: 'Cinzel', 'Tiro Devanagari Sanskrit', serif;
 }
 
 /* Chunky 3D Tactile Button & Tile Utilities */

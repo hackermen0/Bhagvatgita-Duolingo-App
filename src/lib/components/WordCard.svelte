@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { WordMeaning } from "../data/gitaData";
   import { getSanskritDisplay } from "../data/sanskritHelper";
+  import { gameState } from "../state/gameState.svelte";
 
   let { word, onNext } = $props<{
     word: WordMeaning;
@@ -125,19 +126,31 @@
         >New Word</span
       >
 
-      <!-- Devanagari -->
-      <p
-        class="text-5xl font-bold text-primary font-cinzel leading-none tracking-wide z-10"
-      >
-        {word.devanagari}
-      </p>
+      <!-- Primary form: Devanāgarī, or the romanized word for learners who can't read the script yet -->
+      {#if gameState.scriptDisplay === 'roman'}
+        <p class="text-4xl font-bold text-primary leading-none tracking-wide z-10">
+          {word.word}
+        </p>
+      {:else}
+        <p
+          class="text-5xl font-bold text-primary font-cinzel leading-none tracking-wide z-10"
+        >
+          {word.devanagari}
+        </p>
+      {/if}
 
-      <!-- Transliteration + Listen button -->
+      <!-- Secondary form + Listen button -->
       <div class="flex flex-col items-center gap-2 z-10">
         <div class="flex items-center gap-2">
-          <p class="text-base text-text-muted italic font-light tracking-wide">
-            {word.word}
-          </p>
+          {#if gameState.scriptDisplay === 'roman'}
+            <p class="text-lg text-text-muted font-cinzel tracking-wide">
+              {word.devanagari}
+            </p>
+          {:else}
+            <p class="text-base text-text-muted italic font-light tracking-wide">
+              {word.word}
+            </p>
+          {/if}
           {#if speechSupported}
             <button
               onclick={toggleSpeakWord}

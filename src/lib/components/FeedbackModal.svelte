@@ -3,12 +3,16 @@
   import Mascot from './Mascot.svelte';
   import { playSuccessSound, playErrorSound } from '../utils/soundEffects';
 
-  let { isCorrect, correctAnswerText, explanation, onContinue } = $props<{
+  let { isCorrect, correctAnswerText, explanation, encouragement, onContinue } = $props<{
     isCorrect: boolean;
     correctAnswerText?: string;
     explanation?: string;
+    encouragement?: string;
     onContinue: () => void;
   }>();
+
+  const CORRECT_HEADERS = ['Excellent!', 'Well done!', 'Wonderful!', 'Correct!'];
+  const header = $derived(isCorrect ? CORRECT_HEADERS[Math.floor(Math.random() * CORRECT_HEADERS.length)] : 'Not quite');
 
   let mounted = $state(false);
   let canvasRef = $state<HTMLCanvasElement | null>(null);
@@ -113,20 +117,26 @@
               <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
             </svg>
           </div>
-          <h2 class="text-2xl font-black tracking-tight text-success font-cinzel">Excellent!</h2>
+          <h2 class="text-2xl font-black tracking-tight text-success font-cinzel">{header}</h2>
         {:else}
           <div class="p-2 bg-error text-bg-base rounded-full animate-shake">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor" class="w-5 h-5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </div>
-          <h2 class="text-2xl font-black tracking-tight text-error font-cinzel">Incorrect</h2>
+          <h2 class="text-2xl font-black tracking-tight text-error font-cinzel">{header}</h2>
         {/if}
       </div>
 
       <!-- Mascot Mood -->
-      <Mascot mood={isCorrect ? 'happy' : 'sad'} size="sm" />
+      <Mascot mood={isCorrect ? 'happy' : 'thinking'} size="sm" />
     </div>
+
+    {#if encouragement}
+      <p class="text-sm font-bold -mt-1 {isCorrect ? 'text-success' : 'text-text-primary'}">
+        {encouragement}
+      </p>
+    {/if}
 
     <!-- Correct Answer Display (if incorrect) -->
     {#if !isCorrect && correctAnswerText}

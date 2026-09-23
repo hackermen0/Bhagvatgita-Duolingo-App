@@ -30,7 +30,27 @@ export interface TeachingSlide {
   wordData?: WordMeaning;
 }
 
-export type Question =
+export interface ListeningOption {
+  word: string;
+  devanagari: string;
+}
+
+// targetWords: IAST words an exercise tests — lets mistakes be attributed to specific words
+// for spaced review. Hand-authored lesson exercises derive this from their content instead.
+// warmup: a word-by-word matching step before the phrase-level one; learners who already
+// know Sanskrit skip it.
+type QuestionMeta = { targetWords?: string[]; warmup?: boolean };
+
+export type Question = QuestionMeta & (
+  | {
+      id: string;
+      type: 'listening';
+      prompt: string;
+      audioText: string;
+      options: ListeningOption[];
+      answer: string;
+      explanation: string;
+    }
   | {
       id: string;
       type: 'phrase_matching';
@@ -66,7 +86,8 @@ export type Question =
       prompt: string;
       verseContext?: string;
       guidance?: string;
-    };
+    }
+);
 
 export interface VersePart {
   partIndex: number;
@@ -251,6 +272,7 @@ export const gitaData: GitaData = {
                     {
                       id: 'p1_q1',
                       type: 'phrase_matching',
+                      warmup: true,
                       prompt: 'Match each word in Part 1 to its meaning.',
                       pairs: [
                         { sanskrit: 'karmaṇi', english: 'in action / duty' },
@@ -293,6 +315,7 @@ export const gitaData: GitaData = {
                     {
                       id: 'p2_q1',
                       type: 'phrase_matching',
+                      warmup: true,
                       prompt: 'Match each word in Part 2 to its meaning.',
                       pairs: [
                         { sanskrit: 'mā', english: 'never / not' },
@@ -440,6 +463,7 @@ export const gitaData: GitaData = {
                     {
                       id: 'bg248_p1_q1',
                       type: 'phrase_matching',
+                      warmup: true,
                       prompt: 'Match each word in Part 1 to its meaning.',
                       pairs: [
                         { sanskrit: 'yogasthaḥ', english: 'established in Yoga' },
@@ -526,7 +550,7 @@ export const gitaData: GitaData = {
               id: 'ch2_sec1_l3',
               title: 'Skill in Action',
               verseRef: 'BG 2.50',
-              verseSanskrit: 'बुद्धियुक्तो जहातीह उभे सुकृतदुष्कृते ।\ntasmād yogāya yujyasva yogaḥ karmasu kauśalam ॥',
+              verseSanskrit: 'बुद्धियुक्तो जहातीह उभे सुकृतदुष्कृते ।\nतस्माद्योगाय युज्यस्व योगः कर्मसु कौशलम् ॥',
               verseTransliteration: 'buddhi-yukto jahātīha ubhe sukṛta-duṣkṛte\ntasmād yogāya yujyasva yogaḥ karmasu kauśalam',
               translation: 'A person engaged in devotional service rids himself of both good and bad actions even in this life. Therefore, strive for Yoga, which is the art of all work.',
               purport: 'Yoga is skill in action ("yogaḥ karmasu kauśalam").',
@@ -622,6 +646,7 @@ export const gitaData: GitaData = {
                     {
                       id: 'bg271_p1_q1',
                       type: 'phrase_matching',
+                      warmup: true,
                       prompt: 'Match each word in Part 1 to its meaning.',
                       pairs: [
                         { sanskrit: 'vihāya', english: 'giving up / abandoning' },

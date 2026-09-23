@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { getSanskritDisplay } from '../data/sanskritHelper';
   import { playPopSound } from '../utils/soundEffects';
+  import SanskritWord from './SanskritWord.svelte';
 
   let { tiles, onChange } = $props<{
     tiles: string[];
@@ -48,18 +48,12 @@
       </div>
     {:else}
       {#each selected as tile (tile.id)}
-        {@const display = getSanskritDisplay(tile.text)}
         <button
           type="button"
           onclick={() => handleDeselect(tile)}
           class="bg-primary hover:bg-primary-dark text-bg-base px-3 py-1.5 rounded-xl shadow-md border-b-4 border-accent tile-3d flex flex-col items-center justify-center min-w-[65px] animate-[pop_0.12s_ease-out]"
         >
-          <span class="text-[9px] font-extrabold text-bg-base/80 tracking-wider">
-            {display.englishSyllables}
-          </span>
-          <span class="text-base font-black font-cinzel text-bg-base leading-tight">
-            {display.devanagari}
-          </span>
+          <SanskritWord text={tile.text} inverted />
         </button>
       {/each}
     {/if}
@@ -71,18 +65,12 @@
   <!-- Word Tile Pool -->
   <div class="flex flex-wrap justify-center gap-2 p-3 border border-border-warm bg-bg-surface rounded-2xl min-h-[90px] content-start">
     {#each bank as tile (tile.id)}
-      {@const display = getSanskritDisplay(tile.text)}
       <button
         type="button"
         onclick={() => handleSelect(tile)}
         class="bg-bg-surface-alt hover:bg-border-warm text-text-primary px-3 py-1.5 rounded-xl shadow-sm border border-border-warm border-b-4 tile-3d flex flex-col items-center justify-center min-w-[70px]"
       >
-        <span class="text-[9px] font-semibold text-text-muted tracking-wider">
-          {display.englishSyllables}
-        </span>
-        <span class="text-base font-black font-cinzel text-text-primary leading-tight mt-0.5">
-          {display.devanagari}
-        </span>
+        <SanskritWord text={tile.text} />
       </button>
     {/each}
   </div>

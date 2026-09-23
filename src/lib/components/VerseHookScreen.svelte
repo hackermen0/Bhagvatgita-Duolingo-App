@@ -1,12 +1,16 @@
 <script lang="ts">
   import type { Lesson, VersePart, WordMeaning } from "../data/gitaData";
   import { getSanskritDisplay } from "../data/sanskritHelper";
+  import { gameState } from "../state/gameState.svelte";
   import { onMount } from "svelte";
 
-  let { lesson, onComplete } = $props<{
+  let { lesson, onComplete, autoPlay = false } = $props<{
     lesson: Lesson;
     onComplete: () => void;
+    autoPlay?: boolean;
   }>();
+
+  const scriptDisplay = $derived(gameState.scriptDisplay);
 
   // Word-by-word phonetic pairing. Neither `lesson.wordBreakdown` (a short "key vocab"
   // highlight list on most lessons) nor any single part's wordBreakdown is guaranteed to
@@ -28,7 +32,7 @@
     addEntries(lesson.wordBreakdown);
     lesson.parts?.forEach((p: VersePart) => addEntries(p.wordBreakdown));
 
-    const pairs: { devanagari: string; phonetic: string }[] = [];
+    const pairs: { devanagari: string; phonetic: string; roman: string }[] = [];
     devLines.forEach((tokens: string[], lineIdx: number) => {
       const translitTokens = translitLines[lineIdx] ?? [];
       tokens.forEach((tok: string, i: number) => {
@@ -37,7 +41,8 @@
         const phoneticSource = curated.get(cleaned) ?? translitTokens[i] ?? cleaned;
         pairs.push({
           devanagari: cleaned,
-          phonetic: getSanskritDisplay(phoneticSource).englishSyllables
+          phonetic: getSanskritDisplay(phoneticSource).englishSyllables,
+          roman: phoneticSource
         });
       });
     });
@@ -79,7 +84,10 @@
 
   onMount(() => {
     speechSupported = typeof window !== "undefined" && "speechSynthesis" in window;
+    const t = autoPlay && speechSupported ? setTimeout(startSpeaking, 700) : undefined;
     return () => {
+      clearTimeout(t);
+      currentUtterance = null;
       if (speechSupported) window.speechSynthesis.cancel();
     };
   });
@@ -170,18 +178,32 @@
           class="flex flex-col items-center px-1.5 py-1 rounded-xl transition-all duration-150
             {isActive ? 'bg-primary/15 scale-110' : ''}"
         >
-          <span
-            class="text-2xl font-bold font-cinzel leading-none text-shadow-gold transition-colors duration-150
-              {isActive ? 'text-primary' : 'text-primary-dark dark:text-primary'}"
-          >
-            {pair.devanagari}
-          </span>
-          <span
-            class="text-[10px] tracking-wide mt-1.5 whitespace-nowrap transition-colors duration-150
-              {isActive ? 'text-primary font-bold' : 'text-text-muted'}"
-          >
-            {pair.phonetic}
-          </span>
+          {#if scriptDisplay === 'roman'}
+            <span
+              class="text-xl font-bold leading-tight transition-colors duration-150
+                {isActive ? 'text-primary' : 'text-primary-dark dark:text-primary'}"
+            >
+              {pair.roman}
+            </span>
+            <span class="text-xs font-cinzel mt-1 leading-none {isActive ? 'text-primary' : 'text-text-muted'}">
+              {pair.devanagari}
+            </span>
+          {:else}
+            <span
+              class="text-2xl font-bold font-cinzel leading-none text-shadow-gold transition-colors duration-150
+                {isActive ? 'text-primary' : 'text-primary-dark dark:text-primary'}"
+            >
+              {pair.devanagari}
+            </span>
+            {#if scriptDisplay === 'both'}
+              <span
+                class="text-[10px] tracking-wide mt-1.5 whitespace-nowrap transition-colors duration-150
+                  {isActive ? 'text-primary font-bold' : 'text-text-muted'}"
+              >
+                {pair.phonetic}
+              </span>
+            {/if}
+          {/if}
         </div>
       {/each}
     </div>

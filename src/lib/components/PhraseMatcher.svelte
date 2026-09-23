@@ -1,11 +1,11 @@
 <script lang="ts">
   import type { PhrasePair } from '../data/gitaData';
-  import { getSanskritDisplay } from '../data/sanskritHelper';
   import { playPopSound, playSuccessSound, playErrorSound } from '../utils/soundEffects';
+  import SanskritWord from './SanskritWord.svelte';
 
   let { pairs, onIncorrect, onAllMatched } = $props<{
     pairs: PhrasePair[];
-    onIncorrect: () => void;
+    onIncorrect: (confusedTerms: string[]) => void;
     onAllMatched: () => void;
   }>();
 
@@ -70,7 +70,9 @@
       playErrorSound();
       errorSanskrit = selectedSanskrit;
       errorEnglish = selectedEnglish;
-      onIncorrect();
+      // Both the tapped term and the term that actually owns the tapped meaning were confused
+      const ownerOfMeaning = pairs.find((p: PhrasePair) => p.english === selectedEnglish)?.sanskrit;
+      onIncorrect([selectedSanskrit, ...(ownerOfMeaning ? [ownerOfMeaning] : [])]);
 
       setTimeout(() => {
         errorSanskrit = null;
@@ -92,7 +94,6 @@
         {@const isMatched = matchedSanskrit.includes(term)}
         {@const isSelected = selectedSanskrit === term}
         {@const isError = errorSanskrit === term}
-        {@const display = getSanskritDisplay(term)}
         <button
           type="button"
           onclick={() => selectSanskrit(term)}
@@ -106,12 +107,7 @@
                   ? 'bg-primary/20 border-primary text-primary shadow-md'
                   : 'bg-bg-surface hover:bg-bg-surface-alt border-border-warm text-text-primary'}"
         >
-          <span class="text-[9px] font-semibold text-text-muted tracking-wider">
-            {display.englishSyllables}
-          </span>
-          <span class="text-sm font-bold font-cinzel text-text-primary mt-0.5">
-            {display.devanagari}
-          </span>
+          <SanskritWord text={term} size="sm" />
         </button>
       {/each}
     </div>

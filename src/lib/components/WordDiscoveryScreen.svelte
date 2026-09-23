@@ -1,12 +1,14 @@
 <script lang="ts">
   import type { VersePart } from '../data/gitaData';
   import WordCard from './WordCard.svelte';
+  import VerseText from './VerseText.svelte';
 
-  let { part, partIndex, totalParts, onComplete } = $props<{
+  let { part, partIndex, totalParts, onComplete, canSkip = false } = $props<{
     part: VersePart;
     partIndex: number;
     totalParts: number;
     onComplete: () => void;
+    canSkip?: boolean;
   }>();
 
   let wordIndex = $state(0);
@@ -48,10 +50,19 @@
       </span>
     </div>
 
-    <!-- Part progress pill -->
-    <span class="text-[10px] font-bold px-3 py-1 rounded-full bg-primary/15 text-primary border border-primary/25">
-      DISCOVER
-    </span>
+    {#if canSkip && !showTransition}
+      <button
+        type="button"
+        onclick={onComplete}
+        class="text-[10px] font-bold px-3 py-1 rounded-full bg-bg-surface border border-border-warm text-text-muted hover:text-primary hover:border-primary/40 transition-colors"
+      >
+        I know these — skip
+      </button>
+    {:else}
+      <span class="text-[10px] font-bold px-3 py-1 rounded-full bg-primary/15 text-primary border border-primary/25">
+        DISCOVER
+      </span>
+    {/if}
   </div>
 
   <!-- Word progress dots -->
@@ -70,9 +81,11 @@
 
   <!-- Sanskrit context strip -->
   <div class="mx-4 mb-4 px-4 py-2.5 bg-bg-surface border border-border-warm rounded-2xl text-center">
-    <p class="text-xs font-bold font-cinzel text-primary/70 leading-relaxed">
-      {part.sanskrit}
-    </p>
+    <VerseText
+      sanskrit={part.sanskrit}
+      transliteration={part.transliteration}
+      class="text-xs font-bold text-primary/70 leading-relaxed"
+    />
   </div>
 
   <!-- Word count indicator -->
