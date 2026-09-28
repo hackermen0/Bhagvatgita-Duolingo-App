@@ -67,13 +67,19 @@
 }
 
 @layer base {
+  /* The document never scrolls — only each screen's inner content area does. On mobile,
+     100vh is taller than the visible area (it ignores the address bar), which let the whole
+     page scroll and slide the top/bottom bars off screen. */
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
   body {
     background-color: var(--color-bg-base);
     color: var(--color-text-primary);
     font-family: var(--font-display);
     font-weight: 600;
-    min-height: 100vh;
-    overflow-x: hidden;
     -webkit-tap-highlight-color: transparent;
     transition: background-color 0.2s ease, color 0.2s ease;
   }
@@ -218,6 +224,10 @@
     font-weight: 800;
   }
   .tile-selected .key-hint { border-color: var(--color-primary-edge); color: var(--color-primary-dark); }
+  /* Keyboard shortcut numbers mean nothing on a touchscreen */
+  @media (hover: none) and (pointer: coarse) {
+    .key-hint { display: none; }
+  }
 
   /* Speech bubble next to the mascot */
   .bubble {
@@ -289,9 +299,11 @@
 
   /* Sticky footer used by every lesson-like screen */
   .lesson-footer {
+    flex-shrink: 0;
     border-top: 2px solid var(--color-border-warm);
     background: var(--color-bg-base);
     padding: 16px;
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
   }
 }
 
@@ -413,6 +425,9 @@
 .animate-lotus-bloom { animation: lotus-bloom 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
 .animate-story-fill { animation-name: story-fill; animation-timing-function: linear; animation-fill-mode: forwards; }
 .animate-story-pan { animation: story-pan 6s ease-out forwards; }
+
+/* Inner scroll areas: bouncing at the ends must not drag the app shell with it */
+.overflow-y-auto { overscroll-behavior-y: contain; }
 
 .scrollbar-none::-webkit-scrollbar { display: none; }
 .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }

@@ -672,7 +672,7 @@
         class="absolute inset-0 z-40 bg-black/40 animate-[fade-in_0.15s_ease-out] cursor-default"
         onclick={() => (showQuit = false)}
       ></button>
-      <div class="absolute inset-x-0 bottom-0 z-50 bg-bg-base rounded-t-3xl px-6 pt-6 pb-6 flex flex-col items-center text-center animate-sheet-up">
+      <div class="absolute inset-x-0 bottom-0 z-50 bg-bg-base rounded-t-3xl px-6 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] flex flex-col items-center text-center animate-sheet-up">
         <Mascot mood="sad" size="lg" />
         <h2 class="text-2xl font-black mt-3">Wait, don't go!</h2>
         <p class="text-base font-bold text-text-muted mt-1">

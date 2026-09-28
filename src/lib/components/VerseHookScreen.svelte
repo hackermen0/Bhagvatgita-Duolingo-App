@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Lesson, VersePart, WordMeaning } from "../data/gitaData";
+  import type { Lesson, VersePart, VerseWord, WordMeaning } from "../data/gitaData";
   import { getSanskritDisplay, toPhonetic } from "../data/sanskritHelper";
   import { gameState } from "../state/gameState.svelte";
   import { onMount } from "svelte";
@@ -20,6 +20,14 @@
   // Devanagari match exists (most accurate), then the same-position transliteration token
   // in that line (handles sandhi-fused compounds reasonably), then the raw token itself.
   let wordPairs = $derived.by(() => {
+    if (lesson.verseWordGuide?.length) {
+      return lesson.verseWordGuide.map((w: VerseWord) => ({
+        devanagari: w.devanagari,
+        phonetic: getSanskritDisplay(w.roman).englishSyllables,
+        roman: toPhonetic(w.roman)
+      }));
+    }
+
     const devLines = lesson.verseSanskrit.split("\n").map((l: string) => l.trim().split(/\s+/).filter(Boolean));
     const translitLines = lesson.verseTransliteration.split("\n").map((l: string) => l.trim().split(/\s+/).filter(Boolean));
 
@@ -77,47 +85,103 @@
     return found;
   }
 
-  // Cancelling an utterance to start a replacement fires the OLD utterance's
-  // onend/onerror asynchronously, after the new one has already started — this
-  // reference lets those stale callbacks recognize they're outdated and no-op.
-  let currentUtterance: SpeechSynthesisUtterance | null = null;
+  // Each playback gets a fresh token. Cancelling speech fires the OLD utterances'
+  // onend/onerror asynchronously, after the new playback has started — comparing
+  // against the token lets those stale callbacks recognize they're outdated and no-op.
+  let session: object | null = null;
+
+  // Word highlighting needs to know when each word starts. Desktop voices report that via
+  // `onboundary`, so the verse plays as one smooth utterance. Many mobile voices (Android
+  // Chrome's Hindi voice especially) never fire `onboundary`; there the verse is queued as
+  // one utterance per word instead, and each word's `onstart` — reliable everywhere — drives
+  // the highlight in exact sync. Phones start in word-by-word mode; elsewhere a full
+  // recitation that finishes without a single boundary switches that device over.
+  // (No mid-playback timeout: network voices can start reporting boundaries well after
+  // `onstart`, which once misclassified desktops — hence the versioned key.)
+  const BOUNDARY_KEY = "gita_tts_word_boundaries_v2";
+  const isMobileDevice = () =>
+    !!(navigator as Navigator & { userAgentData?: { mobile: boolean } }).userAgentData?.mobile ||
+    /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  function readBoundarySupport(): boolean | null {
+    try {
+      const v = localStorage.getItem(BOUNDARY_KEY);
+      return v === null ? null : v === "1";
+    } catch {
+      return null;
+    }
+  }
+  function saveBoundarySupport(supported: boolean) {
+    try {
+      localStorage.setItem(BOUNDARY_KEY, supported ? "1" : "0");
+    } catch {}
+  }
 
   onMount(() => {
     speechSupported = typeof window !== "undefined" && "speechSynthesis" in window;
     const t = autoPlay && speechSupported ? setTimeout(startSpeaking, 700) : undefined;
     return () => {
       clearTimeout(t);
-      currentUtterance = null;
+      session = null;
       if (speechSupported) window.speechSynthesis.cancel();
     };
   });
 
+  const speechRate = () => (rate === "slow" ? 0.4 : 0.75);
+
+  function finish(token: object) {
+    if (session !== token) return;
+    session = null;
+    isSpeaking = false;
+    activeWordIndex = -1;
+  }
+
   function startSpeaking() {
     window.speechSynthesis.cancel();
+    isSpeaking = true;
+    activeWordIndex = -1;
+    const supported = readBoundarySupport();
+    if (supported === false || (supported === null && isMobileDevice())) speakWordByWord();
+    else speakWhole();
+  }
 
+  function speakWhole() {
+    const token = {};
+    session = token;
     const utterance = new SpeechSynthesisUtterance(spokenWords.join(" "));
     utterance.lang = "hi-IN";
-    utterance.rate = rate === "slow" ? 0.4 : 0.75;
+    utterance.rate = speechRate();
+    let boundaryFired = false;
     utterance.onboundary = (event) => {
-      if (currentUtterance !== utterance) return;
+      if (session !== token) return;
       if (event.name === "word" || event.name === undefined) {
+        if (!boundaryFired) saveBoundarySupport(true);
+        boundaryFired = true;
         activeWordIndex = findWordIndexForCharIndex(event.charIndex);
       }
     };
     utterance.onend = () => {
-      if (currentUtterance !== utterance) return;
-      isSpeaking = false;
-      activeWordIndex = -1;
+      // Only a recitation that played to the end counts; stop/restart null the session first
+      if (session === token && !boundaryFired) saveBoundarySupport(false);
+      finish(token);
     };
-    utterance.onerror = () => {
-      if (currentUtterance !== utterance) return;
-      isSpeaking = false;
-      activeWordIndex = -1;
-    };
-
-    currentUtterance = utterance;
-    isSpeaking = true;
+    utterance.onerror = () => finish(token);
     window.speechSynthesis.speak(utterance);
+  }
+
+  function speakWordByWord() {
+    const token = {};
+    session = token;
+    spokenWords.forEach((word: string, i: number) => {
+      const utterance = new SpeechSynthesisUtterance(word);
+      utterance.lang = "hi-IN";
+      utterance.rate = speechRate();
+      utterance.onstart = () => {
+        if (session === token) activeWordIndex = i;
+      };
+      utterance.onerror = () => finish(token);
+      if (i === spokenWords.length - 1) utterance.onend = () => finish(token);
+      window.speechSynthesis.speak(utterance);
+    });
   }
 
   function toggleRecitation(e: MouseEvent) {
@@ -125,7 +189,7 @@
     if (!speechSupported) return;
 
     if (isSpeaking) {
-      currentUtterance = null;
+      session = null;
       window.speechSynthesis.cancel();
       isSpeaking = false;
       activeWordIndex = -1;

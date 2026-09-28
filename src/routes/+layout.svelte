@@ -21,7 +21,9 @@
   const showNav = $derived(TAB_ROUTES.includes($page.url.pathname));
 
   $effect(() => {
-    document.documentElement.classList.toggle('dark', gameState.themeMode === 'dark');
+    const dark = gameState.themeMode === 'dark';
+    document.documentElement.classList.toggle('dark', dark);
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#1F1310' : '#FFFCF7');
   });
 
   function handleOnboardingComplete(profile: OnboardingProfile) {
@@ -29,15 +31,16 @@
   }
 </script>
 
-<!-- Desktop backdrop: centers the mobile app -->
-<div class="min-h-screen w-full bg-bg-surface-alt flex items-center justify-center sm:p-4 text-text-primary">
-  <main class="w-full h-dvh sm:h-[860px] sm:max-w-md sm:rounded-3xl sm:border-2 sm:border-border-warm bg-bg-base shadow-2xl shadow-black/10 dark:shadow-black/40 flex flex-col relative overflow-hidden">
+<!-- Pinned to the visible viewport so the top and bottom bars never scroll away; on desktop it centers the phone-sized app -->
+<div class="fixed inset-0 bg-bg-base sm:bg-bg-surface-alt flex items-center justify-center sm:p-4 text-text-primary">
+  <main class="w-full h-full sm:h-[860px] sm:max-h-full sm:max-w-md sm:rounded-3xl sm:border-2 sm:border-border-warm bg-bg-base shadow-2xl shadow-black/10 dark:shadow-black/40 flex flex-col relative overflow-hidden pt-[env(safe-area-inset-top)] px-[env(safe-area-inset-left)]">
     {#if !mounted}
       <!-- blank until localStorage is read, to avoid a flash -->
     {:else if !gameState.onboardingComplete}
       <OnboardingFlow onComplete={handleOnboardingComplete} />
     {:else}
-      <div class="flex-1 min-h-0 flex flex-col relative">
+      <!-- Not positioned on purpose: full-screen overlays anchor to <main> so they also cover the bottom nav -->
+      <div class="flex-1 min-h-0 flex flex-col">
         {@render children()}
       </div>
       {#if showNav}

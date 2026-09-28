@@ -23,7 +23,7 @@
 
 <!-- Duolingo-style result sheet: slides over the CHECK footer -->
 <div
-  class="absolute inset-x-0 bottom-0 z-30 px-5 pt-5 pb-5 animate-sheet-up select-none
+  class="absolute inset-x-0 bottom-0 z-30 px-5 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] animate-sheet-up select-none
     {isCorrect ? 'bg-success-soft' : 'bg-error-soft'}"
   role="status"
 >

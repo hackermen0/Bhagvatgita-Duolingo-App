@@ -101,6 +101,11 @@ export interface VersePart {
   reflectionPrompt?: string;
 }
 
+export interface VerseWord {
+  devanagari: string;
+  roman: string;
+}
+
 export interface Lesson {
   id: string;
   title: string;
@@ -118,6 +123,14 @@ export interface Lesson {
   questions: Question[];
   /** One narrative sentence for this lesson's frame in the unit's story reward; falls back to `translation`. */
   storyCaption?: string;
+  /**
+   * Hand-verified Devanagari-token → romanization pairing for the whole verse, in reading order.
+   * Devanagari fuses sandhi compounds into single space-delimited tokens that `verseTransliteration`
+   * (kept more granular, for readability) doesn't line up with word-for-word — matching them by
+   * position breaks as soon as one line's token counts diverge. Used by the verse-hook recitation
+   * screen; lessons without one fall back to that best-effort positional match.
+   */
+  verseWordGuide?: VerseWord[];
 }
 
 export interface Section {
@@ -256,6 +269,16 @@ export const gitaData: GitaData = {
               verseRef: 'BG 2.47',
               verseSanskrit: 'कर्मण्येवाधिकारस्ते मा फलेषु कदाचन ।\nमा कर्मफलहेतुर्भूर्मा ते सङ्गोऽस्त्वकर्मणि ॥',
               verseTransliteration: 'karmaṇy-evādhikāras te mā phaleṣu kadācana\nmā karma-phala-hetur bhūr mā te saṅgo \'stv akarmaṇi',
+              verseWordGuide: [
+                { devanagari: 'कर्मण्येवाधिकारस्ते', roman: 'karmaṇy-evādhikāras-te' },
+                { devanagari: 'मा', roman: 'mā' },
+                { devanagari: 'फलेषु', roman: 'phaleṣu' },
+                { devanagari: 'कदाचन', roman: 'kadācana' },
+                { devanagari: 'मा', roman: 'mā' },
+                { devanagari: 'कर्मफलहेतुर्भूर्मा', roman: 'karma-phala-hetur-bhūr-mā' },
+                { devanagari: 'ते', roman: 'te' },
+                { devanagari: 'सङ्गोऽस्त्वकर्मणि', roman: "saṅgo-'stv-akarmaṇi" }
+              ],
               translation: 'You have a right to perform your prescribed duties, but you are not entitled to the fruits of your actions. Never consider yourself to be the cause of the results of your activities, and never be attached to not doing your duty.',
               purport: 'This famous verse outlines the foundation of Karma Yoga. Krishna advises Arjuna to focus entirely on his duty (action) without anxiety about the outcomes (fruits) of those actions, and warns against resolving not to do work (inaction) just because he cannot control the results.',
               commentary: {
@@ -443,6 +466,20 @@ export const gitaData: GitaData = {
               verseRef: 'BG 2.48',
               verseSanskrit: 'योगस्थः कुरु कर्माणि सङ्गं त्यक्त्वा धनञ्जय ।\nसिद्ध्यसिद्ध्योः समो भूत्वा समत्वं योग उच्यते ॥',
               verseTransliteration: 'yoga-sthaḥ kuru karmāṇi saṅgaṁ tyaktvā dhanañjaya\nsiddhy-asiddhyoḥ samo bhūtvā samatvaṁ yoga ucyate',
+              verseWordGuide: [
+                { devanagari: 'योगस्थः', roman: 'yogasthaḥ' },
+                { devanagari: 'कुरु', roman: 'kuru' },
+                { devanagari: 'कर्माणि', roman: 'karmāṇi' },
+                { devanagari: 'सङ्गं', roman: 'saṅgaṁ' },
+                { devanagari: 'त्यक्त्वा', roman: 'tyaktvā' },
+                { devanagari: 'धनञ्जय', roman: 'dhanañjaya' },
+                { devanagari: 'सिद्ध्यसिद्ध्योः', roman: 'siddhy-asiddhyoḥ' },
+                { devanagari: 'समो', roman: 'samo' },
+                { devanagari: 'भूत्वा', roman: 'bhūtvā' },
+                { devanagari: 'समत्वं', roman: 'samatvaṁ' },
+                { devanagari: 'योग', roman: 'yoga' },
+                { devanagari: 'उच्यते', roman: 'ucyate' }
+              ],
               translation: 'Perform your duty equipoised, O Arjuna, abandoning all attachment to success or failure. Such equanimity is called Yoga.',
               purport: 'Krishna advises Arjuna to maintain a balanced mind regardless of victory or defeat.',
               commentary: {
@@ -566,6 +603,17 @@ export const gitaData: GitaData = {
               verseRef: 'BG 2.50',
               verseSanskrit: 'बुद्धियुक्तो जहातीह उभे सुकृतदुष्कृते ।\nतस्माद्योगाय युज्यस्व योगः कर्मसु कौशलम् ॥',
               verseTransliteration: 'buddhi-yukto jahātīha ubhe sukṛta-duṣkṛte\ntasmād yogāya yujyasva yogaḥ karmasu kauśalam',
+              verseWordGuide: [
+                { devanagari: 'बुद्धियुक्तो', roman: 'buddhi-yukto' },
+                { devanagari: 'जहातीह', roman: 'jahātīha' },
+                { devanagari: 'उभे', roman: 'ubhe' },
+                { devanagari: 'सुकृतदुष्कृते', roman: 'sukṛta-duṣkṛte' },
+                { devanagari: 'तस्माद्योगाय', roman: 'tasmād-yogāya' },
+                { devanagari: 'युज्यस्व', roman: 'yujyasva' },
+                { devanagari: 'योगः', roman: 'yogaḥ' },
+                { devanagari: 'कर्मसु', roman: 'karmasu' },
+                { devanagari: 'कौशलम्', roman: 'kauśalam' }
+              ],
               translation: 'A person engaged in devotional service rids himself of both good and bad actions even in this life. Therefore, strive for Yoga, which is the art of all work.',
               purport: 'Yoga is skill in action ("yogah karmasu kaushalam").',
               storyCaption: 'Wisdom acts without being bound by its results. This skill in action, Krishna said, is the highest art of all.',
@@ -637,6 +685,16 @@ export const gitaData: GitaData = {
               verseRef: 'BG 2.71',
               verseSanskrit: 'विहाय कामान्यः सर्वान्पुमांश्चरति निःस्पृहः ।\nनिर्ममो निरहङ्कारः स शान्तिमधिगच्छति ॥',
               verseTransliteration: 'vihāya kāmān yaḥ sarvān pumāṁś carati niḥspṛhaḥ\nnirmamo nirahaṅkāraḥ sa śāntim adhigacchati',
+              verseWordGuide: [
+                { devanagari: 'विहाय', roman: 'vihāya' },
+                { devanagari: 'कामान्यः', roman: 'kāmān-yaḥ' },
+                { devanagari: 'सर्वान्पुमांश्चरति', roman: 'sarvān-pumāṁś-carati' },
+                { devanagari: 'निःस्पृहः', roman: 'niḥspṛhaḥ' },
+                { devanagari: 'निर्ममो', roman: 'nirmamo' },
+                { devanagari: 'निरहङ्कारः', roman: 'nirahaṅkāraḥ' },
+                { devanagari: 'स', roman: 'sa' },
+                { devanagari: 'शान्तिमधिगच्छति', roman: 'śāntim-adhigacchati' }
+              ],
               translation: 'A person who has given up all desires for sense gratification, who lives free from desires, who has given up all sense of proprietorship and is devoid of false ego — he alone attains real peace.',
               purport: 'True peace comes when we drop possessiveness ("nirmamah") and false ego ("nirahankarah").',
               storyCaption: 'Free of craving, free of ego, Arjuna set down his fear — and found the peace that never fades.',

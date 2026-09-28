@@ -9,6 +9,8 @@
   import Mascot from '$lib/components/Mascot.svelte';
   import Icon from '$lib/components/Icon.svelte';
   import TopStatsBar from '$lib/components/TopStatsBar.svelte';
+  import StoryReward from '$lib/components/StoryReward.svelte';
+  import { storyForSection, type UnitStory } from '$lib/data/stories';
 
   const cfg = $derived(learningConfig(gameState.profile));
   const allLessons = gitaData.chapters.flatMap((c) => c.sections.flatMap((s) => s.lessons));
@@ -47,6 +49,7 @@
   );
 
   let selected = $state<string | null>(null);
+  let replayStory = $state<UnitStory | null>(null);
 
   function toggleNode(id: string) {
     selected = selected === id ? null : id;
@@ -249,6 +252,16 @@
                 {:else}
                   <button type="button" class="btn btn-disabled w-full" disabled>Locked</button>
                 {/if}
+                {#if unitComplete(section)}
+                  <button
+                    type="button"
+                    class="btn {trophyReady ? 'btn-on-color' : 'btn-secondary'} w-full"
+                    style="--unit: var(--color-gold-dark)"
+                    onclick={() => { selected = null; replayStory = storyForSection(section); }}
+                  >
+                    <Icon name="book" class="w-5 h-5" /> Replay story
+                  </button>
+                {/if}
               </div>
             </div>
           {/if}
@@ -266,3 +279,7 @@
     <div class="flex-1 h-0.5 bg-border-warm"></div>
   </div>
 </div>
+
+{#if replayStory}
+  <StoryReward story={replayStory} onComplete={() => (replayStory = null)} />
+{/if}
