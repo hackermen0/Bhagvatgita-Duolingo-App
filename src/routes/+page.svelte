@@ -138,7 +138,7 @@
 
               <!-- Ring around the current node -->
               {#if current}
-                <div class="absolute -inset-[11px] rounded-full border-[7px] border-border-warm pointer-events-none"></div>
+                <div class="absolute -inset-[13px] animate-pulse-ring translate-y-1.5 rounded-full border-[7px] border-border-warm pointer-events-none"></div>
               {/if}
 
               <button

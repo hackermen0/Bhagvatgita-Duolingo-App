@@ -179,7 +179,7 @@
         style="box-shadow: 0 5px 0 var(--color-info-dark)"
       >
         {#if isSpeaking}
-          <span class="absolute -inset-1.5 rounded-[1.4rem] border-4 border-info/30 animate-pulse-ring pointer-events-none"></span>
+          <span class="absolute -inset-1.5 rounded-[1.4rem] animate-pulse-ring pointer-events-none"></span>
         {/if}
         <svg viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8">
           {#if isSpeaking}
@@ -193,7 +193,7 @@
 
       <!-- Speed toggle — only shown while actively speaking -->
       {#if isSpeaking}
-        <div class="flex items-center rounded-full border-2 border-border-warm bg-bg-surface p-0.5 animate-[fade-in_0.2s_ease-out]">
+        <div class="flex items-center rounded-full border-2 mt-2 border-border-warm bg-bg-surface p-0.5 animate-[fade-in_0.2s_ease-out]">
           <button
             onclick={(e) => setRate(e, 'slow')}
             class="px-4 py-1 rounded-full text-xs font-black uppercase tracking-wide {rate === 'slow' ? 'bg-info text-white' : 'text-text-muted hover:text-text-primary'}"

@@ -385,6 +385,16 @@
   100% { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes story-fill {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+
+@keyframes story-pan {
+  from { transform: scale(1.04) translateY(0); }
+  to { transform: scale(1.12) translateY(-1.5%); }
+}
+
 @keyframes lotus-bloom {
   0% { transform: scale(0.8) rotate(-10deg); opacity: 0.5; }
   60% { transform: scale(1.12) rotate(4deg); opacity: 1; }
@@ -401,6 +411,8 @@
 .animate-pop-in { animation: pop-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
 .animate-check-pop { animation: check-pop 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
 .animate-lotus-bloom { animation: lotus-bloom 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-story-fill { animation-name: story-fill; animation-timing-function: linear; animation-fill-mode: forwards; }
+.animate-story-pan { animation: story-pan 6s ease-out forwards; }
 
 .scrollbar-none::-webkit-scrollbar { display: none; }
 .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }

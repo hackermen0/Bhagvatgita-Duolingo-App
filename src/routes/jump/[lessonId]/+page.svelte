@@ -7,11 +7,13 @@
   import QuizScreen from '$lib/components/QuizScreen.svelte';
 
   let test = $state<JumpTest | null>(null);
+  let targetId = $state('');
 
   // Built once on mount: passing the test marks lessons complete, which would otherwise
   // rebuild (and empty) the test while its completion screen is still showing.
   onMount(() => {
-    test = buildJumpTest($page.params.lessonId ?? '', gameState.completedLessons);
+    targetId = $page.params.lessonId ?? '';
+    test = buildJumpTest(targetId, gameState.completedLessons);
     if (!test) goto('/');
   });
 
@@ -19,5 +21,5 @@
 </script>
 
 {#if test}
-  <QuizScreen lesson={test.lesson} mode="jump" jumpLessonIds={test.skippedLessonIds} onExit={exit} />
+  <QuizScreen lesson={test.lesson} mode="jump" jumpLessonIds={test.skippedLessonIds} targetLessonId={targetId} onExit={exit} />
 {/if}

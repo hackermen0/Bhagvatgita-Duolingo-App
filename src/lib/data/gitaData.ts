@@ -116,6 +116,8 @@ export interface Lesson {
   wordBreakdown: WordMeaning[];
   teachingSlides: TeachingSlide[];
   questions: Question[];
+  /** One narrative sentence for this lesson's frame in the unit's story reward; falls back to `translation`. */
+  storyCaption?: string;
 }
 
 export interface Section {
@@ -134,6 +136,16 @@ export interface Chapter {
 
 export interface GitaData {
   chapters: Chapter[];
+}
+
+/** Finds the section (and its chapter) that owns a given lesson id. */
+export function sectionForLesson(gita: GitaData, lessonId: string): { chapter: Chapter; section: Section } | undefined {
+  for (const chapter of gita.chapters) {
+    for (const section of chapter.sections) {
+      if (section.lessons.some((l) => l.id === lessonId)) return { chapter, section };
+    }
+  }
+  return undefined;
 }
 
 const bg247WordBreakdown: WordMeaning[] = [
@@ -252,6 +264,7 @@ export const gitaData: GitaData = {
                 text: 'Work done with expectation of reward brings anxiety and bondage. Perform your duty with an unattached mind, treating success and failure with equanimity. By giving up claim to the fruits of action, you purify the mind and gain liberation.'
               },
               reflectionPrompt: 'Where in your life today are you clinging to results rather than bringing full presence and dedication to the action itself?',
+              storyCaption: 'Arjuna raised his bow, and Krishna raised a hand. "Your right is to action alone," he said, "never to its fruit."',
               wordBreakdown: bg247WordBreakdown,
               teachingSlides: [],
               questions: [],
@@ -438,6 +451,7 @@ export const gitaData: GitaData = {
                 text: 'Equanimity (samatvam) is remaining unshaken in praise or blame, gain or loss. When the mind is steady and undisturbed by external results, every action becomes a spiritual discipline (Yoga).'
               },
               reflectionPrompt: 'Recall a recent situation where an unexpected outcome disturbed your peace. How could practicing "samatvam" (evenness of mind) help you respond differently next time?',
+              storyCaption: 'Do your duty, and let go of the outcome, Krishna taught. To remain even in victory and in defeat — that is Yoga.',
               wordBreakdown: [
                 { word: 'yogasthaḥ', devanagari: 'योगस्थः', meaning: 'established in Yoga', partOfSpeech: 'adjective' },
                 { word: 'samatvaṁ', devanagari: 'समत्वम्', meaning: 'evenness of mind', partOfSpeech: 'noun' }
@@ -554,6 +568,7 @@ export const gitaData: GitaData = {
               verseTransliteration: 'buddhi-yukto jahātīha ubhe sukṛta-duṣkṛte\ntasmād yogāya yujyasva yogaḥ karmasu kauśalam',
               translation: 'A person engaged in devotional service rids himself of both good and bad actions even in this life. Therefore, strive for Yoga, which is the art of all work.',
               purport: 'Yoga is skill in action ("yogaḥ karmasu kauśalam").',
+              storyCaption: 'Wisdom acts without being bound by its results. This skill in action, Krishna said, is the highest art of all.',
               wordBreakdown: [
                 { word: 'kauśalam', devanagari: 'कौशलम्', meaning: 'skill / artfulness', partOfSpeech: 'noun' }
               ],
@@ -624,6 +639,7 @@ export const gitaData: GitaData = {
               verseTransliteration: 'vihāya kāmān yaḥ sarvān pumāṁś carati niḥspṛhaḥ\nnirmamo nirahaṅkāraḥ sa śāntim adhigacchati',
               translation: 'A person who has given up all desires for sense gratification, who lives free from desires, who has given up all sense of proprietorship and is devoid of false ego — he alone attains real peace.',
               purport: 'True peace comes when we drop possessiveness ("nirmamaḥ") and false ego ("nirahaṅkāraḥ").',
+              storyCaption: 'Free of craving, free of ego, Arjuna set down his fear — and found the peace that never fades.',
               wordBreakdown: [
                 { word: 'nirmamo', devanagari: 'निर्ममः', meaning: 'without possessiveness', partOfSpeech: 'adjective' },
                 { word: 'nirahaṅkāraḥ', devanagari: 'निरहङ्कारः', meaning: 'without false ego', partOfSpeech: 'adjective' }

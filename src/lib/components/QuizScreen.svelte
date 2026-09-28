@@ -1,8 +1,9 @@
 <script lang="ts">
   import { gameState, type SessionResult } from '../state/gameState.svelte';
-  import type { Lesson, VersePart, Question } from '../data/gitaData';
+  import { gitaData, sectionForLesson, type Lesson, type VersePart, type Question } from '../data/gitaData';
   import { lessonWords, wordsTestedBy } from '../data/practice';
   import { learningConfig, goalNudge } from '../data/learningConfig';
+  import { storyForSection, type UnitStory } from '../data/stories';
   import LessonProgress from './LessonProgress.svelte';
   import FeedbackModal from './FeedbackModal.svelte';
   import PhraseMatcher from './PhraseMatcher.svelte';
@@ -15,15 +16,18 @@
   import VerseHookScreen from './VerseHookScreen.svelte';
   import WordDiscoveryScreen from './WordDiscoveryScreen.svelte';
   import StreakCelebration from './StreakCelebration.svelte';
+  import StoryReward from './StoryReward.svelte';
   import VerseText from './VerseText.svelte';
   import Icon, { type IconName } from './Icon.svelte';
 
-  let { lesson, onExit, mode = 'lesson', jumpLessonIds = [] } = $props<{
+  let { lesson, onExit, mode = 'lesson', jumpLessonIds = [], targetLessonId } = $props<{
     lesson: Lesson;
     onExit: () => void;
     mode?: 'lesson' | 'practice' | 'jump';
     /** Lessons marked complete when a jump test is passed */
     jumpLessonIds?: string[];
+    /** The real lesson id a jump test targets — `lesson.id` is a synthetic id for jump mode */
+    targetLessonId?: string;
   }>();
 
   const isPractice = $derived(mode === 'practice');
@@ -89,6 +93,10 @@
   let showQuit = $state(false);
   let sessionResult = $state<SessionResult | null>(null);
   let combo = $state(0);
+
+  // Set once, in finishSession(), from whichever lesson this session just completed
+  let pendingStory = $state<UnitStory | null>(null);
+  let showStory = $state(false);
 
   // Session tracking
   let missedWords = new Set<string>();
@@ -297,9 +305,42 @@
     };
     isLessonCompleted = true;
     showFloatingXP = true;
+    pendingStory = checkUnitStory();
+  }
+
+  /**
+   * Fires the unit-completion story reward: the real lesson id this session finished
+   * (a jump test's own `lesson.id` is synthetic, so it uses `targetLessonId` instead),
+   * only when that lesson's whole section is now complete and hasn't shown its story yet.
+   */
+  function checkUnitStory(): UnitStory | null {
+    if (isPractice) return null;
+    const checkId = isJump ? targetLessonId : lesson.id;
+    if (!checkId) return null;
+    const found = sectionForLesson(gitaData, checkId);
+    if (!found) return null;
+    const { section } = found;
+    if (gameState.hasSeenStory(section.id)) return null;
+    if (!section.lessons.every((l) => gameState.completedLessons.includes(l.id))) return null;
+    return storyForSection(section);
   }
 
   function handleCompleteContinue() {
+    if (pendingStory) {
+      showStory = true;
+      return;
+    }
+    afterCelebrations();
+  }
+
+  function handleStoryComplete() {
+    if (pendingStory) gameState.markStorySeen(pendingStory.sectionId);
+    showStory = false;
+    pendingStory = null;
+    afterCelebrations();
+  }
+
+  function afterCelebrations() {
     if (sessionResult?.streakExtended) showStreak = true;
     else onExit();
   }
@@ -319,6 +360,8 @@
     isLessonCompleted = false;
     showFloatingXP = false;
     showStreak = false;
+    showStory = false;
+    pendingStory = null;
     sessionResult = null;
     if (hasParts) {
       queue = [];
@@ -416,7 +459,10 @@
 
 <div class="w-full h-full flex flex-col bg-bg-base text-text-primary relative select-none overflow-hidden">
 
-  {#if showStreak}
+  {#if showStory && pendingStory}
+    <StoryReward story={pendingStory} onComplete={handleStoryComplete} />
+
+  {:else if showStreak}
     <StreakCelebration streak={gameState.streak} activeDays={gameState.activeDays} onContinue={onExit} />
 
   {:else if isGameOver}

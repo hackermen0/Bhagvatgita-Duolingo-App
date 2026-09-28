@@ -85,6 +85,8 @@ class GameState {
   profile = $state<OnboardingProfile | null>(null);
   joinedDate = $state(dateKey());
   claimedQuests = $state<{ date: string; ids: string[] }>({ date: dateKey(), ids: [] });
+  /** Section ids whose unit-completion story reward has already played */
+  storiesSeen = $state<string[]>([]);
 
   constructor() {
     this.loadState();
@@ -118,6 +120,7 @@ class GameState {
         // Saves from before join dates were tracked: the earliest active day is the best guess
         this.joinedDate = parsed.joinedDate ?? [...(parsed.activeDays ?? [])].sort()[0] ?? dateKey();
         this.claimedQuests = parsed.claimedQuests ?? { date: dateKey(), ids: [] };
+        this.storiesSeen = parsed.storiesSeen ?? [];
 
         // Older saves stored Date.toDateString(); normalize to YYYY-MM-DD
         const last: string | null = parsed.lastActiveDate ?? null;
@@ -153,7 +156,8 @@ class GameState {
         onboardingComplete: this.onboardingComplete,
         profile: this.profile ? $state.snapshot(this.profile) : null,
         joinedDate: this.joinedDate,
-        claimedQuests: $state.snapshot(this.claimedQuests)
+        claimedQuests: $state.snapshot(this.claimedQuests),
+        storiesSeen: $state.snapshot(this.storiesSeen)
       };
       localStorage.setItem('gita_game_state', JSON.stringify(stateObj));
     } catch (e) {
@@ -300,6 +304,16 @@ class GameState {
     return { xpEarned: PRACTICE_XP, streakExtended, goalJustMet };
   }
 
+  hasSeenStory(sectionId: string): boolean {
+    return this.storiesSeen.includes(sectionId);
+  }
+
+  markStorySeen(sectionId: string) {
+    if (this.storiesSeen.includes(sectionId)) return;
+    this.storiesSeen = [...this.storiesSeen, sectionId];
+    this.saveState();
+  }
+
   isQuestClaimed(id: string): boolean {
     return this.claimedQuests.date === dateKey() && this.claimedQuests.ids.includes(id);
   }
@@ -334,6 +348,8 @@ class GameState {
     this.userReflections = {};
     this.wordMemory = {};
     this.daily = emptyDaily(dateKey());
+    // Stories are earned by completing a unit's lessons, so a progress reset re-locks them too
+    this.storiesSeen = [];
     this.saveState();
   }
 }
