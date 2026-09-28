@@ -53,12 +53,12 @@
     </div>
   </div>
   <div class="px-4 py-5 border-b-2 border-border-warm">
-    <h2 class="text-2xl font-black">Gītā Learner</h2>
+    <h2 class="text-2xl font-black">Gita Learner</h2>
     <p class="text-[15px] text-text-muted font-bold mt-0.5">Joined {joined}</p>
     {#if gameState.profile}
       <p class="mt-3 inline-flex items-center gap-2 text-sm font-extrabold px-3 py-1.5 rounded-xl bg-bg-surface border-2 border-border-warm">
         <span class="font-deva text-primary text-base leading-none">ॐ</span>
-        Bhagavad Gītā · {planById(gameState.profile.plan).name} plan
+        Bhagavad Gita · {planById(gameState.profile.plan).name} plan
       </p>
     {/if}
   </div>

@@ -6,6 +6,7 @@
   import Mascot from '$lib/components/Mascot.svelte';
   import Icon from '$lib/components/Icon.svelte';
   import SanskritWord from '$lib/components/SanskritWord.svelte';
+  import { toPhonetic } from '$lib/data/sanskritHelper';
 
   const status = $derived(practiceStatus());
   const words = $derived(
@@ -119,7 +120,7 @@
             {#if speechSupported}
               <button
                 type="button"
-                aria-label="Hear {w.word}"
+                aria-label="Hear {toPhonetic(w.word)}"
                 onclick={() => speak(w.devanagari)}
                 class="shrink-0 w-10 h-10 rounded-xl bg-info/15 text-info flex items-center justify-center active:scale-95"
               >

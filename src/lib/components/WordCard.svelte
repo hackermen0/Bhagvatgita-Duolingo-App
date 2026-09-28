@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import type { WordMeaning } from "../data/gitaData";
-  import { getSanskritDisplay } from "../data/sanskritHelper";
+  import { getSanskritDisplay, toPhonetic } from "../data/sanskritHelper";
   import { gameState } from "../state/gameState.svelte";
   import Icon from "./Icon.svelte";
 
@@ -75,11 +75,11 @@
     <!-- FRONT -->
     <div class="card-face card border-b-[6px]! flex flex-col items-center justify-center gap-4 p-6">
       {#if gameState.scriptDisplay === 'roman'}
-        <p class="text-4xl font-black text-primary leading-none">{word.word}</p>
+        <p class="text-4xl font-black text-primary leading-none">{toPhonetic(word.word)}</p>
         <p class="text-xl text-text-muted font-deva">{word.devanagari}</p>
       {:else}
         <p class="text-5xl font-bold text-primary font-deva leading-tight">{word.devanagari}</p>
-        <p class="text-lg text-text-muted font-bold italic">{word.word}</p>
+        <p class="text-lg text-text-muted font-bold italic">{toPhonetic(word.word)}</p>
       {/if}
 
       {#if speechSupported}

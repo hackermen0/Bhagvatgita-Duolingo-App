@@ -172,7 +172,7 @@ const bg247TeachingSlides: TeachingSlide[] = [
   {
     type: 'word_card',
     title: 'New Word',
-    content: 'Your right is to action alone — "karmaṇi" is the locative case of "karma", meaning the field of duty or prescribed action.',
+    content: 'Your right is to action alone — "karmani" is the locative case of "karma", meaning the field of duty or prescribed action.',
     wordData: { word: 'karmaṇi', devanagari: 'कर्मणि', meaning: 'in action / prescribed duty', partOfSpeech: 'noun (locative)' },
   },
   {
@@ -184,37 +184,37 @@ const bg247TeachingSlides: TeachingSlide[] = [
   {
     type: 'word_card',
     title: 'New Word',
-    content: '"adhikāraḥ" means right, authority, or entitlement. Combined with "te" (your), it says: your right/authority…',
+    content: '"adhikarah" means right, authority, or entitlement. Combined with "te" (your), it says: your right/authority…',
     wordData: { word: 'adhikāraḥ', devanagari: 'अधिकारः', meaning: 'right / authority', partOfSpeech: 'noun' },
   },
   {
     type: 'word_card',
     title: 'New Word',
-    content: '"mā" is a prohibition particle — it means "never" or "do not". Krishna is commanding: do NOT claim rights over the fruits.',
+    content: '"ma" is a prohibition particle — it means "never" or "do not". Krishna is commanding: do NOT claim rights over the fruits.',
     wordData: { word: 'mā', devanagari: 'मा', meaning: 'never / not', partOfSpeech: 'particle' },
   },
   {
     type: 'word_card',
     title: 'New Word',
-    content: '"phaleṣu" comes from "phala" (fruit/result). In locative case, it means "in the fruits". You have no right in the results of your work.',
+    content: '"phaleshu" comes from "phala" (fruit/result). In locative case, it means "in the fruits". You have no right in the results of your work.',
     wordData: { word: 'phaleṣu', devanagari: 'फलेषु', meaning: 'in the fruits / results', partOfSpeech: 'noun (locative)' },
   },
   {
     type: 'word_card',
     title: 'New Word',
-    content: '"karma-phala-hetuḥ" is a compound: the one who acts motivated ONLY by results. Krishna says: never be such a person.',
+    content: '"karma-phala-hetuh" is a compound: the one who acts motivated ONLY by results. Krishna says: never be such a person.',
     wordData: { word: 'karma-phala', devanagari: 'कर्मफल', meaning: 'fruits of action', partOfSpeech: 'compound noun' },
   },
   {
     type: 'word_card',
     title: 'New Word',
-    content: '"saṅgaḥ" means attachment or clinging. "akarmaṇi" means inaction. The final warning: don\'t become attached to NOT doing your duty either.',
+    content: '"sangah" means attachment or clinging. "akarmani" means inaction. The final warning: don\'t become attached to NOT doing your duty either.',
     wordData: { word: 'akarmaṇi', devanagari: 'अकर्मणि', meaning: 'in inaction / not doing duty', partOfSpeech: 'noun (locative)' },
   },
   {
     type: 'meaning_reveal',
     title: 'Putting It All Together',
-    content: 'karmaṇy-evādhikāras te — Your right is in action only\nmā phaleṣu kadācana — Never in the fruits at any time\nmā karma-phala-hetur bhūḥ — Never be motivated only by results\nmā te saṅgo \'stv akarmaṇi — Nor be attached to inaction',
+    content: 'karmany-evadhikaras te — Your right is in action only\nma phaleshu kadachana — Never in the fruits at any time\nma karma-phala-hetur bhuh — Never be motivated only by results\nma te sango \'stv akarmani — Nor be attached to inaction',
   },
 ];
 
@@ -228,13 +228,13 @@ const bg248TeachingSlides: TeachingSlide[] = [
   {
     type: 'word_card',
     title: 'New Word',
-    content: '"yogasthaḥ" means established in Yoga (balanced mind).',
+    content: '"yogasthah" means established in Yoga (balanced mind).',
     wordData: { word: 'yogasthaḥ', devanagari: 'योगस्थः', meaning: 'established in Yoga', partOfSpeech: 'adjective' },
   },
   {
     type: 'meaning_reveal',
     title: 'Equanimity is Yoga',
-    content: 'yogasthaḥ kuru karmāṇi — Perform duty established in Yoga\nsamatvaṁ yoga ucyate — Evenness of mind is called Yoga',
+    content: 'yogasthah kuru karmani — Perform duty established in Yoga\nsamatvam yoga uchyate — Evenness of mind is called Yoga',
   }
 ];
 
@@ -309,7 +309,7 @@ export const gitaData: GitaData = {
                       prompt: 'Arrange the words to form Part 1 of the verse.',
                       targetSentence: 'karmaṇi eva adhikāraḥ te',
                       tiles: ['karmaṇi', 'eva', 'adhikāraḥ', 'te'],
-                      explanation: '"karmaṇi eva adhikāraḥ te" — Your right is in action only.'
+                      explanation: '"karmani eva adhikarah te" — Your right is in action only.'
                     }
                   ]
                 },
@@ -343,7 +343,7 @@ export const gitaData: GitaData = {
                       translation: 'Never in the fruits at any time.',
                       options: ['kadācana', 'akarmaṇi', 'eva', 'karmasu'],
                       answer: 'kadācana',
-                      explanation: '"kadācana" means at any time. You are never entitled to results.'
+                      explanation: '"kadachana" means at any time. You are never entitled to results.'
                     },
                     {
                       id: 'p2_q3',
@@ -377,12 +377,12 @@ export const gitaData: GitaData = {
                       translation: '...let not your attachment be to inaction.',
                       options: ['akarmaṇi', 'karmaṇi', 'phaleṣu', 'karmasu'],
                       answer: 'akarmaṇi',
-                      explanation: '"akarmaṇi" means inaction. Krishna warns: never quit your duty out of frustration.'
+                      explanation: '"akarmani" means inaction. Krishna warns: never quit your duty out of frustration.'
                     },
                     {
                       id: 'p3_q2',
                       type: 'multiple_choice',
-                      prompt: 'What does "mā karma-phala-hetur bhūḥ" instruct us to do?',
+                      prompt: 'What does "ma karma-phala-hetur bhuh" instruct us to do?',
                       options: [
                         { text: 'Do not let the desire for results be the motive for your work.', isCorrect: true, explanation: 'Correct! Work for the sake of duty, not greed for results.' },
                         { text: 'Always demand high rewards before working.', isCorrect: false, explanation: 'Incorrect.' }
@@ -409,7 +409,7 @@ export const gitaData: GitaData = {
                   prompt: 'REBUILD THE ENTIRE VERSE: Arrange the complete first half of BG 2.47!',
                   targetSentence: 'karmaṇi eva adhikāraḥ te mā phaleṣu kadācana',
                   tiles: ['karmaṇi', 'eva', 'adhikāraḥ', 'te', 'mā', 'phaleṣu', 'kadācana'],
-                  explanation: '"karmaṇi eva adhikāraḥ te mā phaleṣu kadācana" — You have a right to action alone, never to its fruits.'
+                  explanation: '"karmani eva adhikarah te ma phaleshu kadachana" — You have a right to action alone, never to its fruits.'
                 },
                 {
                   id: 'syn_q3',
@@ -424,7 +424,7 @@ export const gitaData: GitaData = {
                     {
                       text: 'By quitting difficult projects immediately.',
                       isCorrect: false,
-                      explanation: 'Incorrect. Krishna warns against attachment to inaction ("mā te saṅgo \'stv akarmaṇi").'
+                      explanation: 'Incorrect. Krishna warns against attachment to inaction ("ma te sango \'stv akarmani").'
                     }
                   ]
                 },
@@ -432,7 +432,7 @@ export const gitaData: GitaData = {
                   id: 'syn_q4',
                   type: 'reflection',
                   prompt: 'Personal Reflection on Karma Yoga:',
-                  verseContext: 'BG 2.47: "karmaṇy-evādhikāras te mā phaleṣu kadācana — You have a right to perform your prescribed duties, but never to the fruits."',
+                  verseContext: 'BG 2.47: "karmany-evadhikaras te ma phaleshu kadachana — You have a right to perform your prescribed duties, but never to the fruits."',
                   guidance: 'Reflect on a personal project or goal you are currently pursuing. How would your peace of mind and effort change if you detached from the final outcome and focused entirely on the craftsmanship of your action today?'
                 }
               ]
@@ -505,7 +505,7 @@ export const gitaData: GitaData = {
                       prompt: 'Arrange the words to form Part 1 of the verse.',
                       targetSentence: 'yogasthaḥ kuru karmāṇi saṅgaṁ tyaktvā dhanañjaya',
                       tiles: ['yogasthaḥ', 'kuru', 'karmāṇi', 'saṅgaṁ', 'tyaktvā', 'dhanañjaya'],
-                      explanation: '"yogasthaḥ kuru karmāṇi saṅgaṁ tyaktvā dhanañjaya" — Established in Yoga, perform your duties, abandoning attachment, O Arjuna.'
+                      explanation: '"yogasthah kuru karmani sangam tyaktva dhananjaya" — Established in Yoga, perform your duties, abandoning attachment, O Arjuna.'
                     }
                   ]
                 },
@@ -542,7 +542,7 @@ export const gitaData: GitaData = {
                       type: 'multiple_choice',
                       prompt: 'What does Krishna define as "Yoga" in BG 2.48?',
                       options: [
-                        { text: 'Equanimity of mind in both success and failure ("samatvaṁ yoga ucyate").', isCorrect: true, explanation: 'Correct! Evenness of mind is true Yoga.' },
+                        { text: 'Equanimity of mind in both success and failure ("samatvam yoga uchyate").', isCorrect: true, explanation: 'Correct! Evenness of mind is true Yoga.' },
                         { text: 'Only physical postures.', isCorrect: false, explanation: 'Incorrect.' }
                       ]
                     }
@@ -556,7 +556,7 @@ export const gitaData: GitaData = {
                   prompt: 'REBUILD FULL VERSE: Arrange the second half of BG 2.48!',
                   targetSentence: 'siddhy asiddhyoḥ samo bhūtvā samatvaṁ yoga ucyate',
                   tiles: ['siddhy', 'asiddhyoḥ', 'samo', 'bhūtvā', 'samatvaṁ', 'yoga', 'ucyate'],
-                  explanation: '"siddhy-asiddhyoḥ samo bhūtvā samatvaṁ yoga ucyate" — Evenness in success and failure is called Yoga.'
+                  explanation: '"siddhy-asiddhyoh samo bhutva samatvam yoga uchyate" — Evenness in success and failure is called Yoga.'
                 }
               ]
             },
@@ -567,7 +567,7 @@ export const gitaData: GitaData = {
               verseSanskrit: 'बुद्धियुक्तो जहातीह उभे सुकृतदुष्कृते ।\nतस्माद्योगाय युज्यस्व योगः कर्मसु कौशलम् ॥',
               verseTransliteration: 'buddhi-yukto jahātīha ubhe sukṛta-duṣkṛte\ntasmād yogāya yujyasva yogaḥ karmasu kauśalam',
               translation: 'A person engaged in devotional service rids himself of both good and bad actions even in this life. Therefore, strive for Yoga, which is the art of all work.',
-              purport: 'Yoga is skill in action ("yogaḥ karmasu kauśalam").',
+              purport: 'Yoga is skill in action ("yogah karmasu kaushalam").',
               storyCaption: 'Wisdom acts without being bound by its results. This skill in action, Krishna said, is the highest art of all.',
               wordBreakdown: [
                 { word: 'kauśalam', devanagari: 'कौशलम्', meaning: 'skill / artfulness', partOfSpeech: 'noun' }
@@ -613,7 +613,7 @@ export const gitaData: GitaData = {
                       type: 'multiple_choice',
                       prompt: 'What famous declaration is made in BG 2.50?',
                       options: [
-                        { text: 'Yoga is skill in action ("yogaḥ karmasu kauśalam").', isCorrect: true, explanation: 'Correct!' },
+                        { text: 'Yoga is skill in action ("yogah karmasu kaushalam").', isCorrect: true, explanation: 'Correct!' },
                         { text: 'Work is to be avoided.', isCorrect: false, explanation: 'Incorrect.' }
                       ]
                     }
@@ -627,7 +627,7 @@ export const gitaData: GitaData = {
                   prompt: 'FULL VERSE SYNTHESIS: Arrange the famous second line!',
                   targetSentence: 'tasmād yogāya yujyasva yogaḥ karmasu kauśalam',
                   tiles: ['tasmād', 'yogāya', 'yujyasva', 'yogaḥ', 'karmasu', 'kauśalam'],
-                  explanation: '"yogaḥ karmasu kauśalam" — Yoga is skill in action.'
+                  explanation: '"yogah karmasu kaushalam" — Yoga is skill in action.'
                 }
               ]
             },
@@ -638,7 +638,7 @@ export const gitaData: GitaData = {
               verseSanskrit: 'विहाय कामान्यः सर्वान्पुमांश्चरति निःस्पृहः ।\nनिर्ममो निरहङ्कारः स शान्तिमधिगच्छति ॥',
               verseTransliteration: 'vihāya kāmān yaḥ sarvān pumāṁś carati niḥspṛhaḥ\nnirmamo nirahaṅkāraḥ sa śāntim adhigacchati',
               translation: 'A person who has given up all desires for sense gratification, who lives free from desires, who has given up all sense of proprietorship and is devoid of false ego — he alone attains real peace.',
-              purport: 'True peace comes when we drop possessiveness ("nirmamaḥ") and false ego ("nirahaṅkāraḥ").',
+              purport: 'True peace comes when we drop possessiveness ("nirmamah") and false ego ("nirahankarah").',
               storyCaption: 'Free of craving, free of ego, Arjuna set down his fear — and found the peace that never fades.',
               wordBreakdown: [
                 { word: 'nirmamo', devanagari: 'निर्ममः', meaning: 'without possessiveness', partOfSpeech: 'adjective' },
@@ -698,7 +698,7 @@ export const gitaData: GitaData = {
                       type: 'multiple_choice',
                       prompt: 'Who attains real peace according to BG 2.71?',
                       options: [
-                        { text: 'One who lives free from false ego ("nirahaṅkāraḥ") and possessiveness ("nirmamaḥ").', isCorrect: true, explanation: 'Correct!' },
+                        { text: 'One who lives free from false ego ("nirahankarah") and possessiveness ("nirmamah").', isCorrect: true, explanation: 'Correct!' },
                         { text: 'One who accumulates physical wealth.', isCorrect: false, explanation: 'Incorrect.' }
                       ]
                     }
@@ -712,7 +712,7 @@ export const gitaData: GitaData = {
                   prompt: 'FULL VERSE SYNTHESIS: Rebuild the final line of BG 2.71!',
                   targetSentence: 'nirmamo nirahaṅkāraḥ sa śāntim adhigacchati',
                   tiles: ['nirmamo', 'nirahaṅkāraḥ', 'sa', 'śāntim', 'adhigacchati'],
-                  explanation: '"nirmamo nirahaṅkāraḥ sa śāntim adhigacchati" — Without possessiveness or false ego, one attains supreme peace.'
+                  explanation: '"nirmamo nirahankarah sa shantim adhigachchhati" — Without possessiveness or false ego, one attains supreme peace.'
                 }
               ]
             }

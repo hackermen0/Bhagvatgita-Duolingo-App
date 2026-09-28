@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { WordMeaning, Commentary } from "../data/gitaData";
-  import { getSanskritDisplay } from "../data/sanskritHelper";
+  import { getSanskritDisplay, toPhonetic } from "../data/sanskritHelper";
 
   let {
     verseSanskrit,
@@ -28,6 +28,7 @@
   let isFullView = $state(false);
 
   const totalSlides = $derived(commentary ? 5 : 4);
+  const romanVerse = $derived(toPhonetic(verseTransliteration));
 
   function nextSlide() {
     if (currentSlide < totalSlides - 1) {
@@ -126,7 +127,7 @@
             <span
               class="text-[10px] font-black uppercase tracking-[0.2em] text-success"
             >
-              Layer 2 · Transliteration (IAST)
+              Layer 2 · Transliteration
             </span>
           </div>
 
@@ -134,7 +135,7 @@
             <p
               class="text-base sm:text-lg font-semibold text-success italic font-mono leading-relaxed whitespace-pre-line"
             >
-              {verseTransliteration}
+              {romanVerse}
             </p>
           </div>
         </div>
@@ -320,12 +321,12 @@
         <span
           class="text-[9px] font-black uppercase tracking-widest text-success"
         >
-          Layer 2 · Transliteration (IAST)
+          Layer 2 · Transliteration
         </span>
         <p
           class="text-xs sm:text-sm font-semibold text-success italic font-mono leading-relaxed whitespace-pre-line"
         >
-          {verseTransliteration}
+          {romanVerse}
         </p>
       </div>
 
@@ -407,7 +408,7 @@
               {activeWord.devanagari}
             </h3>
             <span class="text-base font-bold text-primary"
-              >{activeWord.word}</span
+              >{toPhonetic(activeWord.word)}</span
             >
           </div>
           <button

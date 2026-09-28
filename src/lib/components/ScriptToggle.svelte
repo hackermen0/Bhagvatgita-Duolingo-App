@@ -2,7 +2,7 @@
   import { gameState, type ScriptDisplay } from '../state/gameState.svelte';
 
   const OPTIONS: { value: ScriptDisplay; label: string; sample: string }[] = [
-    { value: 'script', label: 'Devanāgarī', sample: 'कर्म' },
+    { value: 'script', label: 'Devanagari', sample: 'कर्म' },
     { value: 'both', label: 'Both', sample: 'कर्म · karma' },
     { value: 'roman', label: 'Roman', sample: 'karma' }
   ];

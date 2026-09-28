@@ -3,6 +3,25 @@ export interface SanskritDisplay {
   devanagari: string;
 }
 
+const PHONETIC_LETTERS: Record<string, string> = {
+  ā: 'a', ī: 'i', ū: 'u', ṛ: 'ri', ṝ: 'ri', ḷ: 'lri',
+  ṅ: 'n', ñ: 'n', ṇ: 'n', ṭ: 't', ḍ: 'd', ś: 'sh', ṣ: 'sh', ḥ: 'h', ṁ: 'm', ṃ: 'm',
+  Ā: 'A', Ī: 'I', Ū: 'U', Ṛ: 'Ri', Ṅ: 'N', Ñ: 'N', Ṇ: 'N', Ṭ: 'T', Ḍ: 'D', Ś: 'Sh', Ṣ: 'Sh', Ḥ: 'H', Ṁ: 'M', Ṃ: 'M'
+};
+
+/**
+ * IAST → English-friendly spelling for display (kadācana → kadachana, Kṛṣṇa → Krishna).
+ * IAST stays the internal identity because dropping vowel length collides words
+ * (karmaṇi / karmāṇi). Not idempotent — IAST "ch" becomes "chh" — so apply exactly once.
+ */
+export function toPhonetic(iast: string): string {
+  return iast
+    .normalize('NFC')
+    .replace(/[ṁṃ](?=[kgcjṭḍtdnśṣsyrlh])/g, 'n')
+    .replace(/([cC])(h?)/g, (_, c: string, h: string) => (c === 'c' ? 'ch' : 'Ch') + h)
+    .replace(/[āīūṛṝḷṅñṇṭḍśṣḥṁṃĀĪŪṚṄÑṆṬḌŚṢḤṀṂ]/g, (ch) => PHONETIC_LETTERS[ch]);
+}
+
 // Dictionary of predefined Sanskrit words & phrases to English syllable breakdowns and Devanagari
 const SANSKRIT_DICT: Record<string, SanskritDisplay> = {
   // BG 2.47
@@ -98,8 +117,9 @@ export function getSanskritDisplay(input: string): SanskritDisplay {
   const lowerInput = cleanInput.toLowerCase();
 
   // Check dictionary
-  if (SANSKRIT_DICT[lowerInput]) {
-    return SANSKRIT_DICT[lowerInput];
+  const entry = SANSKRIT_DICT[lowerInput];
+  if (entry) {
+    return { ...entry, englishSyllables: toPhonetic(entry.englishSyllables) };
   }
 
   // If input is already Devanagari (contains Unicode Sanskrit characters 0900-097F)
@@ -134,7 +154,7 @@ export function getSanskritDisplay(input: string): SanskritDisplay {
   }
 
   return {
-    englishSyllables: syllables || cleanInput,
+    englishSyllables: toPhonetic(syllables || cleanInput),
     devanagari: dev
   };
 }

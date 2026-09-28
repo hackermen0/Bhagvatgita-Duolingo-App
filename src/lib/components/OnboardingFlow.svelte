@@ -124,7 +124,7 @@
     {#if stage === 'welcome'}
       <div class="h-full flex flex-col items-center justify-center text-center gap-6">
         <div class="bubble px-5 py-4 max-w-xs animate-pop-in">
-          <p class="text-xl font-black">Namaste! Let's begin your Gītā journey.</p>
+          <p class="text-xl font-black">Namaste! Let's begin your Gita journey.</p>
           <span class="absolute left-1/2 -bottom-[9px] -translate-x-1/2 w-4 h-4 rotate-45 bg-bg-surface border-r-2 border-b-2 border-border-warm"></span>
         </div>
         <Mascot mood="happy" size="xl" animate={true} />

@@ -3,6 +3,7 @@
   import { gitaData, sectionForLesson, type Lesson, type VersePart, type Question } from '../data/gitaData';
   import { lessonWords, wordsTestedBy } from '../data/practice';
   import { learningConfig, goalNudge } from '../data/learningConfig';
+  import { toPhonetic } from '../data/sanskritHelper';
   import { storyForSection, type UnitStory } from '../data/stories';
   import LessonProgress from './LessonProgress.svelte';
   import FeedbackModal from './FeedbackModal.svelte';
@@ -218,7 +219,7 @@
     'Your steady practice is paying off.',
     'Great focus!',
     'Effort like this builds real understanding.',
-    'Abhyāsa — steady practice — at work!',
+    'Abhyasa — steady practice — at work!',
     "You're getting the hang of this."
   ];
 
@@ -402,13 +403,13 @@
       case 'multiple_choice':
         return activeQuestion.options.find((o) => o.isCorrect)?.text || '';
       case 'fill_in_the_blank':
-        return activeQuestion.answer;
+        return toPhonetic(activeQuestion.answer);
       case 'sentence_rebuilding':
-        return activeQuestion.targetSentence;
+        return toPhonetic(activeQuestion.targetSentence);
       case 'listening': {
         const q = activeQuestion;
         const opt = q.options.find((o) => o.word === q.answer);
-        return opt ? `${opt.devanagari} (${opt.word})` : q.answer;
+        return opt ? `${opt.devanagari} (${toPhonetic(opt.word)})` : toPhonetic(q.answer);
       }
       default:
         return '';

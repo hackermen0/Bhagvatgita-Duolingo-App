@@ -1,5 +1,6 @@
 <script lang="ts">
   import { lookupMeaning } from '../data/practice';
+  import { toPhonetic } from '../data/sanskritHelper';
   import { playPopSound } from '../utils/soundEffects';
   import SanskritWord from './SanskritWord.svelte';
   import Mascot from './Mascot.svelte';
@@ -59,7 +60,7 @@
               type="button"
               disabled={!meaning}
               onclick={() => toggleHint(i)}
-              aria-label={meaning ? `Show meaning of ${token.word}` : undefined}
+              aria-label={meaning ? `Show meaning of ${toPhonetic(token.word)}` : undefined}
               class="relative flex flex-col items-center px-1 border-b-2 disabled:cursor-default
                 {meaning ? 'border-dashed border-primary-edge cursor-help' : 'border-transparent'}"
             >
@@ -95,7 +96,7 @@
         type="button"
         onclick={() => (used ? choose(null) : choose(option))}
         class="tile min-w-24 px-4 py-2.5 flex flex-col items-center {used ? 'tile-spent' : ''}"
-        aria-label={used ? `Remove ${option}` : option}
+        aria-label={used ? `Remove ${toPhonetic(option)}` : toPhonetic(option)}
       >
         <span class={used ? 'invisible flex flex-col items-center' : 'flex flex-col items-center'}>
           <SanskritWord text={option} />

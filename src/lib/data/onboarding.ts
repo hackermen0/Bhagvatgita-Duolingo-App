@@ -110,7 +110,7 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
   },
   {
     key: 'devanagariAbility',
-    question: 'Can you read Devanāgarī script?',
+    question: 'Can you read Devanagari script?',
     options: [
       { value: 'none', label: "No, I can't read it yet" },
       { value: 'little', label: 'A little' },

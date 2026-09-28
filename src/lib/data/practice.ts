@@ -1,6 +1,7 @@
 import { gitaData, type Lesson, type Question, type WordMeaning } from './gitaData';
 import { gameState, isDue } from '../state/gameState.svelte';
 import { learningConfig } from './learningConfig';
+import { toPhonetic } from './sanskritHelper';
 
 export const allLessons: Lesson[] = gitaData.chapters.flatMap((c) => c.sections.flatMap((s) => s.lessons));
 
@@ -123,7 +124,7 @@ function pickTargets(max: number, focusMistakes = false): WordMeaning[] {
   return targets;
 }
 
-const label = (w: WordMeaning) => `${w.devanagari} (${w.word})`;
+const label = (w: WordMeaning) => `${w.devanagari} (${toPhonetic(w.word)})`;
 
 export function meaningQuestion(w: WordMeaning, id: string | number, pool: WordMeaning[] = []): Question {
   const wrong = distractors(w, 2, pool);
@@ -133,8 +134,8 @@ export function meaningQuestion(w: WordMeaning, id: string | number, pool: WordM
     prompt: `What does ${label(w)} mean?`,
     targetWords: [w.word],
     options: shuffle([
-      { text: w.meaning, isCorrect: true, explanation: `Yes — "${w.word}" means "${w.meaning}".` },
-      ...wrong.map((d) => ({ text: d.meaning, isCorrect: false, explanation: `"${w.word}" means "${w.meaning}".` }))
+      { text: w.meaning, isCorrect: true, explanation: `Yes — "${toPhonetic(w.word)}" means "${w.meaning}".` },
+      ...wrong.map((d) => ({ text: d.meaning, isCorrect: false, explanation: `"${toPhonetic(w.word)}" means "${w.meaning}".` }))
     ])
   };
 }

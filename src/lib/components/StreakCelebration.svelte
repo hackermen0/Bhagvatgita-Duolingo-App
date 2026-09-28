@@ -14,7 +14,7 @@
     streak === 1
       ? 'Every journey begins with a single step. Practice tomorrow to build your streak!'
       : MILESTONES.includes(streak)
-        ? `${streak} days of steady practice — a real milestone! Abhyāsa is how the mind is trained.`
+        ? `${streak} days of steady practice — a real milestone! Abhyasa is how the mind is trained.`
         : "Practice each day so your streak won't reset!"
   );
 </script>

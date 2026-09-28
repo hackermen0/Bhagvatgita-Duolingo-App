@@ -5,9 +5,12 @@
   import { gameState } from '$lib/state/gameState.svelte';
   import { gitaData } from '$lib/data/gitaData';
   import { lessonWords } from '$lib/data/practice';
+  import { storyForSection, type UnitStory } from '$lib/data/stories';
   import Icon from '$lib/components/Icon.svelte';
   import SanskritWord from '$lib/components/SanskritWord.svelte';
   import VerseText from '$lib/components/VerseText.svelte';
+  import StoryReward from '$lib/components/StoryReward.svelte';
+  import { toPhonetic } from '$lib/data/sanskritHelper';
 
   const found = $derived.by(() => {
     for (const chapter of gitaData.chapters) {
@@ -16,6 +19,12 @@
     }
     return null;
   });
+
+  const sectionComplete = $derived(
+    !!found && found.section.lessons.every((l) => gameState.completedLessons.includes(l.id))
+  );
+
+  let replayStory = $state<UnitStory | null>(null);
 
   let speechSupported = $state(false);
   onMount(() => (speechSupported = 'speechSynthesis' in window));
@@ -45,6 +54,17 @@
       Key words for each verse in this unit. Guides unlock as you complete their lessons, so no meaning is spoiled before you learn it.
     </p>
 
+    {#if sectionComplete}
+      <button
+        type="button"
+        onclick={() => (replayStory = storyForSection(found.section))}
+        class="btn btn-secondary w-full mt-4 flex items-center justify-center gap-2"
+      >
+        <Icon name="book" class="w-5 h-5" />
+        Replay the story
+      </button>
+    {/if}
+
     <div class="flex flex-col gap-8 mt-8 pb-6">
       {#each found.section.lessons as lesson, i}
         {@const unlocked = gameState.completedLessons.includes(lesson.id)}
@@ -67,7 +87,7 @@
                   {#if speechSupported}
                     <button
                       type="button"
-                      aria-label="Hear {w.word}"
+                      aria-label="Hear {toPhonetic(w.word)}"
                       onclick={() => speak(w.devanagari)}
                       class="shrink-0 w-10 h-10 rounded-xl bg-info text-white flex items-center justify-center active:translate-y-0.5"
                       style="box-shadow: 0 3px 0 var(--color-info-dark)"
@@ -95,3 +115,7 @@
     <p class="text-center text-text-muted mt-10">This unit doesn't exist.</p>
   {/if}
 </div>
+
+{#if replayStory}
+  <StoryReward story={replayStory} onComplete={() => (replayStory = null)} />
+{/if}

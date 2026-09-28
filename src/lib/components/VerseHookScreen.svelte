@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Lesson, VersePart, WordMeaning } from "../data/gitaData";
-  import { getSanskritDisplay } from "../data/sanskritHelper";
+  import { getSanskritDisplay, toPhonetic } from "../data/sanskritHelper";
   import { gameState } from "../state/gameState.svelte";
   import { onMount } from "svelte";
 
@@ -42,7 +42,7 @@
         pairs.push({
           devanagari: cleaned,
           phonetic: getSanskritDisplay(phoneticSource).englishSyllables,
-          roman: phoneticSource
+          roman: toPhonetic(phoneticSource)
         });
       });
     });

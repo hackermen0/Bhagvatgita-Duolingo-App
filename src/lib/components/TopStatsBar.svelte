@@ -58,7 +58,7 @@
         <div class="mt-3 flex items-center gap-3">
           <div class="w-14 h-14 rounded-2xl bg-primary-soft border-2 border-primary-edge flex items-center justify-center text-3xl font-deva text-primary">ॐ</div>
           <div class="flex-1">
-            <p class="text-lg font-black">Bhagavad Gītā</p>
+            <p class="text-lg font-black">Bhagavad Gita</p>
             <p class="text-sm text-text-muted">{gameState.completedLessons.length} of {totalLessons} verses learned</p>
           </div>
         </div>

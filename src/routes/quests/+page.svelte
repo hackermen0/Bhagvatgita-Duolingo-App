@@ -26,7 +26,7 @@
   <!-- Banner -->
   <div class="rounded-2xl bg-accent text-white p-5 flex items-center gap-4" style="box-shadow: 0 4px 0 var(--color-accent-dark)">
     <div class="flex-1">
-      <p class="text-xs font-extrabold uppercase tracking-wider opacity-80">Today's sādhanā</p>
+      <p class="text-xs font-extrabold uppercase tracking-wider opacity-80">Today's sadhana</p>
       <h2 class="text-2xl font-black leading-tight mt-1">Complete quests to earn rewards!</h2>
       <p class="text-sm font-bold opacity-85 mt-1">{doneCount} of {quests.length} done</p>
     </div>
