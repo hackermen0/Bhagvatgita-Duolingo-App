@@ -3,14 +3,14 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  /* Saffron & Temple Gold — light (default), laid out on Duolingo's crisp white canvas */
+  /* Temple Blue — light (default), laid out on Duolingo's crisp white canvas */
   --color-bg-base: #FFFCF7;
   --color-bg-surface: #FFFFFF;
   --color-bg-surface-alt: #FFF6EA;
-  --color-primary: #F4972D;
-  --color-primary-dark: #D97615;
-  --color-primary-soft: #FFF0DC;
-  --color-primary-edge: #F6BD7A;
+  --color-primary: #3BB5F8;
+  --color-primary-dark: #1271A5;
+  --color-primary-soft: #E2F4FE;
+  --color-primary-edge: #8CD1F8;
   --color-accent: #8C2F39;
   --color-accent-dark: #6B1F28;
   --color-success: #1B8A73;
@@ -22,8 +22,8 @@
   --color-gold: #F2B01E;
   --color-gold-dark: #C98A00;
   --color-gold-soft: #FFF4D6;
-  --color-info: #2B9FD8;
-  --color-info-dark: #1D7EAF;
+  --color-info: #7349D4;
+  --color-info-dark: #522DA9;
   --color-text-primary: #3A2B1E;
   --color-text-muted: #8A7A6C;
   --color-border-warm: #EDE2D1;
@@ -36,14 +36,14 @@
 }
 
 .dark {
-  /* Saffron & Temple Gold — warm dusk (dark) */
+  /* Temple Blue — warm dusk (dark) */
   --color-bg-base: #1F1310;
   --color-bg-surface: #2B1B16;
   --color-bg-surface-alt: #34221B;
-  --color-primary: #F7A83D;
-  --color-primary-dark: #C97012;
-  --color-primary-soft: #3D2A18;
-  --color-primary-edge: #8A5A22;
+  --color-primary: #49B7F3;
+  --color-primary-dark: #1F7BAD;
+  --color-primary-soft: #18313F;
+  --color-primary-edge: #276586;
   --color-accent: #C4515E;
   --color-accent-dark: #8E3440;
   --color-success: #2FBF9C;
@@ -55,8 +55,8 @@
   --color-gold: #F5BD3A;
   --color-gold-dark: #B88511;
   --color-gold-soft: #3D3016;
-  --color-info: #4BB6E8;
-  --color-info-dark: #2C88B5;
+  --color-info: #9673E8;
+  --color-info-dark: #5B35B6;
   --color-text-primary: #F5E9D8;
   --color-text-muted: #B89F8A;
   --color-border-warm: #45302A;
@@ -353,7 +353,7 @@
   50% { transform: translate(-50%, -6px); }
 }
 
-@keyframes owl-bounce {
+@keyframes mascot-bounce {
   0%, 100% { transform: translateY(0); }
   40% { transform: translateY(-5px); }
   60% { transform: translateY(-3px); }
@@ -417,7 +417,7 @@
 .animate-float-xp { animation: float-xp 1.2s ease-out forwards; }
 .animate-pulse-ring { animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
 .animate-start-bob { animation: start-bob 1.4s ease-in-out infinite; }
-.animate-owl-bounce { animation: owl-bounce 2.5s ease-in-out infinite; }
+.animate-mascot-bounce { animation: mascot-bounce 2.5s ease-in-out infinite; }
 .animate-fade-up { animation: fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
 .animate-sheet-up { animation: sheet-up 0.25s cubic-bezier(0.22, 1, 0.36, 1) both; }
 .animate-pop-in { animation: pop-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both; }

@@ -5,9 +5,12 @@
   import { gameState } from "../state/gameState.svelte";
   import Icon from "./Icon.svelte";
 
-  let { word, flipped = $bindable(false) } = $props<{
+  let { word, flipped = false, onFlip, delay = 0 } = $props<{
     word: WordMeaning;
     flipped?: boolean;
+    onFlip: () => void;
+    /** Stagger for the entrance animation when several cards appear together */
+    delay?: number;
   }>();
 
   let entered = $state(false);
@@ -16,9 +19,10 @@
   let speechSupported = $state(false);
 
   onMount(() => {
-    requestAnimationFrame(() => (entered = true));
+    const t = setTimeout(() => (entered = true), 30 + delay);
     speechSupported = typeof window !== "undefined" && "speechSynthesis" in window;
     return () => {
+      clearTimeout(t);
       currentUtterance = null;
       if (speechSupported) window.speechSynthesis.cancel();
     };
@@ -60,40 +64,48 @@
     rate = newRate;
     if (isSpeaking) startSpeaking();
   }
+
+  // Grid cards are narrow, so long compounds step down a size rather than wrap mid-word
+  const devSize = $derived(
+    word.devanagari.length > 13 ? "text-lg" : word.devanagari.length > 9 ? "text-2xl" : "text-3xl"
+  );
+  const romanSize = $derived(toPhonetic(word.word).length > 13 ? "text-xl" : "text-2xl");
+  const meaningSize = $derived(word.meaning.length > 18 ? "text-base" : "text-xl");
 </script>
 
 <div
-  class="card-scene w-full max-w-xs mx-auto select-none cursor-pointer"
-  style="height: 260px;"
-  onclick={() => (flipped = true)}
+  class="card-scene w-full select-none cursor-pointer"
+  style="height: 200px;"
+  onclick={onFlip}
   role="button"
   tabindex="0"
-  onkeydown={(e) => e.key === " " && (flipped = true)}
-  aria-label="Vocabulary card. Tap to reveal meaning."
+  onkeydown={(e) => e.key === " " && (e.preventDefault(), onFlip())}
+  aria-label="Vocabulary card for {toPhonetic(word.word)}. Tap to flip."
+  aria-pressed={flipped}
 >
   <div class="card-inner w-full h-full {flipped ? 'card-flipped' : ''} {entered ? 'card-entered' : 'card-pending'}">
     <!-- FRONT -->
-    <div class="card-face card border-b-[6px]! flex flex-col items-center justify-center gap-4 p-6">
+    <div class="card-face card border-b-[5px]! flex flex-col items-center justify-center gap-2 p-3">
       {#if gameState.scriptDisplay === 'roman'}
-        <p class="text-4xl font-black text-primary leading-none">{toPhonetic(word.word)}</p>
-        <p class="text-xl text-text-muted font-deva">{word.devanagari}</p>
+        <p class="{romanSize} font-black text-primary leading-tight text-center">{toPhonetic(word.word)}</p>
+        <p class="text-base text-text-muted font-deva text-center">{word.devanagari}</p>
       {:else}
-        <p class="text-5xl font-bold text-primary font-deva leading-tight">{word.devanagari}</p>
-        <p class="text-lg text-text-muted font-bold italic">{toPhonetic(word.word)}</p>
+        <p class="{devSize} font-bold text-primary font-deva leading-tight text-center">{word.devanagari}</p>
+        <p class="text-sm text-text-muted font-bold italic text-center">{toPhonetic(word.word)}</p>
       {/if}
 
       {#if speechSupported}
-        <div class="flex flex-col items-center gap-2">
+        <div class="flex flex-col items-center gap-1.5 mt-1">
           <button
             onclick={toggleSpeakWord}
             aria-label={isSpeaking ? "Stop" : "Listen to pronunciation"}
-            class="relative w-12 h-12 rounded-2xl bg-info text-white flex items-center justify-center active:translate-y-0.5"
-            style="box-shadow: 0 4px 0 var(--color-info-dark)"
+            class="relative w-10 h-10 rounded-xl bg-info text-white flex items-center justify-center active:translate-y-0.5"
+            style="box-shadow: 0 3px 0 var(--color-info-dark)"
           >
             {#if isSpeaking}
-              <span class="absolute -inset-1.5 rounded-[1.2rem] border-4 border-info/30 animate-pulse-ring pointer-events-none"></span>
+              <span class="absolute -inset-1 rounded-[1rem] border-4 border-info/30 animate-pulse-ring pointer-events-none"></span>
             {/if}
-            <Icon name="speaker" class="w-6 h-6" />
+            <Icon name="speaker" class="w-5 h-5" />
           </button>
 
           <!-- Speed toggle — only shown while actively speaking -->
@@ -102,7 +114,7 @@
               {#each ["slow", "normal"] as const as r}
                 <button
                   onclick={(e) => setRate(e, r)}
-                  class="px-3 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wide
+                  class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide
                     {rate === r ? 'bg-info text-white' : 'text-text-muted hover:text-text-primary'}"
                 >
                   {r}
@@ -115,14 +127,14 @@
     </div>
 
     <!-- BACK -->
-    <div class="card-face card-back card border-b-[6px]! border-primary-edge! bg-primary-soft! flex flex-col items-center justify-center gap-3 p-6">
-      <p class="text-xs font-black uppercase tracking-wider text-primary-dark dark:text-primary">Meaning</p>
-      <p class="text-3xl font-black text-center leading-tight">{word.meaning}</p>
-      <span class="text-xs font-black uppercase tracking-wide px-3 py-1 rounded-full bg-bg-surface border-2 border-border-warm text-text-muted">
+    <div class="card-face card-back card border-b-[5px]! border-primary-edge! bg-primary-soft! flex flex-col items-center justify-center gap-1.5 p-3">
+      <p class="text-[10px] font-black uppercase tracking-wider text-primary-dark dark:text-primary">Meaning</p>
+      <p class="{meaningSize} font-black text-center leading-tight">{word.meaning}</p>
+      <span class="text-[10px] font-black uppercase tracking-wide px-2.5 py-0.5 rounded-full bg-bg-surface border-2 border-border-warm text-text-muted text-center">
         {word.partOfSpeech}
       </span>
-      <p class="text-lg text-primary-dark dark:text-primary font-deva">{word.devanagari}</p>
-      <p class="text-sm font-bold text-text-muted">{getSanskritDisplay(word.word).englishSyllables}</p>
+      <p class="text-base text-primary-dark dark:text-primary font-deva">{word.devanagari}</p>
+      <p class="text-[11px] font-bold text-text-muted text-center leading-tight">{getSanskritDisplay(word.word).englishSyllables}</p>
     </div>
   </div>
 </div>

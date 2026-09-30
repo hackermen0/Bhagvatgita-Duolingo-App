@@ -40,6 +40,7 @@ const SANSKRIT_DICT: Record<string, SanskritDisplay> = {
   'saṅgaḥ': { englishSyllables: 'saṅ · gaḥ', devanagari: 'सङ्गः' },
   'saṅgo': { englishSyllables: 'saṅ · go', devanagari: 'सङ्गो' },
   'astv': { englishSyllables: 'astv', devanagari: 'अस्तु' },
+  'astu': { englishSyllables: 'as · tu', devanagari: 'अस्तु' },
   '\'stv': { englishSyllables: '\'stv', devanagari: 'ऽस्तु' },
   'akarmaṇi': { englishSyllables: 'a · kar · ma · ṇi', devanagari: 'अकर्मणि' },
   'karmasu': { englishSyllables: 'kar · ma · su', devanagari: 'कर्मसु' },
@@ -88,7 +89,62 @@ const SANSKRIT_DICT: Record<string, SanskritDisplay> = {
   'nirahaṅkāraḥ': { englishSyllables: 'nir · a · haṅ · kā · raḥ', devanagari: 'निरहङ्कारः' },
   'sa': { englishSyllables: 'sa', devanagari: 'सः' },
   'śāntim': { englishSyllables: 'śān · tim', devanagari: 'शान्तिम्' },
-  'adhigacchati': { englishSyllables: 'a · dhi · gac · cha · ti', devanagari: 'अधिगच्छति' }
+  'adhigacchati': { englishSyllables: 'a · dhi · gac · cha · ti', devanagari: 'अधिगच्छति' },
+
+  // BG 2.13
+  'dehinaḥ': { englishSyllables: 'de · hi · naḥ', devanagari: 'देहिनः' },
+  'asmin': { englishSyllables: 'as · min', devanagari: 'अस्मिन्' },
+  'dehe': { englishSyllables: 'de · he', devanagari: 'देहे' },
+  'yathā': { englishSyllables: 'ya · thā', devanagari: 'यथा' },
+  'kaumāram': { englishSyllables: 'kau · mā · ram', devanagari: 'कौमारम्' },
+  'yauvanam': { englishSyllables: 'yau · va · nam', devanagari: 'यौवनम्' },
+  'jarā': { englishSyllables: 'ja · rā', devanagari: 'जरा' },
+  'tathā': { englishSyllables: 'ta · thā', devanagari: 'तथा' },
+  'dehāntara-prāptiḥ': { englishSyllables: 'de · hān · ta · ra prāp · tiḥ', devanagari: 'देहान्तरप्राप्तिः' },
+  'dhīraḥ': { englishSyllables: 'dhī · raḥ', devanagari: 'धीरः' },
+  'tatra': { englishSyllables: 'tat · ra', devanagari: 'तत्र' },
+  'na': { englishSyllables: 'na', devanagari: 'न' },
+  'muhyati': { englishSyllables: 'muh · ya · ti', devanagari: 'मुह्यति' },
+
+  // BG 2.20
+  'jāyate': { englishSyllables: 'jā · ya · te', devanagari: 'जायते' },
+  'mriyate': { englishSyllables: 'mri · ya · te', devanagari: 'म्रियते' },
+  'vā': { englishSyllables: 'vā', devanagari: 'वा' },
+  'kadācit': { englishSyllables: 'ka · dā · cit', devanagari: 'कदाचित्' },
+  'ayam': { englishSyllables: 'a · yam', devanagari: 'अयम्' },
+  'bhavitā': { englishSyllables: 'bha · vi · tā', devanagari: 'भविता' },
+  'bhūyaḥ': { englishSyllables: 'bhū · yaḥ', devanagari: 'भूयः' },
+  'ajaḥ': { englishSyllables: 'a · jaḥ', devanagari: 'अजः' },
+  'nityaḥ': { englishSyllables: 'ni · tyaḥ', devanagari: 'नित्यः' },
+  'śāśvataḥ': { englishSyllables: 'śāś · va · taḥ', devanagari: 'शाश्वतः' },
+  'purāṇaḥ': { englishSyllables: 'pu · rā · ṇaḥ', devanagari: 'पुराणः' },
+  'hanyate': { englishSyllables: 'han · ya · te', devanagari: 'हन्यते' },
+  'hanyamāne': { englishSyllables: 'han · ya · mā · ne', devanagari: 'हन्यमाने' },
+  'śarīre': { englishSyllables: 'śa · rī · re', devanagari: 'शरीरे' },
+
+  // BG 2.22
+  'vāsāṁsi': { englishSyllables: 'vā · sāṁ · si', devanagari: 'वासांसि' },
+  'jīrṇāni': { englishSyllables: 'jīr · ṇā · ni', devanagari: 'जीर्णानि' },
+  'navāni': { englishSyllables: 'na · vā · ni', devanagari: 'नवानि' },
+  'gṛhṇāti': { englishSyllables: 'gṛh · ṇā · ti', devanagari: 'गृह्णाति' },
+  'naraḥ': { englishSyllables: 'na · raḥ', devanagari: 'नरः' },
+  'aparāṇi': { englishSyllables: 'a · pa · rā · ṇi', devanagari: 'अपराणि' },
+  'śarīrāṇi': { englishSyllables: 'śa · rī · rā · ṇi', devanagari: 'शरीराणि' },
+  'anyāni': { englishSyllables: 'an · yā · ni', devanagari: 'अन्यानि' },
+  'saṁyāti': { englishSyllables: 'saṁ · yā · ti', devanagari: 'संयाति' },
+  'dehī': { englishSyllables: 'de · hī', devanagari: 'देही' },
+
+  // BG 2.23
+  'enam': { englishSyllables: 'e · nam', devanagari: 'एनम्' },
+  'chindanti': { englishSyllables: 'chin · dan · ti', devanagari: 'छिन्दन्ति' },
+  'śastrāṇi': { englishSyllables: 'śas · trā · ṇi', devanagari: 'शस्त्राणि' },
+  'dahati': { englishSyllables: 'da · ha · ti', devanagari: 'दहति' },
+  'pāvakaḥ': { englishSyllables: 'pā · va · kaḥ', devanagari: 'पावकः' },
+  'ca': { englishSyllables: 'ca', devanagari: 'च' },
+  'kledayanti': { englishSyllables: 'kle · da · yan · ti', devanagari: 'क्लेदयन्ति' },
+  'āpaḥ': { englishSyllables: 'ā · paḥ', devanagari: 'आपः' },
+  'śoṣayati': { englishSyllables: 'śo · ṣa · ya · ti', devanagari: 'शोषयति' },
+  'mārutaḥ': { englishSyllables: 'mā · ru · taḥ', devanagari: 'मारुतः' }
 };
 
 // Map of IAST/Roman letters to basic Devanagari script for fallback

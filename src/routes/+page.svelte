@@ -33,9 +33,28 @@
   );
   const planName = $derived(gameState.profile ? planById(gameState.profile.plan).name : '');
 
-  // ─── Path geometry: Duolingo's gentle zigzag ──────────────────────────────
-  const OFFSETS = [0, 44, 70, 44, 0, -44, -70, -44];
-  const offsetAt = (i: number) => OFFSETS[i % OFFSETS.length];
+  // ─── Path geometry: an organic, non-repeating wander like Duolingo's ──────
+  // A plain sine zigzag repeats its exact shape every ~8 nodes, so any two units
+  // with the same lesson count looked identical. Instead each unit gets its own
+  // wavelength/amplitude/phase (seeded from its section id, so it's stable across
+  // reloads without being stored), and the node index runs continuously across
+  // unit boundaries instead of resetting to 0, so units flow into each other
+  // rather than each restarting the same curve from center.
+  function seedFor(str: string): number {
+    let h = 0;
+    for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+    return h;
+  }
+
+  function pathOffset(sectionId: string, globalIndex: number): number {
+    const seed = seedFor(sectionId);
+    // A short wavelength relative to a unit's ~4-5 nodes so an actual bend is
+    // visible within one unit, not just a near-monotonic drift to one side.
+    const period = 5.5 + (seed % 5) * 0.5; // ~5.5–7.5 nodes per full cycle
+    const phase = (seed % 1000) / 1000 * Math.PI * 2;
+    const amplitude = 65 + (seed % 4) * 10; // 65–95px swing
+    return Math.round(Math.sin((globalIndex / period) * Math.PI * 2 + phase) * amplitude);
+  }
 
   const UNIT_COLORS = [
     { unit: 'var(--color-primary)', dark: 'var(--color-primary-dark)' },
@@ -43,9 +62,16 @@
     { unit: 'var(--color-success)', dark: 'var(--color-success-dark)' }
   ];
 
-  // Unit numbering runs across chapters, so each unit keeps its own color
+  // Unit numbering runs across chapters, so each unit keeps its own color.
+  // startIndex is the running node count (lessons + trophy) before this unit,
+  // so pathOffset() can treat the whole path as one continuous line.
+  let runningNodeCount = 0;
   const units = gitaData.chapters.flatMap((chapter) =>
-    chapter.sections.map((section, sIdx) => ({ chapter, section, unitNumber: sIdx + 1 }))
+    chapter.sections.map((section, sIdx) => {
+      const startIndex = runningNodeCount;
+      runningNodeCount += section.lessons.length + 1;
+      return { chapter, section, unitNumber: sIdx + 1, startIndex };
+    })
   );
 
   let selected = $state<string | null>(null);
@@ -78,12 +104,12 @@
     <button type="button" aria-label="Close" class="fixed inset-0 z-20 cursor-default" onclick={() => (selected = null)}></button>
   {/if}
 
-  {#each units as { chapter, section, unitNumber }, uIdx}
+  {#each units as { chapter, section, unitNumber, startIndex }, uIdx}
     {@const color = UNIT_COLORS[uIdx % UNIT_COLORS.length]}
     {@const trophyId = `trophy-${section.id}`}
     {@const trophyOpen = selected === trophyId}
     {@const trophyReady = unitComplete(section) && practice.available}
-    {@const trophyOffset = offsetAt(section.lessons.length)}
+    {@const trophyOffset = pathOffset(section.id, startIndex + section.lessons.length)}
     <section style="--unit: {color.unit}; --unit-dark: {color.dark}">
       <!-- ─── Unit banner (sticks while its unit scrolls by) ─── -->
       <div class="sticky top-0 z-10 px-4 pt-4 pb-2 bg-bg-base">
@@ -106,13 +132,17 @@
       <!-- ─── Path ─── -->
       <div class="relative flex flex-col items-center pt-10 pb-6">
         {#if section.lessons.length >= 3}
-          <div class="absolute left-[8%] pointer-events-none" style="top: {2 * 124 + 40}px">
-            <Mascot mood="guide" size="lg" animate={true} />
+          {@const mascotNodeOffset = pathOffset(section.id, startIndex + 2)}
+          <div
+            class="absolute pointer-events-none"
+            style="{mascotNodeOffset >= 0 ? 'left' : 'right'}: 8%; top: {2 * 124 + 40}px"
+          >
+            <Mascot size="lg" animate={true} />
           </div>
         {/if}
 
         {#each section.lessons as lesson, idx}
-          {@const offset = offsetAt(idx)}
+          {@const offset = pathOffset(section.id, startIndex + idx)}
           {@const done = isDone(lesson.id)}
           {@const unlocked = isLessonUnlocked(lesson.id)}
           {@const current = lesson.id === nextLesson?.id}

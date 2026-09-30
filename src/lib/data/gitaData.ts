@@ -381,26 +381,26 @@ export const gitaData: GitaData = {
                 },
                 {
                   partIndex: 3,
-                  title: 'Part 3: Freedom from Motive & Inaction',
-                  sanskrit: 'मा कर्मफलहेतुर्भूर्मा ते सङ्गोऽस्त्वकर्मणि',
-                  transliteration: 'mā karma-phala-hetur bhūr mā te saṅgo \'stv akarmaṇi',
-                  translation: 'Never be motivated by results, nor be attached to inaction.',
+                  title: 'Part 3: Freedom from Motive',
+                  sanskrit: 'मा कर्मफलहेतुर्भूः',
+                  transliteration: 'mā karma-phala-hetur bhūḥ',
+                  translation: 'Never be motivated by the fruits of action.',
                   wordBreakdown: [
                     { word: 'karma-phala', devanagari: 'कर्मफल', meaning: 'fruits of action', partOfSpeech: 'compound' },
                     { word: 'hetuḥ', devanagari: 'हेतुः', meaning: 'motive / cause', partOfSpeech: 'noun' },
-                    { word: 'bhūḥ', devanagari: 'भूः', meaning: 'become', partOfSpeech: 'verb' },
-                    { word: 'saṅgaḥ', devanagari: 'सङ्गः', meaning: 'attachment', partOfSpeech: 'noun' },
-                    { word: 'akarmaṇi', devanagari: 'अकर्मणि', meaning: 'in inaction', partOfSpeech: 'noun' }
+                    { word: 'bhūḥ', devanagari: 'भूः', meaning: 'become', partOfSpeech: 'verb' }
                   ],
                   questions: [
                     {
                       id: 'p3_q1',
-                      type: 'fill_in_the_blank',
-                      prompt: 'Complete: "mā te saṅgo \'stv ______"',
-                      translation: '...let not your attachment be to inaction.',
-                      options: ['akarmaṇi', 'karmaṇi', 'phaleṣu', 'karmasu'],
-                      answer: 'akarmaṇi',
-                      explanation: '"akarmani" means inaction. Krishna warns: never quit your duty out of frustration.'
+                      type: 'phrase_matching',
+                      warmup: true,
+                      prompt: 'Match each word in Part 3 to its meaning.',
+                      pairs: [
+                        { sanskrit: 'karma-phala', english: 'fruits of action' },
+                        { sanskrit: 'hetuḥ', english: 'motive / cause' },
+                        { sanskrit: 'bhūḥ', english: 'become' }
+                      ]
                     },
                     {
                       id: 'p3_q2',
@@ -410,6 +410,40 @@ export const gitaData: GitaData = {
                         { text: 'Do not let the desire for results be the motive for your work.', isCorrect: true, explanation: 'Correct! Work for the sake of duty, not greed for results.' },
                         { text: 'Always demand high rewards before working.', isCorrect: false, explanation: 'Incorrect.' }
                       ]
+                    }
+                  ]
+                },
+                {
+                  partIndex: 4,
+                  title: 'Part 4: Not Attached to Inaction',
+                  sanskrit: 'मा ते सङ्गोऽस्त्वकर्मणि',
+                  transliteration: 'mā te saṅgo \'stv akarmaṇi',
+                  translation: 'Nor let your attachment be to inaction.',
+                  wordBreakdown: [
+                    { word: 'saṅgaḥ', devanagari: 'सङ्गः', meaning: 'attachment', partOfSpeech: 'noun' },
+                    { word: 'astu', devanagari: 'अस्तु', meaning: 'let there be', partOfSpeech: 'verb (imperative)' },
+                    { word: 'akarmaṇi', devanagari: 'अकर्मणि', meaning: 'in inaction', partOfSpeech: 'noun' }
+                  ],
+                  questions: [
+                    {
+                      id: 'p4_q1',
+                      type: 'phrase_matching',
+                      warmup: true,
+                      prompt: 'Match each word in Part 4 to its meaning.',
+                      pairs: [
+                        { sanskrit: 'saṅgaḥ', english: 'attachment' },
+                        { sanskrit: 'astu', english: 'let there be' },
+                        { sanskrit: 'akarmaṇi', english: 'in inaction' }
+                      ]
+                    },
+                    {
+                      id: 'p4_q2',
+                      type: 'fill_in_the_blank',
+                      prompt: 'Complete: "mā te saṅgo \'stv ______"',
+                      translation: '...let not your attachment be to inaction.',
+                      options: ['akarmaṇi', 'karmaṇi', 'phaleṣu', 'karmasu'],
+                      answer: 'akarmaṇi',
+                      explanation: '"akarmani" means inaction. Krishna warns: never quit your duty out of frustration.'
                     }
                   ]
                 }
@@ -499,16 +533,13 @@ export const gitaData: GitaData = {
                 {
                   partIndex: 1,
                   title: 'Part 1: Established in Yoga',
-                  sanskrit: 'योगस्थः कुरु कर्माणि सङ्गं त्यक्त्वा धनञ्जय',
-                  transliteration: 'yoga-sthaḥ kuru karmāṇi saṅgaṁ tyaktvā dhanañjaya',
-                  translation: 'Perform your duty established in Yoga, abandoning all attachment, O Arjuna.',
+                  sanskrit: 'योगस्थः कुरु कर्माणि',
+                  transliteration: 'yoga-sthaḥ kuru karmāṇi',
+                  translation: 'Established in Yoga, perform your duties.',
                   wordBreakdown: [
                     { word: 'yogasthaḥ', devanagari: 'योगस्थः', meaning: 'established in Yoga', partOfSpeech: 'adjective' },
                     { word: 'kuru', devanagari: 'कुरु', meaning: 'do / perform', partOfSpeech: 'verb' },
-                    { word: 'karmāṇi', devanagari: 'कर्माणि', meaning: 'duties / actions', partOfSpeech: 'noun' },
-                    { word: 'saṅgaṁ', devanagari: 'सङ्गं', meaning: 'attachment', partOfSpeech: 'noun' },
-                    { word: 'tyaktvā', devanagari: 'त्यक्त्वा', meaning: 'abandoning', partOfSpeech: 'verb' },
-                    { word: 'dhanañjaya', devanagari: 'धनञ्जय', meaning: 'O Arjuna (winner of wealth)', partOfSpeech: 'noun (vocative)' }
+                    { word: 'karmāṇi', devanagari: 'कर्माणि', meaning: 'duties / actions', partOfSpeech: 'noun' }
                   ],
                   questions: [
                     {
@@ -519,10 +550,7 @@ export const gitaData: GitaData = {
                       pairs: [
                         { sanskrit: 'yogasthaḥ', english: 'established in Yoga' },
                         { sanskrit: 'kuru', english: 'do / perform' },
-                        { sanskrit: 'karmāṇi', english: 'duties / actions' },
-                        { sanskrit: 'saṅgaṁ', english: 'attachment' },
-                        { sanskrit: 'tyaktvā', english: 'abandoning' },
-                        { sanskrit: 'dhanañjaya', english: 'O Arjuna (winner of wealth)' }
+                        { sanskrit: 'karmāṇi', english: 'duties / actions' }
                       ]
                     },
                     {
@@ -531,15 +559,55 @@ export const gitaData: GitaData = {
                       prompt: 'Now match the joined phrases to their meanings.',
                       pairs: [
                         { sanskrit: 'yogasthaḥ', english: 'established in Yoga' },
-                        { sanskrit: 'kuru karmāṇi', english: 'perform duties' },
-                        { sanskrit: 'saṅgaṁ tyaktvā', english: 'abandoning attachment' },
-                        { sanskrit: 'dhanañjaya', english: 'O Arjuna' }
+                        { sanskrit: 'kuru karmāṇi', english: 'perform duties' }
                       ]
                     },
                     {
                       id: 'bg248_p1_q3',
                       type: 'sentence_rebuilding',
                       prompt: 'Arrange the words to form Part 1 of the verse.',
+                      targetSentence: 'yogasthaḥ kuru karmāṇi',
+                      tiles: ['yogasthaḥ', 'kuru', 'karmāṇi'],
+                      explanation: '"yogasthah kuru karmani" — Established in Yoga, perform your duties.'
+                    }
+                  ]
+                },
+                {
+                  partIndex: 2,
+                  title: 'Part 2: Letting Go of Attachment',
+                  sanskrit: 'सङ्गं त्यक्त्वा धनञ्जय',
+                  transliteration: 'saṅgaṁ tyaktvā dhanañjaya',
+                  translation: 'Abandoning all attachment, O Arjuna.',
+                  wordBreakdown: [
+                    { word: 'saṅgaṁ', devanagari: 'सङ्गं', meaning: 'attachment', partOfSpeech: 'noun' },
+                    { word: 'tyaktvā', devanagari: 'त्यक्त्वा', meaning: 'abandoning', partOfSpeech: 'verb' },
+                    { word: 'dhanañjaya', devanagari: 'धनञ्जय', meaning: 'O Arjuna (winner of wealth)', partOfSpeech: 'noun (vocative)' }
+                  ],
+                  questions: [
+                    {
+                      id: 'bg248_p2_q1',
+                      type: 'phrase_matching',
+                      warmup: true,
+                      prompt: 'Match each word in Part 2 to its meaning.',
+                      pairs: [
+                        { sanskrit: 'saṅgaṁ', english: 'attachment' },
+                        { sanskrit: 'tyaktvā', english: 'abandoning' },
+                        { sanskrit: 'dhanañjaya', english: 'O Arjuna (winner of wealth)' }
+                      ]
+                    },
+                    {
+                      id: 'bg248_p2_q2',
+                      type: 'phrase_matching',
+                      prompt: 'Now match the joined phrases to their meanings.',
+                      pairs: [
+                        { sanskrit: 'saṅgaṁ tyaktvā', english: 'abandoning attachment' },
+                        { sanskrit: 'dhanañjaya', english: 'O Arjuna' }
+                      ]
+                    },
+                    {
+                      id: 'bg248_p2_q3',
+                      type: 'sentence_rebuilding',
+                      prompt: 'Now arrange the whole first line of the verse.',
                       targetSentence: 'yogasthaḥ kuru karmāṇi saṅgaṁ tyaktvā dhanañjaya',
                       tiles: ['yogasthaḥ', 'kuru', 'karmāṇi', 'saṅgaṁ', 'tyaktvā', 'dhanañjaya'],
                       explanation: '"yogasthah kuru karmani sangam tyaktva dhananjaya" — Established in Yoga, perform your duties, abandoning attachment, O Arjuna.'
@@ -547,35 +615,64 @@ export const gitaData: GitaData = {
                   ]
                 },
                 {
-                  partIndex: 2,
-                  title: 'Part 2: Definition of Yoga',
-                  sanskrit: 'सिद्ध्यसिद्ध्योः समो भूत्वा समत्वं योग उच्यते',
-                  transliteration: 'siddhy-asiddhyoḥ samo bhūtvā samatvaṁ yoga ucyate',
-                  translation: 'Be equal in success and failure. Such evenness of mind is called Yoga.',
+                  partIndex: 3,
+                  title: 'Part 3: Equal in Success and Failure',
+                  sanskrit: 'सिद्ध्यसिद्ध्योः समो भूत्वा',
+                  transliteration: 'siddhy-asiddhyoḥ samo bhūtvā',
+                  translation: 'Being equal in success and failure.',
                   wordBreakdown: [
                     { word: 'siddhy-asiddhyoḥ', devanagari: 'सिद्ध्यसिद्ध्योः', meaning: 'in success and failure', partOfSpeech: 'noun (compound)' },
                     { word: 'samo', devanagari: 'समो', meaning: 'equal / equipoised', partOfSpeech: 'adjective' },
-                    { word: 'bhūtvā', devanagari: 'भूत्वा', meaning: 'having become / being', partOfSpeech: 'verb (participle)' },
+                    { word: 'bhūtvā', devanagari: 'भूत्वा', meaning: 'having become / being', partOfSpeech: 'verb (participle)' }
+                  ],
+                  questions: [
+                    {
+                      id: 'bg248_p3_q1',
+                      type: 'phrase_matching',
+                      warmup: true,
+                      prompt: 'Match each word in Part 3 to its meaning.',
+                      pairs: [
+                        { sanskrit: 'siddhy-asiddhyoḥ', english: 'in success and failure' },
+                        { sanskrit: 'samo', english: 'equal / equipoised' },
+                        { sanskrit: 'bhūtvā', english: 'having become / being' }
+                      ]
+                    },
+                    {
+                      id: 'bg248_p3_q2',
+                      type: 'phrase_matching',
+                      prompt: 'Now match the joined phrases to their meanings.',
+                      pairs: [
+                        { sanskrit: 'siddhy-asiddhyoḥ', english: 'in success and failure' },
+                        { sanskrit: 'samo bhūtvā', english: 'being equal' }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  partIndex: 4,
+                  title: 'Part 4: Definition of Yoga',
+                  sanskrit: 'समत्वं योग उच्यते',
+                  transliteration: 'samatvaṁ yoga ucyate',
+                  translation: 'Such evenness of mind is called Yoga.',
+                  wordBreakdown: [
                     { word: 'samatvaṁ', devanagari: 'समत्वम्', meaning: 'evenness of mind', partOfSpeech: 'noun' },
                     { word: 'yoga', devanagari: 'योग', meaning: 'Yoga', partOfSpeech: 'noun' },
                     { word: 'ucyate', devanagari: 'उच्यते', meaning: 'is called / is said to be', partOfSpeech: 'verb (passive)' }
                   ],
                   questions: [
                     {
-                      id: 'bg248_p2_q1',
+                      id: 'bg248_p4_q1',
                       type: 'phrase_matching',
-                      prompt: 'Match each word in Part 2 to its meaning.',
+                      warmup: true,
+                      prompt: 'Match each word in Part 4 to its meaning.',
                       pairs: [
-                        { sanskrit: 'siddhy-asiddhyoḥ', english: 'in success and failure' },
-                        { sanskrit: 'samo', english: 'equal / equipoised' },
-                        { sanskrit: 'bhūtvā', english: 'having become / being' },
                         { sanskrit: 'samatvaṁ', english: 'evenness of mind' },
                         { sanskrit: 'yoga', english: 'Yoga' },
                         { sanskrit: 'ucyate', english: 'is called / is said to be' }
                       ]
                     },
                     {
-                      id: 'bg248_p2_q2',
+                      id: 'bg248_p4_q2',
                       type: 'multiple_choice',
                       prompt: 'What does Krishna define as "Yoga" in BG 2.48?',
                       options: [
@@ -591,8 +688,8 @@ export const gitaData: GitaData = {
                   id: 'bg248_syn_q1',
                   type: 'sentence_rebuilding',
                   prompt: 'REBUILD FULL VERSE: Arrange the second half of BG 2.48!',
-                  targetSentence: 'siddhy asiddhyoḥ samo bhūtvā samatvaṁ yoga ucyate',
-                  tiles: ['siddhy', 'asiddhyoḥ', 'samo', 'bhūtvā', 'samatvaṁ', 'yoga', 'ucyate'],
+                  targetSentence: 'siddhy-asiddhyoḥ samo bhūtvā samatvaṁ yoga ucyate',
+                  tiles: ['siddhy-asiddhyoḥ', 'samo', 'bhūtvā', 'samatvaṁ', 'yoga', 'ucyate'],
                   explanation: '"siddhy-asiddhyoh samo bhutva samatvam yoga uchyate" — Evenness in success and failure is called Yoga.'
                 }
               ]
@@ -631,33 +728,92 @@ export const gitaData: GitaData = {
                   translation: 'One endowed with wisdom casts off both good and bad karma in this life.',
                   wordBreakdown: [
                     { word: 'buddhi-yukto', devanagari: 'बुद्धियुक्तो', meaning: 'endowed with wisdom', partOfSpeech: 'adjective' },
-                    { word: 'jahātīha', devanagari: 'जहातीह', meaning: 'casts off in this life', partOfSpeech: 'verb' }
+                    { word: 'jahātīha', devanagari: 'जहातीह', meaning: 'casts off in this life', partOfSpeech: 'verb' },
+                    { word: 'ubhe', devanagari: 'उभे', meaning: 'both', partOfSpeech: 'adjective' },
+                    { word: 'sukṛta-duṣkṛte', devanagari: 'सुकृतदुष्कृते', meaning: 'good and bad actions', partOfSpeech: 'compound noun' }
                   ],
                   questions: [
                     {
                       id: 'bg250_p1_q1',
                       type: 'phrase_matching',
+                      warmup: true,
                       prompt: 'Match Part 1 terms.',
                       pairs: [
                         { sanskrit: 'buddhi-yukto', english: 'endowed with wisdom' },
-                        { sanskrit: 'jahātīha', english: 'casts off in this life' }
+                        { sanskrit: 'jahātīha', english: 'casts off in this life' },
+                        { sanskrit: 'ubhe', english: 'both' },
+                        { sanskrit: 'sukṛta-duṣkṛte', english: 'good and bad actions' }
+                      ]
+                    },
+                    {
+                      id: 'bg250_p1_q2',
+                      type: 'phrase_matching',
+                      prompt: 'Now match the joined phrases to their meanings.',
+                      pairs: [
+                        { sanskrit: 'buddhi-yukto', english: 'endowed with wisdom' },
+                        { sanskrit: 'jahātīha ubhe sukṛta-duṣkṛte', english: 'casts off both good and bad actions in this life' }
                       ]
                     }
                   ]
                 },
                 {
                   partIndex: 2,
-                  title: 'Part 2: Yoga is Skill in Action',
-                  sanskrit: 'तस्माद्योगाय युज्यस्व योगः कर्मसु कौशलम्',
-                  transliteration: 'tasmād yogāya yujyasva yogaḥ karmasu kauśalam',
-                  translation: 'Therefore strive for Yoga; Yoga is skill in action.',
+                  title: 'Part 2: Strive for Yoga',
+                  sanskrit: 'तस्माद्योगाय युज्यस्व',
+                  transliteration: 'tasmād yogāya yujyasva',
+                  translation: 'Therefore, strive for Yoga.',
                   wordBreakdown: [
+                    { word: 'tasmād', devanagari: 'तस्मात्', meaning: 'therefore', partOfSpeech: 'adverb' },
                     { word: 'yogāya', devanagari: 'योगाय', meaning: 'for Yoga', partOfSpeech: 'noun' },
-                    { word: 'kauśalam', devanagari: 'कौशलम्', meaning: 'skill / mastery', partOfSpeech: 'noun' }
+                    { word: 'yujyasva', devanagari: 'युज्यस्व', meaning: 'strive / engage yourself', partOfSpeech: 'verb (imperative)' }
                   ],
                   questions: [
                     {
                       id: 'bg250_p2_q1',
+                      type: 'phrase_matching',
+                      warmup: true,
+                      prompt: 'Match each word in Part 2 to its meaning.',
+                      pairs: [
+                        { sanskrit: 'tasmād', english: 'therefore' },
+                        { sanskrit: 'yogāya', english: 'for Yoga' },
+                        { sanskrit: 'yujyasva', english: 'strive / engage yourself' }
+                      ]
+                    },
+                    {
+                      id: 'bg250_p2_q2',
+                      type: 'phrase_matching',
+                      prompt: 'Now match the joined phrase to its meaning.',
+                      pairs: [
+                        { sanskrit: 'tasmād yogāya yujyasva', english: 'therefore, strive for Yoga' }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  partIndex: 3,
+                  title: 'Part 3: Yoga is Skill in Action',
+                  sanskrit: 'योगः कर्मसु कौशलम्',
+                  transliteration: 'yogaḥ karmasu kauśalam',
+                  translation: 'Yoga is skill in action.',
+                  wordBreakdown: [
+                    { word: 'yogaḥ', devanagari: 'योगः', meaning: 'Yoga', partOfSpeech: 'noun' },
+                    { word: 'karmasu', devanagari: 'कर्मसु', meaning: 'in action / works', partOfSpeech: 'noun (locative)' },
+                    { word: 'kauśalam', devanagari: 'कौशलम्', meaning: 'skill / mastery', partOfSpeech: 'noun' }
+                  ],
+                  questions: [
+                    {
+                      id: 'bg250_p3_q1',
+                      type: 'phrase_matching',
+                      warmup: true,
+                      prompt: 'Match each word in Part 3 to its meaning.',
+                      pairs: [
+                        { sanskrit: 'yogaḥ', english: 'Yoga' },
+                        { sanskrit: 'karmasu', english: 'in action / works' },
+                        { sanskrit: 'kauśalam', english: 'skill / mastery' }
+                      ]
+                    },
+                    {
+                      id: 'bg250_p3_q2',
                       type: 'multiple_choice',
                       prompt: 'What famous declaration is made in BG 2.50?',
                       options: [
@@ -742,17 +898,59 @@ export const gitaData: GitaData = {
                 {
                   partIndex: 2,
                   title: 'Part 2: Without Ego & Possessiveness',
-                  sanskrit: 'निर्ममो निरहङ्कारः स शान्तिमधिगच्छति',
-                  transliteration: 'nirmamo nirahaṅkāraḥ sa śāntim adhigacchati',
-                  translation: 'Free from possessiveness and false ego, he alone attains real peace.',
+                  sanskrit: 'निर्ममो निरहङ्कारः',
+                  transliteration: 'nirmamo nirahaṅkāraḥ',
+                  translation: 'Free from possessiveness and false ego.',
                   wordBreakdown: [
                     { word: 'nirmamo', devanagari: 'निर्ममः', meaning: 'without possessiveness', partOfSpeech: 'adjective' },
-                    { word: 'nirahaṅkāraḥ', devanagari: 'निरहङ्कारः', meaning: 'without false ego', partOfSpeech: 'adjective' },
-                    { word: 'śāntim', devanagari: 'शान्तिम्', meaning: 'peace', partOfSpeech: 'noun' }
+                    { word: 'nirahaṅkāraḥ', devanagari: 'निरहङ्कारः', meaning: 'without false ego', partOfSpeech: 'adjective' }
                   ],
                   questions: [
                     {
                       id: 'bg271_p2_q1',
+                      type: 'phrase_matching',
+                      warmup: true,
+                      prompt: 'Match each word in Part 2 to its meaning.',
+                      pairs: [
+                        { sanskrit: 'nirmamo', english: 'without possessiveness' },
+                        { sanskrit: 'nirahaṅkāraḥ', english: 'without false ego' }
+                      ]
+                    },
+                    {
+                      id: 'bg271_p2_q2',
+                      type: 'phrase_matching',
+                      prompt: 'Now match the joined phrase to its meaning.',
+                      pairs: [
+                        { sanskrit: 'nirmamo nirahaṅkāraḥ', english: 'free from possessiveness and false ego' }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  partIndex: 3,
+                  title: 'Part 3: Attains Real Peace',
+                  sanskrit: 'स शान्तिमधिगच्छति',
+                  transliteration: 'sa śāntim adhigacchati',
+                  translation: 'He alone attains real peace.',
+                  wordBreakdown: [
+                    { word: 'sa', devanagari: 'सः', meaning: 'he', partOfSpeech: 'pronoun' },
+                    { word: 'śāntim', devanagari: 'शान्तिम्', meaning: 'peace', partOfSpeech: 'noun' },
+                    { word: 'adhigacchati', devanagari: 'अधिगच्छति', meaning: 'attains', partOfSpeech: 'verb' }
+                  ],
+                  questions: [
+                    {
+                      id: 'bg271_p3_q1',
+                      type: 'phrase_matching',
+                      warmup: true,
+                      prompt: 'Match each word in Part 3 to its meaning.',
+                      pairs: [
+                        { sanskrit: 'sa', english: 'he' },
+                        { sanskrit: 'śāntim', english: 'peace' },
+                        { sanskrit: 'adhigacchati', english: 'attains' }
+                      ]
+                    },
+                    {
+                      id: 'bg271_p3_q2',
                       type: 'multiple_choice',
                       prompt: 'Who attains real peace according to BG 2.71?',
                       options: [
@@ -771,6 +969,876 @@ export const gitaData: GitaData = {
                   targetSentence: 'nirmamo nirahaṅkāraḥ sa śāntim adhigacchati',
                   tiles: ['nirmamo', 'nirahaṅkāraḥ', 'sa', 'śāntim', 'adhigacchati'],
                   explanation: '"nirmamo nirahankarah sa shantim adhigachchhati" — Without possessiveness or false ego, one attains supreme peace.'
+                }
+              ]
+            }
+          ]
+        },
+        {
+          id: 'ch2_sec2',
+          title: 'The Eternal Self',
+          lessons: [
+            {
+              id: 'ch2_sec2_l1',
+              title: 'The Eternal Traveler',
+              verseRef: 'BG 2.13',
+              verseSanskrit: 'देहिनोऽस्मिन् यथा देहे कौमारं यौवनं जरा ।\nतथा देहान्तरप्राप्तिर्धीरस्तत्र न मुह्यति ॥',
+              verseTransliteration: 'dehino \'smin yathā dehe kaumāraṁ yauvanaṁ jarā\ntathā dehāntara-prāptir dhīras tatra na muhyati',
+              verseWordGuide: [
+                { devanagari: 'देहिनोऽस्मिन्', roman: "dehino-'smin" },
+                { devanagari: 'यथा', roman: 'yathā' },
+                { devanagari: 'देहे', roman: 'dehe' },
+                { devanagari: 'कौमारं', roman: 'kaumāraṁ' },
+                { devanagari: 'यौवनं', roman: 'yauvanaṁ' },
+                { devanagari: 'जरा', roman: 'jarā' },
+                { devanagari: 'तथा', roman: 'tathā' },
+                { devanagari: 'देहान्तरप्राप्तिर्धीरस्तत्र', roman: 'dehāntara-prāptir-dhīras-tatra' },
+                { devanagari: 'न', roman: 'na' },
+                { devanagari: 'मुह्यति', roman: 'muhyati' }
+              ],
+              translation: 'As the embodied soul continuously passes, in this body, from childhood to youth to old age, the soul similarly passes into another body at death. The wise are not deluded by this change.',
+              purport: 'This verse opens the chapter\'s central teaching: the self within the body is not the body itself. A person already accepts, without distress, that the body of childhood is not the body of old age — Krishna asks Arjuna to extend that same acceptance to the passage from one body to the next.',
+              commentary: {
+                author: 'Paramahansa Yogananda',
+                tradition: 'Self-Realization Fellowship',
+                text: 'You have already died many times in this one life — the infant\'s body is gone, the child\'s body is gone — yet you remained. Death of the body is only the last of these many changes, not the end of the one who witnesses them.'
+              },
+              reflectionPrompt: 'Think of an earlier version of yourself — as a child, or years younger. That body and that time are gone, yet something in you carried through. What was it?',
+              storyCaption: 'Krishna looked at the warrior who had once been a boy on these same fields. "The body you had then is gone," he said, "yet you remain. Death is only one more such change."',
+              wordBreakdown: [
+                { word: 'dehinaḥ', devanagari: 'देहिनः', meaning: 'of the embodied soul', partOfSpeech: 'noun (genitive)' },
+                { word: 'dehāntara-prāptiḥ', devanagari: 'देहान्तरप्राप्तिः', meaning: 'attainment of another body', partOfSpeech: 'compound noun' }
+              ],
+              teachingSlides: [],
+              questions: [],
+              parts: [
+                {
+                  partIndex: 1,
+                  title: 'Part 1: The Embodied Soul',
+                  sanskrit: 'देहिनोऽस्मिन् यथा देहे',
+                  transliteration: "dehino 'smin yathā dehe",
+                  translation: 'As, for the embodied soul, in this body...',
+                  wordBreakdown: [
+                    { word: 'dehinaḥ', devanagari: 'देहिनः', meaning: 'of the embodied soul', partOfSpeech: 'noun (genitive)' },
+                    { word: 'asmin', devanagari: 'अस्मिन्', meaning: 'in this', partOfSpeech: 'pronoun (locative)' },
+                    { word: 'yathā', devanagari: 'यथा', meaning: 'just as', partOfSpeech: 'adverb' },
+                    { word: 'dehe', devanagari: 'देहे', meaning: 'in the body', partOfSpeech: 'noun (locative)' }
+                  ],
+                  questions: [
+                    {
+                      id: 'bg213_p1_q1',
+                      type: 'phrase_matching',
+                      warmup: true,
+                      prompt: 'Match each word in Part 1 to its meaning.',
+                      pairs: [
+                        { sanskrit: 'dehinaḥ', english: 'of the embodied soul' },
+                        { sanskrit: 'asmin', english: 'in this' },
+                        { sanskrit: 'yathā', english: 'just as' },
+                        { sanskrit: 'dehe', english: 'in the body' }
+                      ]
+                    },
+                    {
+                      id: 'bg213_p1_q2',
+                      type: 'phrase_matching',
+                      prompt: 'Now match the joined phrases to their meanings.',
+                      pairs: [
+                        { sanskrit: 'asmin dehe', english: 'in this body' },
+                        { sanskrit: 'dehinaḥ', english: 'of the embodied soul' }
+                      ]
+                    },
+                    {
+                      id: 'bg213_p1_q3',
+                      type: 'sentence_rebuilding',
+                      prompt: 'Arrange the words to form Part 1 of the verse.',
+                      targetSentence: 'dehinaḥ asmin yathā dehe',
+                      tiles: ['dehinaḥ', 'asmin', 'yathā', 'dehe'],
+                      explanation: '"dehinaḥ asmin yathā dehe" — As, for the embodied soul, in this body.'
+                    }
+                  ]
+                },
+                {
+                  partIndex: 2,
+                  title: 'Part 2: The Stages of Life',
+                  sanskrit: 'कौमारं यौवनं जरा',
+                  transliteration: 'kaumāraṁ yauvanaṁ jarā',
+                  translation: 'childhood, youth, and old age.',
+                  wordBreakdown: [
+                    { word: 'kaumāram', devanagari: 'कौमारम्', meaning: 'childhood', partOfSpeech: 'noun' },
+                    { word: 'yauvanam', devanagari: 'यौवनम्', meaning: 'youth', partOfSpeech: 'noun' },
+                    { word: 'jarā', devanagari: 'जरा', meaning: 'old age', partOfSpeech: 'noun' }
+                  ],
+                  questions: [
+                    {
+                      id: 'bg213_p2_q1',
+                      type: 'phrase_matching',
+                      warmup: true,
+                      prompt: 'Match each word in Part 2 to its meaning.',
+                      pairs: [
+                        { sanskrit: 'kaumāram', english: 'childhood' },
+                        { sanskrit: 'yauvanam', english: 'youth' },
+                        { sanskrit: 'jarā', english: 'old age' }
+                      ]
+                    },
+                    {
+                      id: 'bg213_p2_q2',
+                      type: 'phrase_matching',
+                      prompt: 'Now match the joined phrase to its meaning.',
+                      pairs: [
+                        { sanskrit: 'kaumāraṁ yauvanaṁ jarā', english: 'childhood, youth, and old age' }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  partIndex: 3,
+                  title: 'Part 3: Passing to Another Body',
+                  sanskrit: 'तथा देहान्तरप्राप्तिर्धीरस्तत्र',
+                  transliteration: 'tathā dehāntara-prāptir dhīras tatra',
+                  translation: 'similarly, the wise are not bewildered by the attainment of another body.',
+                  wordBreakdown: [
+                    { word: 'tathā', devanagari: 'तथा', meaning: 'similarly', partOfSpeech: 'adverb' },
+                    { word: 'dehāntara-prāptiḥ', devanagari: 'देहान्तरप्राप्तिः', meaning: 'attainment of another body', partOfSpeech: 'compound noun' },
+                    { word: 'dhīraḥ', devanagari: 'धीरः', meaning: 'the wise / sober person', partOfSpeech: 'noun' },
+                    { word: 'tatra', devanagari: 'तत्र', meaning: 'therein / at that', partOfSpeech: 'adverb' }
+                  ],
+                  questions: [
+                    {
+                      id: 'bg213_p3_q1',
+                      type: 'phrase_matching',
+                      warmup: true,
+                      prompt: 'Match each word in Part 3 to its meaning.',
+                      pairs: [
+                        { sanskrit: 'tathā', english: 'similarly' },
+                        { sanskrit: 'dehāntara-prāptiḥ', english: 'attainment of another body' },
+                        { sanskrit: 'dhīraḥ', english: 'the wise / sober person' },
+                        { sanskrit: 'tatra', english: 'therein / at that' }
+                      ]
+                    },
+                    {
+                      id: 'bg213_p3_q2',
+                      type: 'phrase_matching',
+                      prompt: 'Now match the joined phrases to their meanings.',
+                      pairs: [
+                        { sanskrit: 'tathā dehāntara-prāptiḥ', english: 'similarly, attaining another body' },
+                        { sanskrit: 'dhīraḥ tatra', english: 'the wise person, in that' }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  partIndex: 4,
+                  title: 'Part 4: Not Bewildered',
+                  sanskrit: 'न मुह्यति',
+                  transliteration: 'na muhyati',
+                  translation: 'is not deluded.',
+                  wordBreakdown: [
+                    { word: 'na', devanagari: 'न', meaning: 'not', partOfSpeech: 'particle' },
+                    { word: 'muhyati', devanagari: 'मुह्यति', meaning: 'is bewildered / deluded', partOfSpeech: 'verb' }
+                  ],
+                  questions: [
+                    {
+                      id: 'bg213_p4_q1',
+                      type: 'phrase_matching',
+                      warmup: true,
+                      prompt: 'Match each word in Part 4 to its meaning.',
+                      pairs: [
+                        { sanskrit: 'na', english: 'not' },
+                        { sanskrit: 'muhyati', english: 'is bewildered / deluded' }
+                      ]
+                    },
+                    {
+                      id: 'bg213_p4_q2',
+                      type: 'multiple_choice',
+                      prompt: 'According to BG 2.13, how does the wise person respond to the soul passing into a new body?',
+                      options: [
+                        { text: 'They are not bewildered by it, just as they were not bewildered by aging from childhood to youth.', isCorrect: true, explanation: 'Correct! Change of body is compared to the changes already accepted within one life.' },
+                        { text: 'They become anxious and afraid.', isCorrect: false, explanation: 'Incorrect. Krishna says the wise are not deluded ("na muhyati") by this.' }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              finalSynthesisQuestions: [
+                {
+                  id: 'bg213_syn_q1',
+                  type: 'sentence_rebuilding',
+                  prompt: 'FULL VERSE SYNTHESIS: Arrange the first half of BG 2.13!',
+                  targetSentence: 'dehinaḥ asmin yathā dehe kaumāram yauvanam jarā',
+                  tiles: ['dehinaḥ', 'asmin', 'yathā', 'dehe', 'kaumāram', 'yauvanam', 'jarā'],
+                  explanation: '"dehino \'smin yathā dehe kaumāraṁ yauvanaṁ jarā" — As, for the embodied soul in this body, there is childhood, youth, and old age.'
+                },
+                {
+                  id: 'bg213_syn_q2',
+                  type: 'sentence_rebuilding',
+                  prompt: 'FULL VERSE SYNTHESIS: Arrange the second half of BG 2.13!',
+                  targetSentence: 'tathā dehāntara-prāptiḥ dhīraḥ tatra na muhyati',
+                  tiles: ['tathā', 'dehāntara-prāptiḥ', 'dhīraḥ', 'tatra', 'na', 'muhyati'],
+                  explanation: '"tathā dehāntara-prāptir dhīras tatra na muhyati" — Similarly, the wise are not bewildered by the soul\'s passing into another body.'
+                },
+                {
+                  id: 'bg213_syn_q3',
+                  type: 'reflection',
+                  prompt: 'Personal Reflection on the Eternal Self:',
+                  verseContext: 'BG 2.13: "dehino \'smin yathā dehe kaumāraṁ yauvanaṁ jarā tathā dehāntara-prāptir dhīras tatra na muhyati — As the embodied soul passes through childhood, youth, and old age, it likewise passes into another body; the wise are not bewildered by this."',
+                  guidance: 'You have already lived through bodies and identities that no longer exist — the infant, the child, perhaps a much younger adult. What in you stayed constant through all of those changes?'
+                }
+              ]
+            },
+            {
+              id: 'ch2_sec2_l2',
+              title: 'Never Born, Never Dies',
+              verseRef: 'BG 2.20',
+              verseSanskrit: 'न जायते म्रियते वा कदाचिन्नायं भूत्वा भविता वा न भूयः ।\nअजो नित्यः शाश्वतोऽयं पुराणो न हन्यते हन्यमाने शरीरे ॥',
+              verseTransliteration: "na jāyate mriyate vā kadācin nāyaṁ bhūtvā bhavitā vā na bhūyaḥ\najo nityaḥ śāśvato 'yaṁ purāṇo na hanyate hanyamāne śarīre",
+              verseWordGuide: [
+                { devanagari: 'न', roman: 'na' },
+                { devanagari: 'जायते', roman: 'jāyate' },
+                { devanagari: 'म्रियते', roman: 'mriyate' },
+                { devanagari: 'वा', roman: 'vā' },
+                { devanagari: 'कदाचिन्नायं', roman: "kadācin-nāyaṁ" },
+                { devanagari: 'भूत्वा', roman: 'bhūtvā' },
+                { devanagari: 'भविता', roman: 'bhavitā' },
+                { devanagari: 'वा', roman: 'vā' },
+                { devanagari: 'न', roman: 'na' },
+                { devanagari: 'भूयः', roman: 'bhūyaḥ' },
+                { devanagari: 'अजो', roman: 'ajo' },
+                { devanagari: 'नित्यः', roman: 'nityaḥ' },
+                { devanagari: 'शाश्वतोऽयं', roman: "śāśvato-'yaṁ" },
+                { devanagari: 'पुराणो', roman: 'purāṇo' },
+                { devanagari: 'न', roman: 'na' },
+                { devanagari: 'हन्यते', roman: 'hanyate' },
+                { devanagari: 'हन्यमाने', roman: 'hanyamāne' },
+                { devanagari: 'शरीरे', roman: 'śarīre' }
+              ],
+              translation: 'For the soul there is neither birth nor death at any time. It has not come into being, does not come into being, and will not come into being. It is unborn, eternal, ever-existing, undying and primeval. It is not slain when the body is slain.',
+              purport: 'This is the Gita\'s most direct statement on the nature of the self: it is entirely outside the cycle of birth and death that the body passes through. What is slain, when a body dies, is only the body — never the one who inhabited it.',
+              commentary: {
+                author: 'Swami Vivekananda',
+                tradition: 'Ramakrishna Order',
+                text: 'That which is born must die, and that which dies must be born again — this is true of the body, never of the Self. The Self was never born, so it can never die; it only appears to enter and leave, as a man enters and leaves a room.'
+              },
+              reflectionPrompt: 'This verse says the true self is untouched by birth and death. What would change in how you face a loss or an ending, if you believed this fully?',
+              storyCaption: 'Arjuna feared for lives about to end. "It is never born, and it never dies," Krishna said. "What you see slain on this field is only the body — never the one within it."',
+              wordBreakdown: [
+                { word: 'ajaḥ', devanagari: 'अजः', meaning: 'unborn', partOfSpeech: 'adjective' },
+                { word: 'nityaḥ', devanagari: 'नित्यः', meaning: 'eternal', partOfSpeech: 'adjective' }
+              ],
+              teachingSlides: [],
+              questions: [],
+              parts: [
+                {
+                  partIndex: 1,
+                  title: 'Part 1: Never Born, Never Dies',
+                  sanskrit: 'न जायते म्रियते वा',
+                  transliteration: 'na jāyate mriyate vā',
+                  translation: 'It is never born, nor does it ever die.',
+                  wordBreakdown: [
+                    { word: 'na', devanagari: 'न', meaning: 'not / never', partOfSpeech: 'particle' },
+                    { word: 'jāyate', devanagari: 'जायते', meaning: 'is born', partOfSpeech: 'verb' },
+                    { word: 'mriyate', devanagari: 'म्रियते', meaning: 'dies', partOfSpeech: 'verb' },
+                    { word: 'vā', devanagari: 'वा', meaning: 'or', partOfSpeech: 'particle' }
+                  ],
+                  questions: [
+                    {
+                      id: 'bg220_p1_q1',
+                      type: 'phrase_matching',
+                      warmup: true,
+                      prompt: 'Match each word in Part 1 to its meaning.',
+                      pairs: [
+                        { sanskrit: 'na', english: 'not / never' },
+                        { sanskrit: 'jāyate', english: 'is born' },
+                        { sanskrit: 'mriyate', english: 'dies' },
+                        { sanskrit: 'vā', english: 'or' }
+                      ]
+                    },
+                    {
+                      id: 'bg220_p1_q2',
+                      type: 'phrase_matching',
+                      prompt: 'Now match the joined phrase to its meaning.',
+                      pairs: [
+                        { sanskrit: 'na jāyate mriyate vā', english: 'it is never born, nor does it die' }
+                      ]
+                    },
+                    {
+                      id: 'bg220_p1_q3',
+                      type: 'sentence_rebuilding',
+                      prompt: 'Arrange the words to form Part 1 of the verse.',
+                      targetSentence: 'na jāyate mriyate vā',
+                      tiles: ['na', 'jāyate', 'mriyate', 'vā'],
+                      explanation: '"na jāyate mriyate vā" — It is never born, nor does it ever die.'
+                    }
+                  ]
+                },
+                {
+                  partIndex: 2,
+                  title: 'Part 2: Never Ceases to Be',
+                  sanskrit: 'कदाचिन्नायं भूत्वा',
+                  transliteration: "kadācin nāyaṁ bhūtvā",
+                  translation: 'At no time did it come into being...',
+                  wordBreakdown: [
+                    { word: 'kadācit', devanagari: 'कदाचित्', meaning: 'at any time', partOfSpeech: 'adverb' },
+                    { word: 'ayam', devanagari: 'अयम्', meaning: 'this (soul)', partOfSpeech: 'pronoun' },
+                    { word: 'bhūtvā', devanagari: 'भूत्वा', meaning: 'having come into being', partOfSpeech: 'verb (participle)' }
+                  ],
+                  questions: [
+                    {
+                      id: 'bg220_p2_q1',
+                      type: 'phrase_matching',
+                      warmup: true,
+                      prompt: 'Match each word in Part 2 to its meaning.',
+                      pairs: [
+                        { sanskrit: 'kadācit', english: 'at any time' },
+                        { sanskrit: 'ayam', english: 'this (soul)' },
+                        { sanskrit: 'bhūtvā', english: 'having come into being' }
+                      ]
+                    },
+                    {
+                      id: 'bg220_p2_q2',
+                      type: 'phrase_matching',
+                      prompt: 'Now match the joined phrase to its meaning.',
+                      pairs: [
+                        { sanskrit: 'na ayam bhūtvā', english: 'this soul did not come into being' }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  partIndex: 3,
+                  title: 'Part 3: Nor Will It Cease',
+                  sanskrit: 'भविता वा न भूयः',
+                  transliteration: 'bhavitā vā na bhūyaḥ',
+                  translation: '...nor will it ever come to be again.',
+                  wordBreakdown: [
+                    { word: 'bhavitā', devanagari: 'भविता', meaning: 'will come into being', partOfSpeech: 'verb (future)' },
+                    { word: 'bhūyaḥ', devanagari: 'भूयः', meaning: 'again', partOfSpeech: 'adverb' }
+                  ],
+                  questions: [
+                    {
+                      id: 'bg220_p3_q1',
+                      type: 'phrase_matching',
+                      warmup: true,
+                      prompt: 'Match each word in Part 3 to its meaning.',
+                      pairs: [
+                        { sanskrit: 'bhavitā', english: 'will come into being' },
+                        { sanskrit: 'bhūyaḥ', english: 'again' }
+                      ]
+                    },
+                    {
+                      id: 'bg220_p3_q2',
+                      type: 'phrase_matching',
+                      prompt: 'Now match the joined phrase to its meaning.',
+                      pairs: [
+                        { sanskrit: 'bhavitā vā na bhūyaḥ', english: 'nor will it ever come to be again' }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  partIndex: 4,
+                  title: 'Part 4: Unborn, Eternal, Primeval',
+                  sanskrit: 'अजो नित्यः शाश्वतोऽयं पुराणो',
+                  transliteration: "ajo nityaḥ śāśvato 'yaṁ purāṇo",
+                  translation: 'It is unborn, eternal, ever-existing, and primeval.',
+                  wordBreakdown: [
+                    { word: 'ajaḥ', devanagari: 'अजः', meaning: 'unborn', partOfSpeech: 'adjective' },
+                    { word: 'nityaḥ', devanagari: 'नित्यः', meaning: 'eternal', partOfSpeech: 'adjective' },
+                    { word: 'śāśvataḥ', devanagari: 'शाश्वतः', meaning: 'permanent / ever-existing', partOfSpeech: 'adjective' },
+                    { word: 'purāṇaḥ', devanagari: 'पुराणः', meaning: 'primeval / most ancient', partOfSpeech: 'adjective' }
+                  ],
+                  questions: [
+                    {
+                      id: 'bg220_p4_q1',
+                      type: 'phrase_matching',
+                      warmup: true,
+                      prompt: 'Match each word in Part 4 to its meaning.',
+                      pairs: [
+                        { sanskrit: 'ajaḥ', english: 'unborn' },
+                        { sanskrit: 'nityaḥ', english: 'eternal' },
+                        { sanskrit: 'śāśvataḥ', english: 'permanent / ever-existing' },
+                        { sanskrit: 'purāṇaḥ', english: 'primeval / most ancient' }
+                      ]
+                    },
+                    {
+                      id: 'bg220_p4_q2',
+                      type: 'sentence_rebuilding',
+                      prompt: 'Arrange the words to form Part 4 of the verse.',
+                      targetSentence: 'ajaḥ nityaḥ śāśvataḥ purāṇaḥ',
+                      tiles: ['ajaḥ', 'nityaḥ', 'śāśvataḥ', 'purāṇaḥ'],
+                      explanation: '"ajo nityaḥ śāśvato \'yaṁ purāṇaḥ" — Unborn, eternal, ever-existing, and primeval.'
+                    }
+                  ]
+                },
+                {
+                  partIndex: 5,
+                  title: 'Part 5: Not Slain With the Body',
+                  sanskrit: 'न हन्यते हन्यमाने शरीरे',
+                  transliteration: 'na hanyate hanyamāne śarīre',
+                  translation: 'it is not slain when the body is slain.',
+                  wordBreakdown: [
+                    { word: 'hanyate', devanagari: 'हन्यते', meaning: 'is slain', partOfSpeech: 'verb (passive)' },
+                    { word: 'hanyamāne', devanagari: 'हन्यमाने', meaning: 'when being slain', partOfSpeech: 'verb (participle, locative)' },
+                    { word: 'śarīre', devanagari: 'शरीरे', meaning: 'in the body', partOfSpeech: 'noun (locative)' }
+                  ],
+                  questions: [
+                    {
+                      id: 'bg220_p5_q1',
+                      type: 'phrase_matching',
+                      warmup: true,
+                      prompt: 'Match each word in Part 5 to its meaning.',
+                      pairs: [
+                        { sanskrit: 'hanyate', english: 'is slain' },
+                        { sanskrit: 'hanyamāne', english: 'when being slain' },
+                        { sanskrit: 'śarīre', english: 'in the body' }
+                      ]
+                    },
+                    {
+                      id: 'bg220_p5_q2',
+                      type: 'multiple_choice',
+                      prompt: 'What does BG 2.20 say happens to the soul when the body dies?',
+                      options: [
+                        { text: 'Nothing — the soul is not slain when the body is slain ("na hanyate hanyamāne śarīre").', isCorrect: true, explanation: 'Correct! The soul is entirely untouched by the body\'s death.' },
+                        { text: 'The soul dies along with the body.', isCorrect: false, explanation: 'Incorrect. This verse says exactly the opposite.' }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              finalSynthesisQuestions: [
+                {
+                  id: 'bg220_syn_q1',
+                  type: 'sentence_rebuilding',
+                  prompt: 'FULL VERSE SYNTHESIS: Rebuild the soul\'s four eternal qualities!',
+                  targetSentence: 'ajaḥ nityaḥ śāśvataḥ purāṇaḥ',
+                  tiles: ['ajaḥ', 'nityaḥ', 'śāśvataḥ', 'purāṇaḥ'],
+                  explanation: '"ajo nityaḥ śāśvato \'yaṁ purāṇaḥ" — Unborn, eternal, ever-existing, and primeval.'
+                },
+                {
+                  id: 'bg220_syn_q2',
+                  type: 'sentence_rebuilding',
+                  prompt: 'FULL VERSE SYNTHESIS: Rebuild the verse\'s famous closing line!',
+                  targetSentence: 'na hanyate hanyamāne śarīre',
+                  tiles: ['na', 'hanyate', 'hanyamāne', 'śarīre'],
+                  explanation: '"na hanyate hanyamāne śarīre" — It is not slain when the body is slain.'
+                },
+                {
+                  id: 'bg220_syn_q3',
+                  type: 'multiple_choice',
+                  prompt: 'What is the central teaching of BG 2.20?',
+                  options: [
+                    {
+                      text: 'The soul is entirely outside the cycle of birth and death that only the body goes through.',
+                      isCorrect: true,
+                      explanation: 'Correct! This is the Gita\'s clearest statement of the soul\'s eternal nature.'
+                    },
+                    {
+                      text: 'The soul is reborn many times, but eventually stops existing.',
+                      isCorrect: false,
+                      explanation: 'Incorrect. The verse says the soul is unborn and undying — it never began and will never cease.'
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              id: 'ch2_sec2_l3',
+              title: 'Like Changing Garments',
+              verseRef: 'BG 2.22',
+              verseSanskrit: 'वासांसि जीर्णानि यथा विहाय नवानि गृह्णाति नरोऽपराणि ।\nतथा शरीराणि विहाय जीर्णान्यन्यानि संयाति नवानि देही ॥',
+              verseTransliteration: "vāsāṁsi jīrṇāni yathā vihāya navāni gṛhṇāti naro 'parāṇi\ntathā śarīrāṇi vihāya jīrṇāny anyāni saṁyāti navāni dehī",
+              verseWordGuide: [
+                { devanagari: 'वासांसि', roman: 'vāsāṁsi' },
+                { devanagari: 'जीर्णानि', roman: 'jīrṇāni' },
+                { devanagari: 'यथा', roman: 'yathā' },
+                { devanagari: 'विहाय', roman: 'vihāya' },
+                { devanagari: 'नवानि', roman: 'navāni' },
+                { devanagari: 'गृह्णाति', roman: 'gṛhṇāti' },
+                { devanagari: 'नरोऽपराणि', roman: "naro-'parāṇi" },
+                { devanagari: 'तथा', roman: 'tathā' },
+                { devanagari: 'शरीराणि', roman: 'śarīrāṇi' },
+                { devanagari: 'विहाय', roman: 'vihāya' },
+                { devanagari: 'जीर्णान्यन्यानि', roman: 'jīrṇāny-anyāni' },
+                { devanagari: 'संयाति', roman: 'saṁyāti' },
+                { devanagari: 'नवानि', roman: 'navāni' },
+                { devanagari: 'देही', roman: 'dehī' }
+              ],
+              translation: 'As a person casts off worn-out garments and puts on new ones, the embodied soul likewise casts off worn-out bodies and enters into others that are new.',
+              purport: 'One of the Gita\'s best-loved images. A worn-out garment is discarded without grief, because we know we are not the garment. The verse asks us to see the body the same way — as something the self wears, not something the self is.',
+              commentary: {
+                author: 'Sri Aurobindo',
+                tradition: 'Integral Yoga',
+                text: 'Nothing is lost when a garment is changed for a new one; the wearer continues. So it is with the embodied self — its bodies change, one after another, but that which puts them on and takes them off remains the same throughout.'
+              },
+              reflectionPrompt: 'The verse compares the body to a garment the soul wears and eventually changes. Does thinking of your body this way change how you feel about aging, illness, or death?',
+              storyCaption: 'Krishna gestured to Arjuna\'s own worn and mended garments. "You do not weep for the cloth you replace," he said. "The soul, too, only changes what it wears."',
+              wordBreakdown: [
+                { word: 'vihāya', devanagari: 'विहाय', meaning: 'having given up', partOfSpeech: 'verb (participle)' },
+                { word: 'dehī', devanagari: 'देही', meaning: 'the embodied soul', partOfSpeech: 'noun' }
+              ],
+              teachingSlides: [],
+              questions: [],
+              parts: [
+                {
+                  partIndex: 1,
+                  title: 'Part 1: Worn-Out Garments',
+                  sanskrit: 'वासांसि जीर्णानि यथा विहाय',
+                  transliteration: 'vāsāṁsi jīrṇāni yathā vihāya',
+                  translation: 'As, giving up garments that are worn out...',
+                  wordBreakdown: [
+                    { word: 'vāsāṁsi', devanagari: 'वासांसि', meaning: 'garments', partOfSpeech: 'noun (plural)' },
+                    { word: 'jīrṇāni', devanagari: 'जीर्णानि', meaning: 'worn out', partOfSpeech: 'adjective (plural)' },
+                    { word: 'yathā', devanagari: 'यथा', meaning: 'as / just as', partOfSpeech: 'adverb' },
+                    { word: 'vihāya', devanagari: 'विहाय', meaning: 'having given up', partOfSpeech: 'verb (participle)' }
+                  ],
+                  questions: [
+                    {
+                      id: 'bg222_p1_q1',
+                      type: 'phrase_matching',
+                      warmup: true,
+                      prompt: 'Match each word in Part 1 to its meaning.',
+                      pairs: [
+                        { sanskrit: 'vāsāṁsi', english: 'garments' },
+                        { sanskrit: 'jīrṇāni', english: 'worn out' },
+                        { sanskrit: 'yathā', english: 'as / just as' },
+                        { sanskrit: 'vihāya', english: 'having given up' }
+                      ]
+                    },
+                    {
+                      id: 'bg222_p1_q2',
+                      type: 'phrase_matching',
+                      prompt: 'Now match the joined phrase to its meaning.',
+                      pairs: [
+                        { sanskrit: 'vāsāṁsi jīrṇāni', english: 'garments that are worn out' }
+                      ]
+                    },
+                    {
+                      id: 'bg222_p1_q3',
+                      type: 'sentence_rebuilding',
+                      prompt: 'Arrange the words to form Part 1 of the verse.',
+                      targetSentence: 'vāsāṁsi jīrṇāni yathā vihāya',
+                      tiles: ['vāsāṁsi', 'jīrṇāni', 'yathā', 'vihāya'],
+                      explanation: '"vāsāṁsi jīrṇāni yathā vihāya" — As, giving up garments that are worn out.'
+                    }
+                  ]
+                },
+                {
+                  partIndex: 2,
+                  title: 'Part 2: Taking Up New Ones',
+                  sanskrit: 'नवानि गृह्णाति नरोऽपराणि',
+                  transliteration: "navāni gṛhṇāti naro 'parāṇi",
+                  translation: 'a person takes up other, new ones.',
+                  wordBreakdown: [
+                    { word: 'navāni', devanagari: 'नवानि', meaning: 'new', partOfSpeech: 'adjective (plural)' },
+                    { word: 'gṛhṇāti', devanagari: 'गृह्णाति', meaning: 'takes / accepts', partOfSpeech: 'verb' },
+                    { word: 'naraḥ', devanagari: 'नरः', meaning: 'a person', partOfSpeech: 'noun' },
+                    { word: 'aparāṇi', devanagari: 'अपराणि', meaning: 'other', partOfSpeech: 'adjective (plural)' }
+                  ],
+                  questions: [
+                    {
+                      id: 'bg222_p2_q1',
+                      type: 'phrase_matching',
+                      warmup: true,
+                      prompt: 'Match each word in Part 2 to its meaning.',
+                      pairs: [
+                        { sanskrit: 'navāni', english: 'new' },
+                        { sanskrit: 'gṛhṇāti', english: 'takes / accepts' },
+                        { sanskrit: 'naraḥ', english: 'a person' },
+                        { sanskrit: 'aparāṇi', english: 'other' }
+                      ]
+                    },
+                    {
+                      id: 'bg222_p2_q2',
+                      type: 'phrase_matching',
+                      prompt: 'Now match the joined phrase to its meaning.',
+                      pairs: [
+                        { sanskrit: 'naraḥ navāni aparāṇi gṛhṇāti', english: 'a person takes up other, new ones' }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  partIndex: 3,
+                  title: 'Part 3: Giving Up Worn-Out Bodies',
+                  sanskrit: 'तथा शरीराणि विहाय जीर्णान्यन्यानि',
+                  transliteration: 'tathā śarīrāṇi vihāya jīrṇāny anyāni',
+                  translation: 'so too, giving up worn-out bodies, for other ones...',
+                  wordBreakdown: [
+                    { word: 'tathā', devanagari: 'तथा', meaning: 'so too / similarly', partOfSpeech: 'adverb' },
+                    { word: 'śarīrāṇi', devanagari: 'शरीराणि', meaning: 'bodies', partOfSpeech: 'noun (plural)' },
+                    { word: 'anyāni', devanagari: 'अन्यानि', meaning: 'other / different', partOfSpeech: 'adjective (plural)' }
+                  ],
+                  questions: [
+                    {
+                      id: 'bg222_p3_q1',
+                      type: 'phrase_matching',
+                      warmup: true,
+                      prompt: 'Match each word in Part 3 to its meaning.',
+                      pairs: [
+                        { sanskrit: 'tathā', english: 'so too / similarly' },
+                        { sanskrit: 'śarīrāṇi', english: 'bodies' },
+                        { sanskrit: 'anyāni', english: 'other / different' }
+                      ]
+                    },
+                    {
+                      id: 'bg222_p3_q2',
+                      type: 'phrase_matching',
+                      prompt: 'Now match the joined phrase to its meaning.',
+                      pairs: [
+                        { sanskrit: 'tathā śarīrāṇi vihāya', english: 'so too, giving up worn-out bodies' }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  partIndex: 4,
+                  title: 'Part 4: The Soul Moves On',
+                  sanskrit: 'संयाति नवानि देही',
+                  transliteration: 'saṁyāti navāni dehī',
+                  translation: 'the embodied soul enters into new ones.',
+                  wordBreakdown: [
+                    { word: 'saṁyāti', devanagari: 'संयाति', meaning: 'enters into / goes to', partOfSpeech: 'verb' },
+                    { word: 'dehī', devanagari: 'देही', meaning: 'the embodied soul', partOfSpeech: 'noun' }
+                  ],
+                  questions: [
+                    {
+                      id: 'bg222_p4_q1',
+                      type: 'phrase_matching',
+                      warmup: true,
+                      prompt: 'Match each word in Part 4 to its meaning.',
+                      pairs: [
+                        { sanskrit: 'saṁyāti', english: 'enters into / goes to' },
+                        { sanskrit: 'dehī', english: 'the embodied soul' }
+                      ]
+                    },
+                    {
+                      id: 'bg222_p4_q2',
+                      type: 'multiple_choice',
+                      prompt: 'What does the garment simile in BG 2.22 teach?',
+                      options: [
+                        { text: 'Just as we replace old clothes with new ones, the soul takes on a new body when the old one wears out.', isCorrect: true, explanation: 'Correct! The body is what the soul wears, not what the soul is.' },
+                        { text: 'The soul is destroyed along with the body, like a garment thrown away for good.', isCorrect: false, explanation: 'Incorrect. The garment is discarded, but the wearer — the soul — continues.' }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              finalSynthesisQuestions: [
+                {
+                  id: 'bg222_syn_q1',
+                  type: 'sentence_rebuilding',
+                  prompt: 'FULL VERSE SYNTHESIS: Arrange the first half of BG 2.22!',
+                  targetSentence: 'vāsāṁsi jīrṇāni yathā vihāya navāni gṛhṇāti naraḥ aparāṇi',
+                  tiles: ['vāsāṁsi', 'jīrṇāni', 'yathā', 'vihāya', 'navāni', 'gṛhṇāti', 'naraḥ', 'aparāṇi'],
+                  explanation: '"vāsāṁsi jīrṇāni yathā vihāya navāni gṛhṇāti naro \'parāṇi" — As a person casts off worn-out garments and takes up other, new ones.'
+                },
+                {
+                  id: 'bg222_syn_q2',
+                  type: 'sentence_rebuilding',
+                  prompt: 'FULL VERSE SYNTHESIS: Arrange the second half of BG 2.22!',
+                  targetSentence: 'tathā śarīrāṇi vihāya jīrṇāni anyāni saṁyāti navāni dehī',
+                  tiles: ['tathā', 'śarīrāṇi', 'vihāya', 'jīrṇāni', 'anyāni', 'saṁyāti', 'navāni', 'dehī'],
+                  explanation: '"tathā śarīrāṇi vihāya jīrṇāny anyāni saṁyāti navāni dehī" — Likewise, giving up worn-out bodies, the embodied soul enters others that are new.'
+                }
+              ]
+            },
+            {
+              id: 'ch2_sec2_l4',
+              title: 'Untouched by Any Element',
+              verseRef: 'BG 2.23',
+              verseSanskrit: 'नैनं छिन्दन्ति शस्त्राणि नैनं दहति पावकः ।\nन चैनं क्लेदयन्त्यापो न शोषयति मारुतः ॥',
+              verseTransliteration: 'nainaṁ chindanti śastrāṇi nainaṁ dahati pāvakaḥ\nna cainaṁ kledayanty āpo na śoṣayati mārutaḥ',
+              verseWordGuide: [
+                { devanagari: 'नैनं', roman: 'nainaṁ' },
+                { devanagari: 'छिन्दन्ति', roman: 'chindanti' },
+                { devanagari: 'शस्त्राणि', roman: 'śastrāṇi' },
+                { devanagari: 'नैनं', roman: 'nainaṁ' },
+                { devanagari: 'दहति', roman: 'dahati' },
+                { devanagari: 'पावकः', roman: 'pāvakaḥ' },
+                { devanagari: 'न', roman: 'na' },
+                { devanagari: 'चैनं', roman: 'cainaṁ' },
+                { devanagari: 'क्लेदयन्त्यापो', roman: 'kledayanty-āpo' },
+                { devanagari: 'न', roman: 'na' },
+                { devanagari: 'शोषयति', roman: 'śoṣayati' },
+                { devanagari: 'मारुतः', roman: 'mārutaḥ' }
+              ],
+              translation: 'Weapons cannot cut the soul, nor can fire burn it. Water cannot wet it, nor can wind dry it.',
+              purport: 'Having said the soul is unborn and undying, Krishna makes the point as concrete as possible: nothing in the physical world — blade, flame, water, or wind — can reach it at all. Arjuna\'s fear is of what weapons can do; this verse says weapons simply cannot touch what he truly is.',
+              commentary: {
+                author: 'Swami Chinmayananda',
+                tradition: 'Chinmaya Mission',
+                text: 'The four great elements Arjuna would use to end a life — the blade, the fire, the flood, the storm — are named here only to be dismissed. None of them are equal to the task, because the target they seek was never made of anything they can act upon.'
+              },
+              reflectionPrompt: 'This verse insists that the true self cannot be harmed by any physical force. What fears in your own life are really fears about the body or circumstances, rather than about you?',
+              storyCaption: 'Arjuna\'s hands trembled on his bow, afraid of the harm his weapons could do. "No blade can cut it," Krishna said, "no fire burn it, no water wet it, no wind dry it."',
+              wordBreakdown: [
+                { word: 'enam', devanagari: 'एनम्', meaning: 'it / this (the soul)', partOfSpeech: 'pronoun' },
+                { word: 'chindanti', devanagari: 'छिन्दन्ति', meaning: 'they cut', partOfSpeech: 'verb' }
+              ],
+              teachingSlides: [],
+              questions: [],
+              parts: [
+                {
+                  partIndex: 1,
+                  title: 'Part 1: Weapons Cannot Cut It',
+                  sanskrit: 'नैनं छिन्दन्ति शस्त्राणि',
+                  transliteration: 'nainaṁ chindanti śastrāṇi',
+                  translation: 'Weapons cannot cut it.',
+                  wordBreakdown: [
+                    { word: 'na', devanagari: 'न', meaning: 'not', partOfSpeech: 'particle' },
+                    { word: 'enam', devanagari: 'एनम्', meaning: 'it / this (the soul)', partOfSpeech: 'pronoun' },
+                    { word: 'chindanti', devanagari: 'छिन्दन्ति', meaning: 'they cut', partOfSpeech: 'verb' },
+                    { word: 'śastrāṇi', devanagari: 'शस्त्राणि', meaning: 'weapons', partOfSpeech: 'noun (plural)' }
+                  ],
+                  questions: [
+                    {
+                      id: 'bg223_p1_q1',
+                      type: 'phrase_matching',
+                      warmup: true,
+                      prompt: 'Match each word in Part 1 to its meaning.',
+                      pairs: [
+                        { sanskrit: 'na', english: 'not' },
+                        { sanskrit: 'enam', english: 'it / this (the soul)' },
+                        { sanskrit: 'chindanti', english: 'they cut' },
+                        { sanskrit: 'śastrāṇi', english: 'weapons' }
+                      ]
+                    },
+                    {
+                      id: 'bg223_p1_q2',
+                      type: 'phrase_matching',
+                      prompt: 'Now match the joined phrase to its meaning.',
+                      pairs: [
+                        { sanskrit: 'na enam chindanti śastrāṇi', english: 'weapons cannot cut it' }
+                      ]
+                    },
+                    {
+                      id: 'bg223_p1_q3',
+                      type: 'sentence_rebuilding',
+                      prompt: 'Arrange the words to form Part 1 of the verse.',
+                      targetSentence: 'na enam chindanti śastrāṇi',
+                      tiles: ['na', 'enam', 'chindanti', 'śastrāṇi'],
+                      explanation: '"nainaṁ chindanti śastrāṇi" — Weapons cannot cut it.'
+                    }
+                  ]
+                },
+                {
+                  partIndex: 2,
+                  title: 'Part 2: Fire Cannot Burn It',
+                  sanskrit: 'नैनं दहति पावकः',
+                  transliteration: 'nainaṁ dahati pāvakaḥ',
+                  translation: 'Fire cannot burn it.',
+                  wordBreakdown: [
+                    { word: 'dahati', devanagari: 'दहति', meaning: 'burns', partOfSpeech: 'verb' },
+                    { word: 'pāvakaḥ', devanagari: 'पावकः', meaning: 'fire', partOfSpeech: 'noun' }
+                  ],
+                  questions: [
+                    {
+                      id: 'bg223_p2_q1',
+                      type: 'phrase_matching',
+                      warmup: true,
+                      prompt: 'Match each word in Part 2 to its meaning.',
+                      pairs: [
+                        { sanskrit: 'dahati', english: 'burns' },
+                        { sanskrit: 'pāvakaḥ', english: 'fire' }
+                      ]
+                    },
+                    {
+                      id: 'bg223_p2_q2',
+                      type: 'phrase_matching',
+                      prompt: 'Now match the joined phrase to its meaning.',
+                      pairs: [
+                        { sanskrit: 'na enam dahati pāvakaḥ', english: 'fire cannot burn it' }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  partIndex: 3,
+                  title: 'Part 3: Water Cannot Wet It',
+                  sanskrit: 'न चैनं क्लेदयन्त्यापो',
+                  transliteration: "na cainaṁ kledayanty āpo",
+                  translation: 'nor can water wet it.',
+                  wordBreakdown: [
+                    { word: 'ca', devanagari: 'च', meaning: 'and', partOfSpeech: 'particle' },
+                    { word: 'kledayanti', devanagari: 'क्लेदयन्ति', meaning: 'wet / moisten', partOfSpeech: 'verb' },
+                    { word: 'āpaḥ', devanagari: 'आपः', meaning: 'waters', partOfSpeech: 'noun (plural)' }
+                  ],
+                  questions: [
+                    {
+                      id: 'bg223_p3_q1',
+                      type: 'phrase_matching',
+                      warmup: true,
+                      prompt: 'Match each word in Part 3 to its meaning.',
+                      pairs: [
+                        { sanskrit: 'ca', english: 'and' },
+                        { sanskrit: 'kledayanti', english: 'wet / moisten' },
+                        { sanskrit: 'āpaḥ', english: 'waters' }
+                      ]
+                    },
+                    {
+                      id: 'bg223_p3_q2',
+                      type: 'phrase_matching',
+                      prompt: 'Now match the joined phrase to its meaning.',
+                      pairs: [
+                        { sanskrit: 'na ca enam kledayanti āpaḥ', english: 'nor can water wet it' }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  partIndex: 4,
+                  title: 'Part 4: Wind Cannot Dry It',
+                  sanskrit: 'न शोषयति मारुतः',
+                  transliteration: 'na śoṣayati mārutaḥ',
+                  translation: 'nor can wind dry it.',
+                  wordBreakdown: [
+                    { word: 'śoṣayati', devanagari: 'शोषयति', meaning: 'dries', partOfSpeech: 'verb' },
+                    { word: 'mārutaḥ', devanagari: 'मारुतः', meaning: 'wind', partOfSpeech: 'noun' }
+                  ],
+                  questions: [
+                    {
+                      id: 'bg223_p4_q1',
+                      type: 'phrase_matching',
+                      warmup: true,
+                      prompt: 'Match each word in Part 4 to its meaning.',
+                      pairs: [
+                        { sanskrit: 'śoṣayati', english: 'dries' },
+                        { sanskrit: 'mārutaḥ', english: 'wind' }
+                      ]
+                    },
+                    {
+                      id: 'bg223_p4_q2',
+                      type: 'multiple_choice',
+                      prompt: 'According to BG 2.23, what can harm the soul?',
+                      options: [
+                        { text: 'Nothing physical — weapons, fire, water, and wind are all named, and all are unable to touch it.', isCorrect: true, explanation: 'Correct! The soul is beyond the reach of every physical force.' },
+                        { text: 'Only fire, which can burn away anything.', isCorrect: false, explanation: 'Incorrect. The verse explicitly says fire cannot burn it either.' }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              finalSynthesisQuestions: [
+                {
+                  id: 'bg223_syn_q1',
+                  type: 'sentence_rebuilding',
+                  prompt: 'FULL VERSE SYNTHESIS: Rebuild the first line of BG 2.23!',
+                  targetSentence: 'na enam chindanti śastrāṇi na enam dahati pāvakaḥ',
+                  tiles: ['na', 'enam', 'chindanti', 'śastrāṇi', 'na', 'enam', 'dahati', 'pāvakaḥ'],
+                  explanation: '"nainaṁ chindanti śastrāṇi nainaṁ dahati pāvakaḥ" — Weapons cannot cut it, nor can fire burn it.'
+                },
+                {
+                  id: 'bg223_syn_q2',
+                  type: 'sentence_rebuilding',
+                  prompt: 'FULL VERSE SYNTHESIS: Rebuild the second line of BG 2.23!',
+                  targetSentence: 'na ca enam kledayanti āpaḥ na śoṣayati mārutaḥ',
+                  tiles: ['na', 'ca', 'enam', 'kledayanti', 'āpaḥ', 'na', 'śoṣayati', 'mārutaḥ'],
+                  explanation: '"na cainaṁ kledayanty āpo na śoṣayati mārutaḥ" — Nor can water wet it, nor can wind dry it.'
+                },
+                {
+                  id: 'bg223_syn_q3',
+                  type: 'reflection',
+                  prompt: 'Personal Reflection on the Indestructible Self:',
+                  verseContext: 'BG 2.23: "nainaṁ chindanti śastrāṇi nainaṁ dahati pāvakaḥ na cainaṁ kledayanty āpo na śoṣayati mārutaḥ — Weapons cannot cut it, fire cannot burn it, water cannot wet it, nor wind dry it."',
+                  guidance: 'Across these four lessons, the Gita has called the self unborn, undying, ever-changing in body but never in essence, and untouchable by any physical force. Which of these ideas do you find hardest to believe — and which feels most true to your own experience?'
                 }
               ]
             }

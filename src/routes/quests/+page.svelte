@@ -30,7 +30,7 @@
       <h2 class="text-2xl font-black leading-tight mt-1">Complete quests to earn rewards!</h2>
       <p class="text-sm font-bold opacity-85 mt-1">{doneCount} of {quests.length} done</p>
     </div>
-    <Mascot mood="happy" size="md" />
+    <Mascot mood="mischievous" size="md" />
   </div>
 
   <div>

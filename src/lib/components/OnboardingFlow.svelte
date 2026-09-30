@@ -100,7 +100,7 @@
 
 {#snippet askBubble(text: string, helper?: string)}
   <div class="flex items-center gap-2">
-    <div class="shrink-0 -ml-1"><Mascot mood="guide" size="lg" /></div>
+    <div class="shrink-0 -ml-1"><Mascot size="lg" /></div>
     <div class="bubble bubble-left flex-1">
       <p class="text-lg font-black leading-snug">{text}</p>
       {#if helper}<p class="text-sm font-bold text-text-muted mt-1">{helper}</p>{/if}
@@ -127,7 +127,7 @@
           <p class="text-xl font-black">Namaste! Let's begin your Gita journey.</p>
           <span class="absolute left-1/2 -bottom-[9px] -translate-x-1/2 w-4 h-4 rotate-45 bg-bg-surface border-r-2 border-b-2 border-border-warm"></span>
         </div>
-        <Mascot mood="happy" size="xl" animate={true} />
+        <Mascot mood="affectionate" size="xl" animate={true} />
         <p class="text-base font-bold text-text-muted max-w-xs">
           Answer {ONBOARDING_QUESTIONS.length} quick questions and we'll shape your daily practice around you.
         </p>

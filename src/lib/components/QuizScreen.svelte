@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { gameState, type SessionResult } from '../state/gameState.svelte';
   import { gitaData, sectionForLesson, type Lesson, type VersePart, type Question } from '../data/gitaData';
   import { lessonWords, wordsTestedBy } from '../data/practice';
@@ -13,7 +14,7 @@
   import FillInBlank from './FillInBlank.svelte';
   import ListeningChoice from './ListeningChoice.svelte';
   import ReflectionPrompt from './ReflectionPrompt.svelte';
-  import Mascot from './Mascot.svelte';
+  import Mascot, { preloadMascots, type MascotMood } from './Mascot.svelte';
   import VerseHookScreen from './VerseHookScreen.svelte';
   import WordDiscoveryScreen from './WordDiscoveryScreen.svelte';
   import StreakCelebration from './StreakCelebration.svelte';
@@ -108,6 +109,26 @@
   let startedAt = Date.now();
   let summary = $state<{ accuracy: number; seconds: number } | null>(null);
 
+  // ─── Krishna's in-exercise reactions, like Duolingo's characters ──────────
+  let matchShock = $state(false);
+  let shockTimer: ReturnType<typeof setTimeout> | undefined;
+
+  const onLastLife = () =>
+    isJump ? jumpMistakes >= JUMP_MISTAKES_ALLOWED : !isPractice && gameState.hearts <= 1;
+
+  const exerciseMood = $derived.by((): MascotMood => {
+    if (isChecked) {
+      if (isCorrect) return combo >= 5 ? 'amazed' : combo >= 3 ? 'excited' : 'cheerful';
+      return onLastLife() ? 'worried' : 'disappointed';
+    }
+    return matchShock ? 'shocked' : 'default';
+  });
+
+  onMount(() => {
+    preloadMascots(['default', 'cheerful', 'excited', 'amazed', 'disappointed', 'worried', 'shocked', 'celebrating', 'crying', 'puppy', 'proud']);
+    return () => clearTimeout(shockTimer);
+  });
+
   let canCheck = $derived(() => {
     if (!activeQuestion) return false;
     if (activeQuestion.type === 'phrase_matching') return matchComplete;
@@ -188,6 +209,9 @@
 
   function handleMatchIncorrect(confusedTerms: string[]) {
     matchHadMistake = true;
+    matchShock = true;
+    clearTimeout(shockTimer);
+    shockTimer = setTimeout(() => (matchShock = false), 900);
     wrongCount += 1;
     confusedTerms.flatMap((t) => t.split(/\s+/)).forEach((w) => missedWords.add(w));
     loseHeart();
@@ -469,7 +493,7 @@
   {:else if isGameOver}
     <!-- ═══ OUT OF HEARTS / JUMP TEST NOT PASSED ═══ -->
     <div class="flex-1 flex flex-col items-center justify-center px-6 text-center animate-[fade-in_0.3s_ease-out]">
-      <Mascot mood="sad" size="xl" />
+      <Mascot mood={isJump ? 'disappointed' : 'crying'} size="xl" />
       <h1 class="text-3xl font-black mt-6">{isJump ? 'Not quite yet!' : 'You ran out of hearts!'}</h1>
       <p class="text-base font-bold text-text-muted mt-2 max-w-xs leading-relaxed">
         {isJump
@@ -498,7 +522,7 @@
         </div>
       {/if}
 
-      <Mascot mood="happy" size="xl" animate={true} />
+      <Mascot mood="celebrating" size="xl" animate={true} />
       <h1 class="text-3xl font-black text-gold mt-6">{completion.title}</h1>
       <p class="text-base font-bold text-text-muted mt-2 max-w-xs leading-relaxed">{completion.subtitle}</p>
 
@@ -543,7 +567,7 @@
           <h2 class="text-2xl font-black leading-tight mt-1">Put the whole verse together</h2>
         </div>
         <div class="flex items-center gap-2">
-          <div class="shrink-0 -ml-1"><Mascot mood="happy" size="md" /></div>
+          <div class="shrink-0 -ml-1"><Mascot mood="proud" size="md" /></div>
           <div class="bubble bubble-left flex-1">
             <p class="text-[15px] font-bold">You've learned every part. Now let's master the full verse!</p>
           </div>
@@ -574,31 +598,39 @@
     {:else if current && activeQuestion}
       <!-- ═══ EXERCISE ═══ -->
       <div class="flex-1 overflow-y-auto scrollbar-none px-5 pt-4 {showFeedback ? 'pb-56' : 'pb-6'}">
-        {#if current.isRetry}
-          <p class="flex items-center gap-1.5 text-sm font-extrabold uppercase tracking-wider text-primary mb-1">
-            <Icon name="retry" class="w-4 h-4" /> Previous mistake
-          </p>
-        {:else if isJump}
-          {@const left = Math.max(0, JUMP_MISTAKES_ALLOWED - jumpMistakes)}
-          <p class="text-sm font-extrabold uppercase tracking-wider text-accent mb-1">
-            Jump test · {left} mistake{left === 1 ? '' : 's'} left
-          </p>
-        {:else if isPractice}
-          <p class="text-sm font-extrabold uppercase tracking-wider text-accent mb-1">{lesson.title}</p>
-        {:else if phase === 'synthesis_play'}
-          <p class="flex items-center gap-1.5 text-sm font-extrabold uppercase tracking-wider text-gold-dark dark:text-gold mb-1">
-            <Icon name="star" class="w-4 h-4" /> Full verse
-          </p>
-        {:else if currentPart}
-          <p class="text-sm font-extrabold uppercase tracking-wider text-text-muted mb-1">Part {partIndex + 1} of {parts.length}</p>
-        {/if}
+        <div class="flex items-end gap-3">
+          <div class="flex-1 min-w-0">
+            {#if current.isRetry}
+              <p class="flex items-center gap-1.5 text-sm font-extrabold uppercase tracking-wider text-primary mb-1">
+                <Icon name="retry" class="w-4 h-4" /> Previous mistake
+              </p>
+            {:else if isJump}
+              {@const left = Math.max(0, JUMP_MISTAKES_ALLOWED - jumpMistakes)}
+              <p class="text-sm font-extrabold uppercase tracking-wider text-accent mb-1">
+                Jump test · {left} mistake{left === 1 ? '' : 's'} left
+              </p>
+            {:else if isPractice}
+              <p class="text-sm font-extrabold uppercase tracking-wider text-accent mb-1">{lesson.title}</p>
+            {:else if phase === 'synthesis_play'}
+              <p class="flex items-center gap-1.5 text-sm font-extrabold uppercase tracking-wider text-gold-dark dark:text-gold mb-1">
+                <Icon name="star" class="w-4 h-4" /> Full verse
+              </p>
+            {:else if currentPart}
+              <p class="text-sm font-extrabold uppercase tracking-wider text-text-muted mb-1">Part {partIndex + 1} of {parts.length}</p>
+            {/if}
 
-        {#if activeQuestion.type !== 'reflection'}
-          <h2 class="text-2xl font-black leading-tight">{titleFor(activeQuestion)}</h2>
-          {#if activeQuestion.type === 'phrase_matching'}
-            <p class="text-[15px] font-bold text-text-muted mt-1">{cleanPrompt(activeQuestion.prompt)}</p>
+            {#if activeQuestion.type !== 'reflection'}
+              <h2 class="text-2xl font-black leading-tight">{titleFor(activeQuestion)}</h2>
+              {#if activeQuestion.type === 'phrase_matching'}
+                <p class="text-[15px] font-bold text-text-muted mt-1">{cleanPrompt(activeQuestion.prompt)}</p>
+              {/if}
+            {/if}
+          </div>
+          <!-- Fill-in-the-blank shows Krishna beside its sentence bubble instead; reflections have their own -->
+          {#if activeQuestion.type !== 'reflection' && activeQuestion.type !== 'fill_in_the_blank'}
+            <Mascot mood={exerciseMood} size="lg" />
           {/if}
-        {/if}
+        </div>
 
         <div class="mt-6">
           {#key current.key}
@@ -626,6 +658,7 @@
                 onSelect={handleSelect}
                 showTranslation={cfg.translationHints}
                 disabled={isChecked}
+                mascotMood={exerciseMood}
               />
             {:else if activeQuestion.type === 'multiple_choice'}
               <MultipleChoice options={activeQuestion.options} onSelect={handleSelect} disabled={isChecked} />
@@ -673,7 +706,7 @@
         onclick={() => (showQuit = false)}
       ></button>
       <div class="absolute inset-x-0 bottom-0 z-50 bg-bg-base rounded-t-3xl px-6 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] flex flex-col items-center text-center animate-sheet-up">
-        <Mascot mood="sad" size="lg" />
+        <Mascot mood="puppy" size="lg" />
         <h2 class="text-2xl font-black mt-3">Wait, don't go!</h2>
         <p class="text-base font-bold text-text-muted mt-1">
           {isPractice ? "You're so close to finishing this review." : "You'll lose your progress if you quit now."}

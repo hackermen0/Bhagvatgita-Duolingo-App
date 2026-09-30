@@ -52,7 +52,7 @@
           {/if}
         </p>
       </div>
-      <Mascot mood="happy" size="md" />
+      <Mascot mood="determined" size="md" />
     </div>
     <button
       type="button"

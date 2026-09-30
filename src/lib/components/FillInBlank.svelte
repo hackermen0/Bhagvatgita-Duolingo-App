@@ -3,15 +3,16 @@
   import { toPhonetic } from '../data/sanskritHelper';
   import { playPopSound } from '../utils/soundEffects';
   import SanskritWord from './SanskritWord.svelte';
-  import Mascot from './Mascot.svelte';
+  import Mascot, { type MascotMood } from './Mascot.svelte';
 
-  let { prompt, translation, options, onSelect, showTranslation = true, disabled = false } = $props<{
+  let { prompt, translation, options, onSelect, showTranslation = true, disabled = false, mascotMood = 'default' } = $props<{
     prompt: string;
     translation: string;
     options: string[];
     onSelect: (selectedWord: string | null) => void;
     showTranslation?: boolean;
     disabled?: boolean;
+    mascotMood?: MascotMood;
   }>();
 
   let selectedWord = $state<string | null>(null);
@@ -42,7 +43,7 @@
 
 <div class="flex flex-col gap-8 w-full select-none">
   <div class="flex items-center gap-2">
-    <div class="shrink-0 -ml-1"><Mascot mood="guide" size="md" /></div>
+    <div class="shrink-0 -ml-1"><Mascot mood={mascotMood} size="md" /></div>
     <div class="bubble bubble-left flex-1 min-w-0">
       <div class="flex flex-wrap gap-x-2 gap-y-3 items-end">
         {#each tokens as token, i}

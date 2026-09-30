@@ -49,7 +49,7 @@
   <!-- Identity -->
   <div class="bg-primary-soft border-b-2 border-border-warm flex justify-center pt-8 pb-6">
     <div class="w-28 h-28 rounded-full border-4 border-dashed border-primary-edge bg-bg-surface flex items-center justify-center">
-      <Mascot mood="happy" size="lg" />
+      <Mascot mood="cheerful" size="md" />
     </div>
   </div>
   <div class="px-4 py-5 border-b-2 border-border-warm">
