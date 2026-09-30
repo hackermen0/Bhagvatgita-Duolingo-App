@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { gameState, type SessionResult } from '../state/gameState.svelte';
+  import { gameState, LESSON_LEVELS, type SessionResult } from '../state/gameState.svelte';
   import { gitaData, sectionForLesson, type Lesson, type VersePart, type Question } from '../data/gitaData';
   import { lessonWords, wordsTestedBy } from '../data/practice';
   import { learningConfig, goalNudge } from '../data/learningConfig';
@@ -17,15 +17,21 @@
   import Mascot, { preloadMascots, type MascotMood } from './Mascot.svelte';
   import VerseHookScreen from './VerseHookScreen.svelte';
   import WordDiscoveryScreen from './WordDiscoveryScreen.svelte';
+  import PhraseIntroScreen from './PhraseIntroScreen.svelte';
   import StreakCelebration from './StreakCelebration.svelte';
   import StoryReward from './StoryReward.svelte';
   import VerseText from './VerseText.svelte';
   import Icon, { type IconName } from './Icon.svelte';
 
-  let { lesson, onExit, mode = 'lesson', jumpLessonIds = [], targetLessonId } = $props<{
+  let { lesson, onExit, mode = 'lesson', level = LESSON_LEVELS, jumpLessonIds = [], targetLessonId } = $props<{
     lesson: Lesson;
     onExit: () => void;
     mode?: 'lesson' | 'practice' | 'jump';
+    /**
+     * Which of the verse's three levels this session plays (lessons only):
+     * 1 = hear the verse and learn its words · 2 = build each phrase · 3 = assemble the whole verse
+     */
+    level?: number;
     /** Lessons marked complete when a jump test is passed */
     jumpLessonIds?: string[];
     /** The real lesson id a jump test targets — `lesson.id` is a synthetic id for jump mode */
@@ -42,22 +48,28 @@
 
   // ─── Phase State Machine ───────────────────────────────────────────────────
   type Phase =
-    | 'verse_hook'      // Verse intro with recitation
-    | 'word_discover'   // Word-by-word card flip discovery
-    | 'part_play'       // Exercises for current part
-    | 'synthesis_intro' // Full verse assembled
+    | 'verse_hook'      // Level 1: verse intro with recitation
+    | 'word_discover'   // Level 1: the part's words as flip cards
+    | 'phrase_intro'    // Level 2: the part's phrase, before building it
+    | 'part_play'       // Exercises for current part (Level 1: word warm-ups; Level 2: phrase exercises)
+    | 'synthesis_intro' // Level 3: full verse assembled
     | 'synthesis_play'; // Final exercises (or the whole practice / jump session)
 
   // Captured once on purpose: the routes key this component per lesson, so `lesson` never changes under it
   // svelte-ignore state_referenced_locally
   const parts: VersePart[] = lesson.parts && lesson.parts.length > 0 ? lesson.parts : [];
   const hasParts = parts.length > 0;
+  // Only real lessons with parts are split into levels; practice, jump tests and part-less lessons play as one
+  // svelte-ignore state_referenced_locally
+  const lvl = mode === 'lesson' && hasParts ? Math.min(Math.max(level, 1), LESSON_LEVELS) : LESSON_LEVELS;
   const synthesisQuestions = (): Question[] =>
     lesson.finalSynthesisQuestions && lesson.finalSynthesisQuestions.length > 0
       ? lesson.finalSynthesisQuestions
       : lesson.questions;
 
-  let phase = $state<Phase>(hasParts ? 'verse_hook' : 'synthesis_play');
+  const initialPhase = (): Phase =>
+    !hasParts ? 'synthesis_play' : lvl === 1 ? 'verse_hook' : lvl === 2 ? 'phrase_intro' : 'synthesis_intro';
+  let phase = $state<Phase>(initialPhase());
   let partIndex = $state(0);
 
   let currentPart = $derived<VersePart | null>(hasParts && partIndex < parts.length ? parts[partIndex] : null);
@@ -136,17 +148,17 @@
     return selectedOption !== null;
   });
 
-  // One continuous bar across intro → parts → final stage, like a single Duolingo lesson
-  const totalSteps = hasParts ? parts.length * 2 + 2 : 1;
+  // One continuous bar across this level's screens, like a single Duolingo lesson
+  const totalSteps = !hasParts ? 1 : lvl === 1 ? 1 + parts.length * 2 : lvl === 2 ? parts.length * 2 : 2;
   let progress = $derived.by(() => {
     const queueFrac = queue.length ? (queueIndex + (isChecked && isCorrect ? 1 : 0)) / queue.length : 0;
     if (!hasParts) return isLessonCompleted ? 1 : queueFrac;
     let step = 0;
     let frac = 0;
     if (phase === 'word_discover') step = 1 + partIndex * 2;
-    else if (phase === 'part_play') { step = 2 + partIndex * 2; frac = queueFrac; }
-    else if (phase === 'synthesis_intro') step = 1 + parts.length * 2;
-    else if (phase === 'synthesis_play') { step = 1 + parts.length * 2; frac = queueFrac; }
+    else if (phase === 'phrase_intro') step = partIndex * 2;
+    else if (phase === 'part_play') { step = (lvl === 1 ? 2 : 1) + partIndex * 2; frac = queueFrac; }
+    else if (phase === 'synthesis_play') { step = 1; frac = queueFrac; }
     return (step + frac) / totalSteps;
   });
 
@@ -168,22 +180,38 @@
     encouragement = '';
   }
 
+  // Level 1 keeps only each part's word warm-ups (the retrieval check on the words just seen);
+  // Level 2 plays the rest — the phrase-level exercises.
+  const partQuestions = (part: VersePart | null): Question[] =>
+    !part ? lesson.questions : part.questions.filter((q) => (lvl === 1 ? !!q.warmup : !q.warmup));
+
   function handleVerseHookComplete() {
     partIndex = 0;
     phase = 'word_discover';
   }
 
-  function handleWordDiscoveryComplete() {
-    startExerciseSet(currentPart ? currentPart.questions : lesson.questions);
+  function playPart() {
+    const qs = partQuestions(currentPart);
+    // A learner whose profile skips the warm-ups can have nothing to play in a part
+    if (qs.length === 0) return handlePartPlayComplete();
+    startExerciseSet(qs);
     phase = 'part_play';
+  }
+
+  function handleWordDiscoveryComplete() {
+    playPart();
+  }
+
+  function handlePhraseIntroComplete() {
+    playPart();
   }
 
   function handlePartPlayComplete() {
     if (partIndex + 1 < parts.length) {
       partIndex += 1;
-      phase = 'word_discover';
+      phase = lvl === 1 ? 'word_discover' : 'phrase_intro';
     } else {
-      phase = 'synthesis_intro';
+      finishSession();
     }
   }
 
@@ -322,7 +350,7 @@
       ? gameState.completePractice(words, missed)
       : isJump
         ? gameState.completeJump(jumpLessonIds, words, missed)
-        : gameState.completeLesson(lesson.id, words, missed);
+        : gameState.completeLevel(lesson.id, lvl, words, missed);
     const attempts = correctCount + wrongCount;
     summary = {
       accuracy: attempts ? Math.round((correctCount / attempts) * 100) : 100,
@@ -392,7 +420,7 @@
       queue = [];
       queueIndex = 0;
       resetSelection();
-      phase = 'verse_hook';
+      phase = initialPhase();
     } else {
       startExerciseSet(synthesisQuestions());
       phase = 'synthesis_play';
@@ -462,6 +490,14 @@
     if (isJump) return {
       title: 'You jumped ahead!',
       subtitle: `${jumpLessonIds.length} verse${jumpLessonIds.length === 1 ? '' : 's'} skipped — ${lesson.verseRef} is unlocked. Their words will come back in Practice.`
+    };
+    if (lvl === 1) return {
+      title: 'Level 1 complete!',
+      subtitle: `You know the words of ${lesson.verseRef}. Next up: build its phrases.`
+    };
+    if (lvl === 2) return {
+      title: 'Level 2 complete!',
+      subtitle: `You can build every phrase of ${lesson.verseRef}. One more level to put the whole verse together.`
     };
     return { title: 'Lesson complete!', subtitle: goalNudge(gameState.profile) || `You've learned ${lesson.verseRef}, ${lesson.title}.` };
   });
@@ -557,6 +593,16 @@
         canSkip={cfg.skippableDiscovery}
       />
 
+    {:else if phase === 'phrase_intro' && currentPart}
+      {#key partIndex}
+        <PhraseIntroScreen
+          part={currentPart}
+          partIndex={partIndex + 1}
+          totalParts={parts.length}
+          onComplete={handlePhraseIntroComplete}
+        />
+      {/key}
+
     {:else if phase === 'synthesis_intro'}
       <!-- ═══ FINAL STAGE INTRO ═══ -->
       <div class="flex-1 overflow-y-auto scrollbar-none px-5 pt-4 pb-6 flex flex-col gap-5">
@@ -616,7 +662,9 @@
                 <Icon name="star" class="w-4 h-4" /> Full verse
               </p>
             {:else if currentPart}
-              <p class="text-sm font-extrabold uppercase tracking-wider text-text-muted mb-1">Part {partIndex + 1} of {parts.length}</p>
+              <p class="text-sm font-extrabold uppercase tracking-wider text-text-muted mb-1">
+                {lvl === 1 ? 'Words' : 'Phrase'} · Part {partIndex + 1} of {parts.length}
+              </p>
             {/if}
 
             {#if activeQuestion.type !== 'reflection'}
@@ -709,7 +757,7 @@
         <Mascot mood="puppy" size="lg" />
         <h2 class="text-2xl font-black mt-3">Wait, don't go!</h2>
         <p class="text-base font-bold text-text-muted mt-1">
-          {isPractice ? "You're so close to finishing this review." : "You'll lose your progress if you quit now."}
+          {isPractice ? "You're so close to finishing this review." : "You'll lose your progress in this level if you quit now."}
         </p>
         <button onclick={() => (showQuit = false)} class="btn btn-primary w-full mt-6">Keep learning</button>
         <button onclick={onExit} class="btn btn-ghost w-full mt-2 text-error!">End session</button>

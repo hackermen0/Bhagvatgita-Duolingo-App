@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
   import { goto } from '$app/navigation';
-  import { gameState } from '$lib/state/gameState.svelte';
+  import { gameState, LESSON_LEVELS, levelXP } from '$lib/state/gameState.svelte';
   import { gitaData, type Lesson, type Section } from '$lib/data/gitaData';
   import { practiceStatus } from '$lib/data/practice';
   import { planById } from '$lib/data/onboarding';
@@ -73,6 +73,20 @@
       return { chapter, section, unitNumber: sIdx + 1, startIndex };
     })
   );
+
+  // Each verse is one node taught over LESSON_LEVELS levels; the ring around the node fills one segment per level.
+  const LEVEL_NAMES = ['Meet the words', 'Build the phrases', 'Put it together'];
+  const RING = { cx: 48, cy: 45, rx: 41, ry: 38, gap: 18 };
+
+  function ringArc(i: number): string {
+    const step = 360 / LESSON_LEVELS;
+    const toRad = (deg: number) => (deg * Math.PI) / 180;
+    // Start at the top; the gap is split across both ends so segments are visibly separate
+    const a0 = toRad(-90 + i * step + RING.gap / 2);
+    const a1 = toRad(-90 + (i + 1) * step - RING.gap / 2);
+    const pt = (a: number) => `${(RING.cx + RING.rx * Math.cos(a)).toFixed(2)} ${(RING.cy + RING.ry * Math.sin(a)).toFixed(2)}`;
+    return `M ${pt(a0)} A ${RING.rx} ${RING.ry} 0 0 1 ${pt(a1)}`;
+  }
 
   let selected = $state<string | null>(null);
   let replayStory = $state<UnitStory | null>(null);
@@ -149,6 +163,8 @@
           {@const canJump = !unlocked && cfg.pathAccess === 'jump'}
           {@const isOpen = selected === lesson.id}
           {@const lessonNumber = idx + 1}
+          {@const doneLevels = gameState.levelsDone(lesson.id)}
+          {@const nextLevel = Math.min(doneLevels + 1, LESSON_LEVELS)}
 
           <div class="relative w-full flex justify-center items-start h-[124px] {isOpen ? 'z-30' : ''}">
             <div class="relative" style="transform: translateX({offset}px)" id="node-{lesson.id}">
@@ -169,9 +185,22 @@
                 </div>
               {/if}
 
-              <!-- Ring around the current node -->
-              {#if current}
-                <div class="absolute -inset-[13px] animate-pulse-ring translate-y-1.5 rounded-full border-[7px] border-border-warm pointer-events-none"></div>
+              <!-- Level ring: one segment per level, filled as the levels are finished -->
+              {#if unlocked && !done}
+                <svg
+                  viewBox="0 0 96 90"
+                  class="absolute -inset-[13px] translate-y-1.5 pointer-events-none"
+                  style="width: 96px; height: 90px"
+                  fill="none"
+                  stroke-width="7"
+                  stroke-linecap="round"
+                  role="img"
+                  aria-label="{doneLevels} of {LESSON_LEVELS} levels complete"
+                >
+                  {#each { length: LESSON_LEVELS } as _, i}
+                    <path d={ringArc(i)} style="stroke: {i < doneLevels ? 'var(--unit)' : 'var(--color-track-base)'}" />
+                  {/each}
+                </svg>
               {/if}
 
               <button
@@ -215,6 +244,9 @@
                         Lesson {lessonNumber} of {section.lessons.length} · {lesson.verseRef}
                       {/if}
                     </p>
+                    {#if !locked && !done}
+                      <p class="text-sm font-extrabold mt-1">Level {nextLevel} of {LESSON_LEVELS} · {LEVEL_NAMES[nextLevel - 1]}</p>
+                    {/if}
                     {#if current && !advice}
                       <p class="text-sm font-extrabold mt-1">{goalGreeting(gameState.profile, lesson.verseRef)}</p>
                     {/if}
@@ -240,8 +272,8 @@
                         Review first +15 XP
                       </button>
                     {/if}
-                    <button type="button" class="btn btn-on-color w-full" onclick={() => goto(`/lesson/${lesson.id}`)}>
-                      {done ? 'Practice +15 XP' : 'Start +50 XP'}
+                    <button type="button" class="btn btn-on-color w-full" onclick={() => goto(`/lesson/${lesson.id}?level=${done ? LESSON_LEVELS : nextLevel}`)}>
+                      {done ? 'Practice +15 XP' : doneLevels === 0 ? `Start +${levelXP(1)} XP` : `Continue +${levelXP(nextLevel)} XP`}
                     </button>
                   {/if}
                 </div>

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import type { WordMeaning } from "../data/gitaData";
-  import { getSanskritDisplay, toPhonetic } from "../data/sanskritHelper";
+  import { toPhonetic } from "../data/sanskritHelper";
   import { gameState } from "../state/gameState.svelte";
   import Icon from "./Icon.svelte";
 
@@ -70,7 +70,7 @@
     word.devanagari.length > 13 ? "text-lg" : word.devanagari.length > 9 ? "text-2xl" : "text-3xl"
   );
   const romanSize = $derived(toPhonetic(word.word).length > 13 ? "text-xl" : "text-2xl");
-  const meaningSize = $derived(word.meaning.length > 18 ? "text-base" : "text-xl");
+  const meaningSize = $derived(word.meaning.length > 14 ? "text-base" : "text-xl");
 </script>
 
 <div
@@ -129,12 +129,13 @@
     <!-- BACK -->
     <div class="card-face card-back card border-b-[5px]! border-primary-edge! bg-primary-soft! flex flex-col items-center justify-center gap-1.5 p-3">
       <p class="text-[10px] font-black uppercase tracking-wider text-primary-dark dark:text-primary">Meaning</p>
-      <p class="{meaningSize} font-black text-center leading-tight">{word.meaning}</p>
-      <span class="text-[10px] font-black uppercase tracking-wide px-2.5 py-0.5 rounded-full bg-bg-surface border-2 border-border-warm text-text-muted text-center">
-        {word.partOfSpeech}
-      </span>
-      <p class="text-base text-primary-dark dark:text-primary font-deva">{word.devanagari}</p>
-      <p class="text-[11px] font-bold text-text-muted text-center leading-tight">{getSanskritDisplay(word.word).englishSyllables}</p>
+      <p class="{meaningSize} font-black text-center text-lg leading-tight">{word.meaning}</p>
+      <!-- One-line reminder of which word this is, in the reader's own script -->
+      {#if gameState.scriptDisplay === 'roman'}
+        <p class="text-sm mt-1 font-black text-primary-dark dark:text-primary text-center leading-tight">{toPhonetic(word.word)}</p>
+      {:else}
+        <p class="text-lg text-primary-dark dark:text-primary font-deva leading-tight">{word.devanagari}</p>
+      {/if}
     </div>
   </div>
 </div>

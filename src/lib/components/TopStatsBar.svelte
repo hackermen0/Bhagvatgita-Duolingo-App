@@ -28,8 +28,8 @@
 
     <button type="button" onclick={() => toggle('streak')} aria-label="Streak"
       class="flex items-center gap-1.5 px-2 py-1 rounded-xl {open === 'streak' ? 'bg-bg-surface-alt' : ''}">
-      <Icon name="flame" class="w-6 h-6 {streakActiveToday ? 'text-primary' : 'text-node-locked-edge'}" />
-      <span class="font-black text-base tabular-nums {streakActiveToday ? 'text-primary' : 'text-text-muted'}">{gameState.streak}</span>
+      <Icon name="flame" class="w-6 h-6 {streakActiveToday ? 'text-streak' : 'text-node-locked-edge'}" />
+      <span class="font-black text-base tabular-nums {streakActiveToday ? 'text-streak' : 'text-text-muted'}">{gameState.streak}</span>
     </button>
 
     <button type="button" onclick={() => toggle('xp')} aria-label="Experience points"
@@ -65,12 +65,12 @@
       {:else if open === 'streak'}
         <div class="flex items-center gap-4">
           <div class="flex-1">
-            <p class="text-2xl font-black text-primary">{gameState.streak} day streak</p>
+            <p class="text-2xl font-black text-streak">{gameState.streak} day streak</p>
             <p class="text-sm text-text-muted mt-0.5">
               {streakActiveToday ? "You've practiced today. See you tomorrow!" : 'Do a lesson today to extend your streak!'}
             </p>
           </div>
-          <Icon name="flame" class="w-14 h-14 {streakActiveToday ? 'text-primary' : 'text-node-locked-edge'}" />
+          <Icon name="flame" class="w-14 h-14 {streakActiveToday ? 'text-streak' : 'text-node-locked-edge'}" />
         </div>
         <div class="card p-4 mt-4">
           <WeekCalendar activeDays={gameState.activeDays} />

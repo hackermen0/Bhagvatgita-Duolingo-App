@@ -11,7 +11,7 @@
   const reflections = $derived(Object.keys(gameState.userReflections).length);
 
   const stats = $derived<{ icon: IconName; color: string; value: number; label: string }[]>([
-    { icon: 'flame', color: 'text-primary', value: gameState.streak, label: 'Day streak' },
+    { icon: 'flame', color: 'text-streak', value: gameState.streak, label: 'Day streak' },
     { icon: 'bolt', color: 'text-gold', value: gameState.xp, label: 'Total XP' },
     { icon: 'book', color: 'text-success', value: gameState.completedLessons.length, label: 'Verses learned' },
     { icon: 'star', color: 'text-info', value: wordsLearned, label: 'Words learned' }
@@ -27,7 +27,7 @@
   }
 
   const achievements = $derived<Achievement[]>([
-    { title: 'Wildfire', icon: 'flame', color: 'var(--color-primary)', value: gameState.streak, tiers: [3, 7, 14, 30, 60, 100], describe: (n) => `Reach a ${n} day streak` },
+    { title: 'Wildfire', icon: 'flame', color: 'var(--color-streak)', value: gameState.streak, tiers: [3, 7, 14, 30, 60, 100], describe: (n) => `Reach a ${n} day streak` },
     { title: 'Sage', icon: 'bolt', color: 'var(--color-gold)', value: gameState.xp, tiers: [100, 250, 500, 1000, 2500, 5000], describe: (n) => `Earn ${n} XP` },
     { title: 'Scholar', icon: 'book', color: 'var(--color-success)', value: gameState.completedLessons.length, tiers: [1, 3, 5, 10, 25], describe: (n) => `Learn ${n} verse${n === 1 ? '' : 's'}` },
     { title: 'Wordsmith', icon: 'star', color: 'var(--color-info)', value: wordsLearned, tiers: [10, 25, 50, 100, 200], describe: (n) => `Learn ${n} words` },

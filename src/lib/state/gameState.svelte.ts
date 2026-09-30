@@ -43,8 +43,16 @@ export const DAILY_GOAL_OPTIONS = [
   { xp: 50, label: 'Intense' }
 ];
 
-const FIRST_COMPLETION_XP = 50;
+/** Each verse is taught over three levels: meet the words, build the phrases, assemble the whole verse. */
+export const LESSON_LEVELS = 3;
+/** First-time XP per level (totals the old 50 for a whole lesson) */
+const LEVEL_XP = [15, 15, 20];
 const REPLAY_XP = 15;
+
+/** XP a first-time run of this level pays, for showing on the path. */
+export function levelXP(level: number): number {
+  return LEVEL_XP[Math.min(Math.max(level, 1), LESSON_LEVELS) - 1];
+}
 const PRACTICE_XP = 15;
 const JUMP_XP = 30;
 
@@ -73,6 +81,8 @@ class GameState {
   xp = $state(0);
   streak = $state(0);
   completedLessons = $state<string[]>([]);
+  /** Levels finished so far on lessons that aren't complete yet (completed lessons implicitly have them all) */
+  levelProgress = $state<Record<string, number>>({});
   lastActiveDate = $state<string | null>(null);
   activeDays = $state<string[]>([]);
   scriptDisplay = $state<ScriptDisplay>('both');
@@ -106,6 +116,7 @@ class GameState {
         this.xp = parsed.xp ?? 0;
         this.streak = parsed.streak ?? 0;
         this.completedLessons = parsed.completedLessons ?? [];
+        this.levelProgress = parsed.levelProgress ?? {};
         this.activeDays = parsed.activeDays ?? [];
         // Older saves stored a two-way scriptMode ('devanagari' | 'english')
         this.scriptDisplay =
@@ -145,6 +156,7 @@ class GameState {
         xp: this.xp,
         streak: this.streak,
         completedLessons: $state.snapshot(this.completedLessons),
+        levelProgress: $state.snapshot(this.levelProgress),
         lastActiveDate: this.lastActiveDate,
         activeDays: $state.snapshot(this.activeDays),
         scriptDisplay: this.scriptDisplay,
@@ -282,18 +294,38 @@ class GameState {
     return true;
   }
 
-  completeLesson(lessonId: string, words: string[], missed: string[]): SessionResult {
-    const first = !this.completedLessons.includes(lessonId);
-    if (first) this.completedLessons.push(lessonId);
+  /** How many of a lesson's levels are done (all of them once the lesson is complete). */
+  levelsDone(lessonId: string): number {
+    return this.completedLessons.includes(lessonId) ? LESSON_LEVELS : (this.levelProgress[lessonId] ?? 0);
+  }
+
+  /**
+   * Records a finished level. The lesson itself only completes with its last level, which is
+   * what unlocks the next verse. A level left unfinished saves nothing — it restarts next time.
+   */
+  completeLevel(lessonId: string, level: number, words: string[], missed: string[]): SessionResult {
+    const first = level > this.levelsDone(lessonId);
+    const finishesLesson = level >= LESSON_LEVELS;
+    if (first) {
+      if (finishesLesson) {
+        if (!this.completedLessons.includes(lessonId)) this.completedLessons.push(lessonId);
+        delete this.levelProgress[lessonId];
+      } else {
+        this.levelProgress[lessonId] = level;
+      }
+    }
     this.updateWordMemory(words, missed);
     this.rollDaily();
-    this.daily.lessons += 1;
-    if (first) this.daily.newLessons += 1;
+    if (finishesLesson) {
+      this.daily.lessons += 1;
+      if (first) this.daily.newLessons += 1;
+    }
     const streakExtended = this.recordActivity();
-    const xpEarned = first ? FIRST_COMPLETION_XP : REPLAY_XP;
+    const xpEarned = first ? levelXP(level) : REPLAY_XP;
     const goalJustMet = this.addXP(xpEarned);
     return { xpEarned, streakExtended, goalJustMet };
   }
+
 
   completePractice(words: string[], missed: string[]): SessionResult {
     this.updateWordMemory(words, missed);
@@ -342,6 +374,7 @@ class GameState {
     this.xp = 0;
     this.streak = 0;
     this.completedLessons = [];
+    this.levelProgress = {};
     this.lastActiveDate = null;
     this.activeDays = [];
     this.scriptDisplay = this.profile ? scriptDisplayFor(this.profile.devanagariAbility) : 'both';

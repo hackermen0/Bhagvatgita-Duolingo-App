@@ -110,6 +110,8 @@ export interface Lesson {
   id: string;
   title: string;
   verseRef: string;
+  /** One plain-English sentence of what the verse says, shown up-front on the verse-intro screen. */
+  essence?: string;
   verseSanskrit: string;
   verseTransliteration: string;
   translation: string;
@@ -267,6 +269,7 @@ export const gitaData: GitaData = {
               id: 'ch2_sec1_l1',
               title: 'Right to Action',
               verseRef: 'BG 2.47',
+              essence: 'Do your duty with full effort, but let go of the results.',
               verseSanskrit: 'कर्मण्येवाधिकारस्ते मा फलेषु कदाचन ।\nमा कर्मफलहेतुर्भूर्मा ते सङ्गोऽस्त्वकर्मणि ॥',
               verseTransliteration: 'karmaṇy-evādhikāras te mā phaleṣu kadācana\nmā karma-phala-hetur bhūr mā te saṅgo \'stv akarmaṇi',
               verseWordGuide: [
@@ -275,7 +278,8 @@ export const gitaData: GitaData = {
                 { devanagari: 'फलेषु', roman: 'phaleṣu' },
                 { devanagari: 'कदाचन', roman: 'kadācana' },
                 { devanagari: 'मा', roman: 'mā' },
-                { devanagari: 'कर्मफलहेतुर्भूर्मा', roman: 'karma-phala-hetur-bhūr-mā' },
+                { devanagari: 'कर्मफलहेतुर्भूर्', roman: 'karma-phala-hetur-bhūr' },
+                { devanagari: 'मा', roman: 'mā' },
                 { devanagari: 'ते', roman: 'te' },
                 { devanagari: 'सङ्गोऽस्त्वकर्मणि', roman: "saṅgo-'stv-akarmaṇi" }
               ],
@@ -498,6 +502,7 @@ export const gitaData: GitaData = {
               id: 'ch2_sec1_l2',
               title: 'Equanimity in Action',
               verseRef: 'BG 2.48',
+              essence: 'Stay steady in success and failure. That evenness of mind is Yoga.',
               verseSanskrit: 'योगस्थः कुरु कर्माणि सङ्गं त्यक्त्वा धनञ्जय ।\nसिद्ध्यसिद्ध्योः समो भूत्वा समत्वं योग उच्यते ॥',
               verseTransliteration: 'yoga-sthaḥ kuru karmāṇi saṅgaṁ tyaktvā dhanañjaya\nsiddhy-asiddhyoḥ samo bhūtvā samatvaṁ yoga ucyate',
               verseWordGuide: [
@@ -698,6 +703,7 @@ export const gitaData: GitaData = {
               id: 'ch2_sec1_l3',
               title: 'Skill in Action',
               verseRef: 'BG 2.50',
+              essence: 'Wise action frees you from good and bad karma. Yoga is skill in action.',
               verseSanskrit: 'बुद्धियुक्तो जहातीह उभे सुकृतदुष्कृते ।\nतस्माद्योगाय युज्यस्व योगः कर्मसु कौशलम् ॥',
               verseTransliteration: 'buddhi-yukto jahātīha ubhe sukṛta-duṣkṛte\ntasmād yogāya yujyasva yogaḥ karmasu kauśalam',
               verseWordGuide: [
@@ -839,6 +845,7 @@ export const gitaData: GitaData = {
               id: 'ch2_sec1_l4',
               title: 'Attaining Peace',
               verseRef: 'BG 2.71',
+              essence: 'Give up craving and ego, and real peace comes.',
               verseSanskrit: 'विहाय कामान्यः सर्वान्पुमांश्चरति निःस्पृहः ।\nनिर्ममो निरहङ्कारः स शान्तिमधिगच्छति ॥',
               verseTransliteration: 'vihāya kāmān yaḥ sarvān pumāṁś carati niḥspṛhaḥ\nnirmamo nirahaṅkāraḥ sa śāntim adhigacchati',
               verseWordGuide: [
@@ -982,6 +989,7 @@ export const gitaData: GitaData = {
               id: 'ch2_sec2_l1',
               title: 'The Eternal Traveler',
               verseRef: 'BG 2.13',
+              essence: 'The soul passes from childhood to old age to a new body. The wise are not shaken by it.',
               verseSanskrit: 'देहिनोऽस्मिन् यथा देहे कौमारं यौवनं जरा ।\nतथा देहान्तरप्राप्तिर्धीरस्तत्र न मुह्यति ॥',
               verseTransliteration: 'dehino \'smin yathā dehe kaumāraṁ yauvanaṁ jarā\ntathā dehāntara-prāptir dhīras tatra na muhyati',
               verseWordGuide: [
@@ -1188,6 +1196,7 @@ export const gitaData: GitaData = {
               id: 'ch2_sec2_l2',
               title: 'Never Born, Never Dies',
               verseRef: 'BG 2.20',
+              essence: 'The soul is never born and never dies.',
               verseSanskrit: 'न जायते म्रियते वा कदाचिन्नायं भूत्वा भविता वा न भूयः ।\nअजो नित्यः शाश्वतोऽयं पुराणो न हन्यते हन्यमाने शरीरे ॥',
               verseTransliteration: "na jāyate mriyate vā kadācin nāyaṁ bhūtvā bhavitā vā na bhūyaḥ\najo nityaḥ śāśvato 'yaṁ purāṇo na hanyate hanyamāne śarīre",
               verseWordGuide: [
@@ -1443,6 +1452,7 @@ export const gitaData: GitaData = {
               id: 'ch2_sec2_l3',
               title: 'Like Changing Garments',
               verseRef: 'BG 2.22',
+              essence: 'Like changing worn-out clothes, the soul changes worn-out bodies.',
               verseSanskrit: 'वासांसि जीर्णानि यथा विहाय नवानि गृह्णाति नरोऽपराणि ।\nतथा शरीराणि विहाय जीर्णान्यन्यानि संयाति नवानि देही ॥',
               verseTransliteration: "vāsāṁsi jīrṇāni yathā vihāya navāni gṛhṇāti naro 'parāṇi\ntathā śarīrāṇi vihāya jīrṇāny anyāni saṁyāti navāni dehī",
               verseWordGuide: [
@@ -1644,6 +1654,7 @@ export const gitaData: GitaData = {
               id: 'ch2_sec2_l4',
               title: 'Untouched by Any Element',
               verseRef: 'BG 2.23',
+              essence: 'Weapons, fire, water and wind cannot harm the soul.',
               verseSanskrit: 'नैनं छिन्दन्ति शस्त्राणि नैनं दहति पावकः ।\nन चैनं क्लेदयन्त्यापो न शोषयति मारुतः ॥',
               verseTransliteration: 'nainaṁ chindanti śastrāṇi nainaṁ dahati pāvakaḥ\nna cainaṁ kledayanty āpo na śoṣayati mārutaḥ',
               verseWordGuide: [

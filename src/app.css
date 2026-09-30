@@ -11,6 +11,11 @@
   --color-primary-dark: #1271A5;
   --color-primary-soft: #E2F4FE;
   --color-primary-edge: #8CD1F8;
+  /* Streak flame — fire stays orange whatever the brand colour is */
+  --color-streak: #F4972D;
+  --color-streak-dark: #D97615;
+  --color-streak-soft: #FFF0DC;
+  --color-streak-edge: #F9C98A;
   --color-accent: #8C2F39;
   --color-accent-dark: #6B1F28;
   --color-success: #1B8A73;
@@ -44,6 +49,10 @@
   --color-primary-dark: #1F7BAD;
   --color-primary-soft: #18313F;
   --color-primary-edge: #276586;
+  --color-streak: #F7A83D;
+  --color-streak-dark: #D97615;
+  --color-streak-soft: #3D2A16;
+  --color-streak-edge: #8A5620;
   --color-accent: #C4515E;
   --color-accent-dark: #8E3440;
   --color-success: #2FBF9C;

@@ -19,13 +19,13 @@
   {#each week as day}
     {@const done = activeDays.includes(day.key)}
     <div class="flex flex-col items-center gap-1.5 flex-1">
-      <span class="text-xs font-extrabold {day.isToday ? 'text-primary' : 'text-text-muted'}">{day.label}</span>
+      <span class="text-xs font-extrabold {day.isToday ? 'text-streak' : 'text-text-muted'}">{day.label}</span>
       <div
         class="w-8 h-8 rounded-full flex items-center justify-center
           {done
-            ? 'bg-primary text-white animate-check-pop'
+            ? 'bg-streak text-white animate-check-pop'
             : day.isToday
-              ? 'border-2 border-primary-edge bg-primary-soft'
+              ? 'border-2 border-streak-edge bg-streak-soft'
               : 'bg-border-warm'}"
       >
         {#if done}
