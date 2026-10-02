@@ -13,6 +13,7 @@
   import MultipleChoice from './MultipleChoice.svelte';
   import FillInBlank from './FillInBlank.svelte';
   import ListeningChoice from './ListeningChoice.svelte';
+  import TranslateExercise from './TranslateExercise.svelte';
   import ReflectionPrompt from './ReflectionPrompt.svelte';
   import Mascot, { preloadMascots, type MascotMood } from './Mascot.svelte';
   import VerseHookScreen from './VerseHookScreen.svelte';
@@ -107,6 +108,8 @@
   let showQuit = $state(false);
   let sessionResult = $state<SessionResult | null>(null);
   let combo = $state(0);
+  // A correct translate answer in a different word order from the reference
+  let translatedDifferently = $state(false);
 
   // Set once, in finishSession(), from whichever lesson this session just completed
   let pendingStory = $state<UnitStory | null>(null);
@@ -144,7 +147,7 @@
   let canCheck = $derived(() => {
     if (!activeQuestion) return false;
     if (activeQuestion.type === 'phrase_matching') return matchComplete;
-    if (activeQuestion.type === 'sentence_rebuilding') return selectedWords.length > 0;
+    if (activeQuestion.type === 'sentence_rebuilding' || activeQuestion.type === 'translate') return selectedWords.length > 0;
     return selectedOption !== null;
   });
 
@@ -176,6 +179,7 @@
     matchHadMistake = false;
     isChecked = false;
     isCorrect = false;
+    translatedDifferently = false;
     showFeedback = false;
     encouragement = '';
   }
@@ -256,6 +260,9 @@
     selectedWords = words;
   }
 
+  // Words that carry grammar rather than meaning in a translate answer, so leaving one out is fine
+  const GRAMMAR_WORDS = new Set(['a', 'an', 'the', 'is', 'are', 'was', 'be', 'in', 'of', 'to', 'at', 'by', 'for', 'and', 'it', 'do', 'does', 'as']);
+
   const normalize = (s: string) =>
     s.trim().toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, '');
 
@@ -313,6 +320,19 @@
       case 'sentence_rebuilding':
         isCorrect = normalize(selectedWords.join(' ')) === normalize(q.targetSentence);
         break;
+      case 'translate': {
+        // Graded on meaning, not on one fixed English sentence: English allows many valid orders
+        // ("your right is only in action" / "action is your only right"), and small grammar words
+        // are the learner's choice. Right = every meaning word of the reference, no decoys; a
+        // different phrasing still gets the reference shown.
+        const answerWords = q.answer.split(/\s+/).map(normalize);
+        const given = selectedWords.map(normalize);
+        const meaningWords = (ws: string[]) => ws.filter((w) => !GRAMMAR_WORDS.has(w)).sort().join(' ');
+        const onlyAnswerWords = given.every((w) => answerWords.includes(w));
+        isCorrect = onlyAnswerWords && meaningWords(given) === meaningWords(answerWords);
+        translatedDifferently = isCorrect && normalize(selectedWords.join(' ')) !== normalize(q.answer);
+        break;
+      }
     }
 
     let willResurface = false;
@@ -445,6 +465,7 @@
       case 'phrase_matching': return 'Tap the matching pairs';
       case 'fill_in_the_blank': return 'Fill in the blank';
       case 'listening': return 'Tap what you hear';
+      case 'translate': return 'Write this in English';
       default: return cleanPrompt(q.prompt);
     }
   }
@@ -458,6 +479,8 @@
         return toPhonetic(activeQuestion.answer);
       case 'sentence_rebuilding':
         return toPhonetic(activeQuestion.targetSentence);
+      case 'translate':
+        return activeQuestion.answer;
       case 'listening': {
         const q = activeQuestion;
         const opt = q.options.find((o) => o.word === q.answer);
@@ -477,6 +500,10 @@
       case 'sentence_rebuilding':
       case 'listening':
         return activeQuestion.explanation;
+      case 'translate':
+        return translatedDifferently
+          ? `Another way to say it: "${activeQuestion.answer}"`
+          : activeQuestion.explanation ?? '';
       default:
         return '';
     }
@@ -672,10 +699,13 @@
               {#if activeQuestion.type === 'phrase_matching'}
                 <p class="text-[15px] font-bold text-text-muted mt-1">{cleanPrompt(activeQuestion.prompt)}</p>
               {/if}
+              {#if activeQuestion.type === 'sentence_rebuilding' && activeQuestion.hint}
+                <p class="text-[15px] font-bold text-text-muted mt-1">"{activeQuestion.hint}"</p>
+              {/if}
             {/if}
           </div>
-          <!-- Fill-in-the-blank shows Krishna beside its sentence bubble instead; reflections have their own -->
-          {#if activeQuestion.type !== 'reflection' && activeQuestion.type !== 'fill_in_the_blank'}
+          <!-- Fill-in-the-blank and translate show Krishna beside their speech bubble instead; reflections have their own -->
+          {#if activeQuestion.type !== 'reflection' && activeQuestion.type !== 'fill_in_the_blank' && activeQuestion.type !== 'translate'}
             <Mascot mood={exerciseMood} size="lg" />
           {/if}
         </div>
@@ -698,6 +728,15 @@
               />
             {:else if activeQuestion.type === 'sentence_rebuilding'}
               <WordTilePicker tiles={activeQuestion.tiles} onChange={handleWordChange} disabled={isChecked} />
+            {:else if activeQuestion.type === 'translate'}
+              <TranslateExercise
+                sanskrit={activeQuestion.sanskrit}
+                tiles={activeQuestion.tiles}
+                onChange={handleWordChange}
+                disabled={isChecked}
+                mascotMood={exerciseMood}
+                autoPlay={cfg.autoPlayRecitation}
+              />
             {:else if activeQuestion.type === 'fill_in_the_blank'}
               <FillInBlank
                 prompt={activeQuestion.prompt}

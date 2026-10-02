@@ -144,12 +144,12 @@
       </div>
 
       <!-- ─── Path ─── -->
-      <div class="relative flex flex-col items-center pt-10 pb-6">
+      <div class="relative flex flex-col items-center pt-[72px] pb-6">
         {#if section.lessons.length >= 3}
           {@const mascotNodeOffset = pathOffset(section.id, startIndex + 2)}
           <div
             class="absolute pointer-events-none"
-            style="{mascotNodeOffset >= 0 ? 'left' : 'right'}: 8%; top: {2 * 124 + 40}px"
+            style="{mascotNodeOffset >= 0 ? 'left' : 'right'}: 8%; top: {2 * 124 + 72}px"
           >
             <Mascot size="lg" animate={true} />
           </div>

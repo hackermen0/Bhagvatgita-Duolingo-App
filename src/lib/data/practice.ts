@@ -34,6 +34,8 @@ export function wordsTestedBy(q: Question): string[] {
       return [q.answer];
     case 'sentence_rebuilding':
       return q.tiles;
+    case 'translate':
+      return q.sanskrit.split(/\s+/);
     default:
       return [];
   }

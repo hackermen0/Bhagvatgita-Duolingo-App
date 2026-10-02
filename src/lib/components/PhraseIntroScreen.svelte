@@ -12,6 +12,7 @@
   }>();
 
   let isSpeaking = $state(false);
+  let rate = $state<'normal' | 'slow'>('normal');
   let speechSupported = $state(false);
   let currentUtterance: SpeechSynthesisUtterance | null = null;
 
@@ -31,10 +32,21 @@
       isSpeaking = false;
       return;
     }
+    startSpeaking();
+  }
+
+  function setRate(newRate: 'normal' | 'slow') {
+    if (rate === newRate) return;
+    rate = newRate;
+    // Switching speed mid-playback restarts the phrase at the new rate
+    if (isSpeaking) startSpeaking();
+  }
+
+  function startSpeaking() {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(part.sanskrit);
     utterance.lang = 'hi-IN';
-    utterance.rate = 0.6;
+    utterance.rate = rate === 'slow' ? 0.4 : 0.75;
     // Cancelling fires the old utterance's callbacks late; the identity check ignores stale ones
     utterance.onend = utterance.onerror = () => {
       if (currentUtterance === utterance) isSpeaking = false;
@@ -72,11 +84,12 @@
   </div>
 
   {#if speechSupported}
+    <div class="flex flex-col items-center gap-3">
     <button
       type="button"
       onclick={toggleListen}
       aria-label={isSpeaking ? 'Stop' : 'Listen to this phrase'}
-      class="relative self-center flex items-center justify-center gap-3 h-14 px-8 rounded-2xl bg-info text-white active:translate-y-1 transition-transform"
+      class="relative flex items-center justify-center gap-3 h-14 px-8 rounded-2xl bg-info text-white active:translate-y-1 transition-transform"
       style="box-shadow: 0 5px 0 var(--color-info-dark)"
     >
       {#if isSpeaking}
@@ -91,6 +104,22 @@
       </svg>
       <span class="text-base font-black uppercase tracking-wide">{isSpeaking ? 'Stop' : 'Listen'}</span>
     </button>
+
+    <!-- Speed toggle — only shown while actively speaking -->
+    {#if isSpeaking}
+      <div class="flex items-center rounded-full border-2 mt-2 border-border-warm bg-bg-surface p-0.5 animate-[fade-in_0.2s_ease-out]">
+        {#each ['slow', 'normal'] as const as r}
+          <button
+            type="button"
+            onclick={() => setRate(r)}
+            class="px-4 py-1 rounded-full text-xs font-black uppercase tracking-wide {rate === r ? 'bg-info text-white' : 'text-text-muted hover:text-text-primary'}"
+          >
+            {r}
+          </button>
+        {/each}
+      </div>
+    {/if}
+    </div>
   {/if}
 </div>
 

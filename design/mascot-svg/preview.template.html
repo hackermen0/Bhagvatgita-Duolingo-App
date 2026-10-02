@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Krishna mascot — animation preview</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { margin: 0; font-family: system-ui, sans-serif; background: #fffcf7; color: #3a2b1e; display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 16px; }
+  #stage { width: min(78vw, 420px); aspect-ratio: 1; }
+  #stage svg { width: 100%; height: 100%; overflow: visible; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  button { font: 700 14px system-ui; padding: 10px 16px; border-radius: 14px; border: 2px solid #ede2d1; border-bottom-width: 4px; background: #fff; color: #3a2b1e; cursor: pointer; }
+  button:active { transform: translateY(2px); border-bottom-width: 2px; }
+  label { font: 600 14px system-ui; display: flex; align-items: center; gap: 6px; }
+  p { max-width: 460px; text-align: center; font-size: 13px; opacity: .7; margin: 0; }
+</style>
+</head>
+<body>
+<div id="stage"><!--SVG--></div>
+<div class="row">
+  <button data-act="correct">Correct</button>
+  <button data-act="wrong">Wrong</button>
+  <button data-act="celebrate">Celebrate</button>
+  <button data-act="think">Thinking</button>
+</div>
+<label><input type="checkbox" id="idleToggle" checked> Idle animation (breathing, blinking, feather sway)</label>
+<p>Prototype: the layered SVG is animated directly (no Lottie). Expressions here are faked by flipping/tilting the existing mouth and brows; real expression variants would look better.</p>
+
+<script>
+const NS = 'http://www.w3.org/2000/svg';
+const svg = document.querySelector('#stage svg');
+const $ = (id) => svg.getElementById(id);
+
+// Everything except the ground shadow moves with the character; `bob` carries the idle motion and
+// `char` carries one-shot reactions, so the two never fight over one transform.
+const bob = document.createElementNS(NS, 'g'); bob.id = 'bob';
+const char = document.createElementNS(NS, 'g'); char.id = 'char';
+[...svg.children].filter((c) => c.id !== 'shadow').forEach((c) => char.appendChild(c));
+bob.appendChild(char); svg.appendChild(bob);
+
+// Every animation writes its own pivot into the keyframe, so all layers can stack with composite:'add'
+const rot = (a, px, py) => `translate(${px}px, ${py}px) rotate(${a}deg) translate(${-px}px, ${-py}px)`;
+const sc = (sx, sy, px, py) => `translate(${px}px, ${py}px) scale(${sx}, ${sy}) translate(${-px}px, ${-py}px)`;
+const tr = (x, y) => `translate(${x}px, ${y}px)`;
+const HEAD = ['hair-back', 'hair-bun', 'left-ear', 'right-ear', 'head', 'peacock-feather', 'hair-front', 'headband'];
+const NECK = [627, 745], FEET = [627, 1170];
+const P = {
+  leftShoulder: [498, 832], rightShoulder: [772, 830], feather: [735, 240],
+  leftEye: [506, 571], rightEye: [747, 571], mouth: [627, 670], earL: [373, 625], earR: [882, 625],
+  browL: [497, 455], browR: [759, 455], shadow: [618, 1169],
+};
+const els = {}; for (const el of svg.querySelectorAll('[id]')) els[el.id] = el;
+for (const el of [bob, char, els.shadow, ...Object.values(els)]) el.style.transformOrigin = '0 0';
+
+const running = [];
+function play(el, frames, opts = {}) {
+  const a = el.animate(frames, { fill: 'none', easing: 'ease-in-out', ...opts });
+  return a;
+}
+const loops = [];
+function startIdle() {
+  stopIdle();
+  const L = (el, frames, o) => loops.push(play(el, frames, { iterations: Infinity, direction: 'alternate', ...o }));
+  L(bob, [{ transform: tr(0, 0) + sc(1, 1, ...FEET) }, { transform: tr(0, -5) + sc(1.008, 1.012, ...FEET) }], { duration: 1900 });
+  for (const id of HEAD) L(els[id], [{ transform: rot(-1.3, ...NECK) }, { transform: rot(1.3, ...NECK) }], { duration: 3400 });
+  L(els['peacock-feather'], [{ transform: rot(-3.5, ...P.feather) }, { transform: rot(3.5, ...P.feather) }], { duration: 2300, composite: 'add' });
+  L(els['earring-left'], [{ transform: rot(-9, ...P.earL) }, { transform: rot(9, ...P.earL) }], { duration: 1500 });
+  L(els['earring-right'], [{ transform: rot(9, ...P.earR) }, { transform: rot(-9, ...P.earR) }], { duration: 1500 });
+  // Blink: squash each eye to a line and back, every few seconds
+  for (const [id, p] of [['left-eye', P.leftEye], ['right-eye', P.rightEye]]) {
+    loops.push(play(els[id], [
+      { transform: sc(1, 1, ...p), offset: 0 }, { transform: sc(1, 1, ...p), offset: 0.93 },
+      { transform: sc(1, 0.07, ...p), offset: 0.965 }, { transform: sc(1, 1, ...p), offset: 1 },
+    ], { duration: 4200, iterations: Infinity, easing: 'linear' }));
+  }
+}
+function stopIdle() { loops.forEach((a) => a.cancel()); loops.length = 0; }
+
+// ── One-shot reactions (all layered on top of idle with composite:'add') ──
+const R = (el, frames, o) => play(el, frames, { composite: 'add', ...o });
+const hopFrames = (h, s = 1) => [
+  { transform: tr(0, 0) + sc(1, 1, ...FEET), offset: 0 },
+  { transform: tr(0, 0) + sc(1 + 0.07 * s, 1 - 0.1 * s, ...FEET), offset: 0.18 },
+  { transform: tr(0, -h) + sc(1 - 0.03 * s, 1 + 0.05 * s, ...FEET), offset: 0.5 },
+  { transform: tr(0, 0) + sc(1 + 0.08 * s, 1 - 0.1 * s, ...FEET), offset: 0.82 },
+  { transform: tr(0, 0) + sc(1, 1, ...FEET), offset: 1 },
+];
+function hop(h = 110, dur = 800, armsUp = 38) {
+  R(char, hopFrames(h), { duration: dur, easing: 'ease-out' });
+  R(els.shadow, [{ transform: sc(1, 1, ...P.shadow), offset: 0 }, { transform: sc(0.72, 0.72, ...P.shadow), offset: 0.5 }, { transform: sc(1, 1, ...P.shadow), offset: 1 }], { duration: dur });
+  for (const [id, p, a] of [['left-arm', P.leftShoulder, armsUp], ['right-arm', P.rightShoulder, -armsUp]]) {
+    R(els[id], [{ transform: rot(0, ...p) }, { transform: rot(a, ...p), offset: 0.5 }, { transform: rot(0, ...p) }], { duration: dur });
+  }
+  R(els['peacock-feather'], [{ transform: rot(0, ...P.feather) }, { transform: rot(-9, ...P.feather), offset: 0.5 }, { transform: rot(3, ...P.feather), offset: 0.8 }, { transform: rot(0, ...P.feather) }], { duration: dur });
+}
+function grin(dur) {
+  R(els.mouth, [{ transform: sc(1, 1, ...P.mouth) }, { transform: sc(1.45, 1.7, ...P.mouth), offset: 0.15 }, { transform: sc(1.45, 1.7, ...P.mouth), offset: 0.8 }, { transform: sc(1, 1, ...P.mouth) }], { duration: dur });
+  for (const [id, p] of [['left-eye', P.leftEye], ['right-eye', P.rightEye]]) {
+    R(els[id], [{ transform: sc(1, 1, ...p) }, { transform: sc(1.05, 0.72, ...p), offset: 0.15 }, { transform: sc(1.05, 0.72, ...p), offset: 0.8 }, { transform: sc(1, 1, ...p) }], { duration: dur });
+  }
+  for (const id of ['eye-brow-left', 'eye-brow-right']) {
+    R(els[id], [{ transform: tr(0, 0) }, { transform: tr(0, -14), offset: 0.15 }, { transform: tr(0, -14), offset: 0.8 }, { transform: tr(0, 0) }], { duration: dur });
+  }
+}
+function correct() { hop(110, 800); grin(800); }
+function celebrate() {
+  hop(150, 1000, 60); setTimeout(() => hop(150, 1000, 60), 950); grin(2000);
+  for (const id of HEAD) R(els[id], [{ transform: rot(0, ...NECK) }, { transform: rot(-8, ...NECK), offset: 0.25 }, { transform: rot(8, ...NECK), offset: 0.75 }, { transform: rot(0, ...NECK) }], { duration: 2000 });
+}
+function wrong() {
+  const dur = 1300;
+  R(char, [{ transform: tr(0, 0) + sc(1, 1, ...FEET), offset: 0 }, { transform: tr(0, 6) + sc(1.03, 0.95, ...FEET), offset: 0.2 }, { transform: tr(0, 6) + sc(1.03, 0.95, ...FEET), offset: 0.8 }, { transform: tr(0, 0) + sc(1, 1, ...FEET), offset: 1 }], { duration: dur });
+  const shake = [0, -7, 7, -6, 6, -3, 0];
+  for (const id of HEAD) {
+    R(els[id], shake.map((a, i) => ({ transform: rot(a, ...NECK) + tr(0, a === 0 ? 0 : 4), offset: i / (shake.length - 1) })), { duration: dur, easing: 'linear' });
+  }
+  R(els.mouth, [{ transform: sc(1, 1, ...P.mouth) }, { transform: sc(0.9, -1, ...P.mouth), offset: 0.2 }, { transform: sc(0.9, -1, ...P.mouth), offset: 0.8 }, { transform: sc(1, 1, ...P.mouth) }], { duration: dur });
+  R(els['eye-brow-left'], [{ transform: rot(0, ...P.browL) }, { transform: tr(0, -4) + rot(-15, ...P.browL), offset: 0.2 }, { transform: tr(0, -4) + rot(-15, ...P.browL), offset: 0.8 }, { transform: rot(0, ...P.browL) }], { duration: dur });
+  R(els['eye-brow-right'], [{ transform: rot(0, ...P.browR) }, { transform: tr(0, -4) + rot(15, ...P.browR), offset: 0.2 }, { transform: tr(0, -4) + rot(15, ...P.browR), offset: 0.8 }, { transform: rot(0, ...P.browR) }], { duration: dur });
+  for (const [id, p, a] of [['left-arm', P.leftShoulder, -7], ['right-arm', P.rightShoulder, 7]]) {
+    R(els[id], [{ transform: rot(0, ...p) }, { transform: rot(a, ...p), offset: 0.25 }, { transform: rot(a, ...p), offset: 0.8 }, { transform: rot(0, ...p) }], { duration: dur });
+  }
+}
+function think() {
+  const dur = 1800;
+  for (const id of HEAD) R(els[id], [{ transform: rot(0, ...NECK) }, { transform: rot(9, ...NECK) + tr(6, 0), offset: 0.25 }, { transform: rot(9, ...NECK) + tr(6, 0), offset: 0.8 }, { transform: rot(0, ...NECK) }], { duration: dur });
+  R(els['eye-brow-right'], [{ transform: tr(0, 0) }, { transform: tr(0, -18), offset: 0.25 }, { transform: tr(0, -18), offset: 0.8 }, { transform: tr(0, 0) }], { duration: dur });
+  for (const id of ['left-pupil', 'right-pupil']) R(els[id], [{ transform: tr(0, 0) }, { transform: tr(-16, -20), offset: 0.25 }, { transform: tr(-16, -20), offset: 0.8 }, { transform: tr(0, 0) }], { duration: dur });
+}
+
+const ACTIONS = { correct, wrong, celebrate, think };
+document.querySelectorAll('button[data-act]').forEach((b) => b.addEventListener('click', () => ACTIONS[b.dataset.act]()));
+document.getElementById('idleToggle').addEventListener('change', (e) => (e.target.checked ? startIdle() : stopIdle()));
+if (!matchMedia('(prefers-reduced-motion: reduce)').matches) startIdle();
+window.__actions = ACTIONS;
+</script>
+</body>
+</html>

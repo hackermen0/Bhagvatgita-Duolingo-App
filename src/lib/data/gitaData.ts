@@ -61,9 +61,23 @@ export type Question = QuestionMeta & (
       id: string;
       type: 'sentence_rebuilding';
       prompt: string;
+      /** The phrase's meaning, shown as a cue when it builds a single phrase */
+      hint?: string;
       targetSentence: string;
       tiles: string[];
       explanation: string;
+    }
+  | {
+      id: string;
+      type: 'translate';
+      prompt: string;
+      /** IAST phrase Krishna says (shown and spoken in his speech bubble) */
+      sanskrit: string;
+      /** The English the learner assembles from tiles — graded by its words, in any order */
+      answer: string;
+      /** The answer's words plus a few distractors; shuffled on screen */
+      tiles: string[];
+      explanation?: string;
     }
   | {
       id: string;
@@ -331,9 +345,18 @@ export const gitaData: GitaData = {
                       ]
                     },
                     {
+                      id: 'bg247_p1_t',
+                      type: 'translate',
+                      prompt: 'Write this in English',
+                      sanskrit: 'karmaṇi eva adhikāraḥ te',
+                      answer: 'your right is only in action',
+                      tiles: ['your', 'right', 'is', 'only', 'in', 'action', 'fruits', 'never', 'results']
+                    },
+                    {
                       id: 'p1_q3',
                       type: 'sentence_rebuilding',
                       prompt: 'Arrange the words to form Part 1 of the verse.',
+                      hint: 'You have a right to perform your prescribed duties.',
                       targetSentence: 'karmaṇi eva adhikāraḥ te',
                       tiles: ['karmaṇi', 'eva', 'adhikāraḥ', 'te'],
                       explanation: '"karmani eva adhikarah te" — Your right is in action only.'
@@ -380,6 +403,23 @@ export const gitaData: GitaData = {
                         { sanskrit: 'mā phaleṣu', english: 'never in the fruits' },
                         { sanskrit: 'kadācana', english: 'at any time' }
                       ]
+                    },
+                    {
+                      id: 'bg247_p2_t',
+                      type: 'translate',
+                      prompt: 'Write this in English',
+                      sanskrit: 'mā phaleṣu kadācana',
+                      answer: 'never in the fruits at any time',
+                      tiles: ['never', 'in', 'the', 'fruits', 'at', 'any', 'time', 'action', 'right', 'duty']
+                    },
+                    {
+                      id: 'bg247_p2_r',
+                      type: 'sentence_rebuilding',
+                      prompt: 'Arrange the words to form Part 2 of the verse.',
+                      hint: 'Never in the fruits at any time.',
+                      targetSentence: 'mā phaleṣu kadācana',
+                      tiles: ['mā', 'phaleṣu', 'kadācana'],
+                      explanation: 'Never in the fruits, at any time. You may act, but the results are not yours to claim.'
                     }
                   ]
                 },
@@ -405,6 +445,32 @@ export const gitaData: GitaData = {
                         { sanskrit: 'hetuḥ', english: 'motive / cause' },
                         { sanskrit: 'bhūḥ', english: 'become' }
                       ]
+                    },
+                    {
+                      id: 'bg247_p3_m',
+                      type: 'phrase_matching',
+                      prompt: 'Now match the joined phrases to their meanings.',
+                      pairs: [
+                        { sanskrit: 'karma-phala hetuḥ', english: 'the fruit of action as your motive' },
+                        { sanskrit: 'mā bhūḥ', english: 'do not be' }
+                      ]
+                    },
+                    {
+                      id: 'bg247_p3_t',
+                      type: 'translate',
+                      prompt: 'Write this in English',
+                      sanskrit: 'mā karma-phala hetuḥ bhūḥ',
+                      answer: 'never be motivated by results',
+                      tiles: ['never', 'be', 'motivated', 'by', 'results', 'duty', 'right', 'attached']
+                    },
+                    {
+                      id: 'bg247_p3_r',
+                      type: 'sentence_rebuilding',
+                      prompt: 'Arrange the words to form Part 3 of the verse.',
+                      hint: 'Never be motivated by the fruits of action.',
+                      targetSentence: 'mā karma-phala hetuḥ bhūḥ',
+                      tiles: ['mā', 'karma-phala', 'hetuḥ', 'bhūḥ'],
+                      explanation: 'Never be motivated by the fruits of action.'
                     },
                     {
                       id: 'p3_q2',
@@ -439,6 +505,33 @@ export const gitaData: GitaData = {
                         { sanskrit: 'astu', english: 'let there be' },
                         { sanskrit: 'akarmaṇi', english: 'in inaction' }
                       ]
+                    },
+                    {
+                      id: 'bg247_p4_m',
+                      type: 'phrase_matching',
+                      prompt: 'Now match the joined phrases to their meanings.',
+                      pairs: [
+                        { sanskrit: 'mā te', english: 'not your' },
+                        { sanskrit: 'saṅgaḥ astu', english: 'let there be attachment' },
+                        { sanskrit: 'akarmaṇi', english: 'in inaction' }
+                      ]
+                    },
+                    {
+                      id: 'bg247_p4_t',
+                      type: 'translate',
+                      prompt: 'Write this in English',
+                      sanskrit: 'mā te saṅgaḥ astu akarmaṇi',
+                      answer: 'do not be attached to inaction',
+                      tiles: ['do', 'not', 'be', 'attached', 'to', 'inaction', 'fruits', 'right', 'duty']
+                    },
+                    {
+                      id: 'bg247_p4_r',
+                      type: 'sentence_rebuilding',
+                      prompt: 'Arrange the words to form Part 4 of the verse.',
+                      hint: 'Nor let your attachment be to inaction.',
+                      targetSentence: 'mā te saṅgaḥ astu akarmaṇi',
+                      tiles: ['mā', 'te', 'saṅgaḥ', 'astu', 'akarmaṇi'],
+                      explanation: 'Nor let your attachment be to inaction.'
                     },
                     {
                       id: 'p4_q2',
@@ -568,9 +661,18 @@ export const gitaData: GitaData = {
                       ]
                     },
                     {
+                      id: 'bg248_p1_t',
+                      type: 'translate',
+                      prompt: 'Write this in English',
+                      sanskrit: 'yogasthaḥ kuru karmāṇi',
+                      answer: 'established in yoga perform actions',
+                      tiles: ['established', 'in', 'yoga', 'perform', 'actions', 'abandon', 'failure', 'wealth']
+                    },
+                    {
                       id: 'bg248_p1_q3',
                       type: 'sentence_rebuilding',
                       prompt: 'Arrange the words to form Part 1 of the verse.',
+                      hint: 'Established in Yoga, perform your duties.',
                       targetSentence: 'yogasthaḥ kuru karmāṇi',
                       tiles: ['yogasthaḥ', 'kuru', 'karmāṇi'],
                       explanation: '"yogasthah kuru karmani" — Established in Yoga, perform your duties.'
@@ -608,6 +710,14 @@ export const gitaData: GitaData = {
                         { sanskrit: 'saṅgaṁ tyaktvā', english: 'abandoning attachment' },
                         { sanskrit: 'dhanañjaya', english: 'O Arjuna' }
                       ]
+                    },
+                    {
+                      id: 'bg248_p2_t',
+                      type: 'translate',
+                      prompt: 'Write this in English',
+                      sanskrit: 'saṅgaṁ tyaktvā dhanañjaya',
+                      answer: 'abandoning attachment O Arjuna',
+                      tiles: ['abandoning', 'attachment', 'O', 'Arjuna', 'success', 'duties', 'equal']
                     },
                     {
                       id: 'bg248_p2_q3',
@@ -650,6 +760,23 @@ export const gitaData: GitaData = {
                         { sanskrit: 'siddhy-asiddhyoḥ', english: 'in success and failure' },
                         { sanskrit: 'samo bhūtvā', english: 'being equal' }
                       ]
+                    },
+                    {
+                      id: 'bg248_p3_t',
+                      type: 'translate',
+                      prompt: 'Write this in English',
+                      sanskrit: 'siddhy-asiddhyoḥ samo bhūtvā',
+                      answer: 'being equal in success and failure',
+                      tiles: ['being', 'equal', 'in', 'success', 'and', 'failure', 'attachment', 'abandoning', 'duties']
+                    },
+                    {
+                      id: 'bg248_p3_r',
+                      type: 'sentence_rebuilding',
+                      prompt: 'Arrange the words to form Part 3 of the verse.',
+                      hint: 'Being equal in success and failure.',
+                      targetSentence: 'siddhy-asiddhyoḥ samo bhūtvā',
+                      tiles: ['siddhy-asiddhyoḥ', 'samo', 'bhūtvā'],
+                      explanation: 'Being equal in success and failure.'
                     }
                   ]
                 },
@@ -675,6 +802,33 @@ export const gitaData: GitaData = {
                         { sanskrit: 'yoga', english: 'Yoga' },
                         { sanskrit: 'ucyate', english: 'is called / is said to be' }
                       ]
+                    },
+                    {
+                      id: 'bg248_p4_m',
+                      type: 'phrase_matching',
+                      prompt: 'Now match the joined phrases to their meanings.',
+                      pairs: [
+                        { sanskrit: 'yoga ucyate', english: 'is called Yoga' },
+                        { sanskrit: 'samatvaṁ', english: 'evenness of mind' },
+                        { sanskrit: 'siddhy-asiddhyoḥ samo bhūtvā', english: 'being equal in success and failure' }
+                      ]
+                    },
+                    {
+                      id: 'bg248_p4_t',
+                      type: 'translate',
+                      prompt: 'Write this in English',
+                      sanskrit: 'samatvaṁ yoga ucyate',
+                      answer: 'evenness of mind is called yoga',
+                      tiles: ['evenness', 'of', 'mind', 'is', 'called', 'yoga', 'action', 'skill', 'peace']
+                    },
+                    {
+                      id: 'bg248_p4_r',
+                      type: 'sentence_rebuilding',
+                      prompt: 'Arrange the words to form Part 4 of the verse.',
+                      hint: 'Such evenness of mind is called Yoga.',
+                      targetSentence: 'samatvaṁ yoga ucyate',
+                      tiles: ['samatvaṁ', 'yoga', 'ucyate'],
+                      explanation: 'Such evenness of mind is called Yoga.'
                     },
                     {
                       id: 'bg248_p4_q2',
@@ -759,6 +913,23 @@ export const gitaData: GitaData = {
                         { sanskrit: 'buddhi-yukto', english: 'endowed with wisdom' },
                         { sanskrit: 'jahātīha ubhe sukṛta-duṣkṛte', english: 'casts off both good and bad actions in this life' }
                       ]
+                    },
+                    {
+                      id: 'bg250_p1_t',
+                      type: 'translate',
+                      prompt: 'Write this in English',
+                      sanskrit: 'ubhe sukṛta-duṣkṛte',
+                      answer: 'both good and bad actions',
+                      tiles: ['both', 'good', 'and', 'bad', 'actions', 'skill', 'wisdom', 'therefore']
+                    },
+                    {
+                      id: 'bg250_p1_r',
+                      type: 'sentence_rebuilding',
+                      prompt: 'Arrange the words to form Part 1 of the verse.',
+                      hint: 'One endowed with wisdom casts off both good and bad karma in this life.',
+                      targetSentence: 'buddhi-yukto jahātīha ubhe sukṛta-duṣkṛte',
+                      tiles: ['buddhi-yukto', 'jahātīha', 'ubhe', 'sukṛta-duṣkṛte'],
+                      explanation: 'One endowed with wisdom casts off both good and bad actions in this life.'
                     }
                   ]
                 },
@@ -786,12 +957,30 @@ export const gitaData: GitaData = {
                       ]
                     },
                     {
-                      id: 'bg250_p2_q2',
+                      id: 'bg250_p2_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrase to its meaning.',
+                      prompt: 'Now match the joined phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'tasmād yogāya yujyasva', english: 'therefore, strive for Yoga' }
+                        { sanskrit: 'tasmād yogāya', english: 'therefore, for Yoga' },
+                        { sanskrit: 'yujyasva', english: 'strive' }
                       ]
+                    },
+                    {
+                      id: 'bg250_p2_t',
+                      type: 'translate',
+                      prompt: 'Write this in English',
+                      sanskrit: 'tasmād yogāya yujyasva',
+                      answer: 'therefore strive for yoga',
+                      tiles: ['therefore', 'strive', 'for', 'yoga', 'skill', 'both', 'wisdom']
+                    },
+                    {
+                      id: 'bg250_p2_r',
+                      type: 'sentence_rebuilding',
+                      prompt: 'Arrange the words to form Part 2 of the verse.',
+                      hint: 'Therefore, strive for Yoga.',
+                      targetSentence: 'tasmād yogāya yujyasva',
+                      tiles: ['tasmād', 'yogāya', 'yujyasva'],
+                      explanation: 'Therefore, strive for Yoga.'
                     }
                   ]
                 },
@@ -817,6 +1006,32 @@ export const gitaData: GitaData = {
                         { sanskrit: 'karmasu', english: 'in action / works' },
                         { sanskrit: 'kauśalam', english: 'skill / mastery' }
                       ]
+                    },
+                    {
+                      id: 'bg250_p3_m',
+                      type: 'phrase_matching',
+                      prompt: 'Now match the joined phrases to their meanings.',
+                      pairs: [
+                        { sanskrit: 'yogaḥ kauśalam', english: 'Yoga is skill' },
+                        { sanskrit: 'karmasu', english: 'in action / works' }
+                      ]
+                    },
+                    {
+                      id: 'bg250_p3_t',
+                      type: 'translate',
+                      prompt: 'Write this in English',
+                      sanskrit: 'yogaḥ karmasu kauśalam',
+                      answer: 'yoga is skill in action',
+                      tiles: ['yoga', 'is', 'skill', 'in', 'action', 'wisdom', 'therefore', 'both']
+                    },
+                    {
+                      id: 'bg250_p3_r',
+                      type: 'sentence_rebuilding',
+                      prompt: 'Arrange the words to form Part 3 of the verse.',
+                      hint: 'Yoga is skill in action.',
+                      targetSentence: 'yogaḥ karmasu kauśalam',
+                      tiles: ['yogaḥ', 'karmasu', 'kauśalam'],
+                      explanation: 'Yoga is skill in action.'
                     },
                     {
                       id: 'bg250_p3_q2',
@@ -899,6 +1114,23 @@ export const gitaData: GitaData = {
                         { sanskrit: 'vihāya kāmān', english: 'giving up desires' },
                         { sanskrit: 'niḥspṛhaḥ', english: 'free from craving' }
                       ]
+                    },
+                    {
+                      id: 'bg271_p1_t',
+                      type: 'translate',
+                      prompt: 'Write this in English',
+                      sanskrit: 'vihāya kāmān niḥspṛhaḥ',
+                      answer: 'giving up desires free from craving',
+                      tiles: ['giving', 'up', 'desires', 'free', 'from', 'craving', 'ego', 'peace', 'attains']
+                    },
+                    {
+                      id: 'bg271_p1_r',
+                      type: 'sentence_rebuilding',
+                      prompt: 'Arrange the words to form Part 1 of the verse.',
+                      hint: 'That person who relinquishes all desires and moves about free from longing.',
+                      targetSentence: 'vihāya kāmān niḥspṛhaḥ',
+                      tiles: ['vihāya', 'kāmān', 'niḥspṛhaḥ'],
+                      explanation: 'Giving up desires, free from craving.'
                     }
                   ]
                 },
@@ -924,12 +1156,29 @@ export const gitaData: GitaData = {
                       ]
                     },
                     {
-                      id: 'bg271_p2_q2',
+                      id: 'bg271_p2_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrase to its meaning.',
+                      prompt: 'Now match the joined phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'nirmamo nirahaṅkāraḥ', english: 'free from possessiveness and false ego' }
+                        { sanskrit: 'nirmamo nirahaṅkāraḥ', english: 'free from possessiveness and false ego' },
+                        { sanskrit: 'vihāya kāmān niḥspṛhaḥ', english: 'giving up desires, free from craving' }
                       ]
+                    },
+                    {
+                      id: 'bg271_p2_t',
+                      type: 'translate',
+                      prompt: 'Write this in English',
+                      sanskrit: 'nirmamo nirahaṅkāraḥ',
+                      answer: 'free from possessiveness and false ego',
+                      tiles: ['free', 'from', 'possessiveness', 'and', 'false', 'ego', 'desires', 'peace', 'attains']
+                    },
+                    {
+                      id: 'bg271_p2_r',
+                      type: 'sentence_rebuilding',
+                      prompt: 'Arrange the words to form Part 2 of the verse.',
+                      targetSentence: 'vihāya kāmān niḥspṛhaḥ nirmamo nirahaṅkāraḥ',
+                      tiles: ['vihāya', 'kāmān', 'niḥspṛhaḥ', 'nirmamo', 'nirahaṅkāraḥ'],
+                      explanation: 'Giving up desires and craving, free from possessiveness and false ego.'
                     }
                   ]
                 },
@@ -955,6 +1204,32 @@ export const gitaData: GitaData = {
                         { sanskrit: 'śāntim', english: 'peace' },
                         { sanskrit: 'adhigacchati', english: 'attains' }
                       ]
+                    },
+                    {
+                      id: 'bg271_p3_m',
+                      type: 'phrase_matching',
+                      prompt: 'Now match the joined phrases to their meanings.',
+                      pairs: [
+                        { sanskrit: 'śāntim adhigacchati', english: 'attains peace' },
+                        { sanskrit: 'sa adhigacchati', english: 'he attains' }
+                      ]
+                    },
+                    {
+                      id: 'bg271_p3_t',
+                      type: 'translate',
+                      prompt: 'Write this in English',
+                      sanskrit: 'sa śāntim adhigacchati',
+                      answer: 'he attains peace',
+                      tiles: ['he', 'attains', 'peace', 'desires', 'ego', 'gives']
+                    },
+                    {
+                      id: 'bg271_p3_r',
+                      type: 'sentence_rebuilding',
+                      prompt: 'Arrange the words to form Part 3 of the verse.',
+                      hint: 'He alone attains real peace.',
+                      targetSentence: 'sa śāntim adhigacchati',
+                      tiles: ['sa', 'śāntim', 'adhigacchati'],
+                      explanation: 'He alone attains real peace.'
                     },
                     {
                       id: 'bg271_p3_q2',
@@ -1055,9 +1330,18 @@ export const gitaData: GitaData = {
                       ]
                     },
                     {
+                      id: 'bg213_p1_t',
+                      type: 'translate',
+                      prompt: 'Write this in English',
+                      sanskrit: 'asmin dehe',
+                      answer: 'in this body',
+                      tiles: ['in', 'this', 'body', 'soul', 'old', 'another']
+                    },
+                    {
                       id: 'bg213_p1_q3',
                       type: 'sentence_rebuilding',
                       prompt: 'Arrange the words to form Part 1 of the verse.',
+                      hint: 'As, for the embodied soul, in this body...',
                       targetSentence: 'dehinaḥ asmin yathā dehe',
                       tiles: ['dehinaḥ', 'asmin', 'yathā', 'dehe'],
                       explanation: '"dehinaḥ asmin yathā dehe" — As, for the embodied soul, in this body.'
@@ -1088,12 +1372,31 @@ export const gitaData: GitaData = {
                       ]
                     },
                     {
-                      id: 'bg213_p2_q2',
+                      id: 'bg213_p2_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrase to its meaning.',
+                      prompt: 'Now match the joined phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'kaumāraṁ yauvanaṁ jarā', english: 'childhood, youth, and old age' }
+                        { sanskrit: 'kaumāram yauvanam', english: 'childhood and youth' },
+                        { sanskrit: 'jarā', english: 'old age' },
+                        { sanskrit: 'asmin dehe', english: 'in this body' }
                       ]
+                    },
+                    {
+                      id: 'bg213_p2_t',
+                      type: 'translate',
+                      prompt: 'Write this in English',
+                      sanskrit: 'kaumāram yauvanam jarā',
+                      answer: 'childhood youth and old age',
+                      tiles: ['childhood', 'youth', 'and', 'old', 'age', 'body', 'wise', 'death']
+                    },
+                    {
+                      id: 'bg213_p2_r',
+                      type: 'sentence_rebuilding',
+                      prompt: 'Arrange the words to form Part 2 of the verse.',
+                      hint: 'childhood, youth, and old age.',
+                      targetSentence: 'kaumāram yauvanam jarā',
+                      tiles: ['kaumāram', 'yauvanam', 'jarā'],
+                      explanation: 'Childhood, youth, and old age.'
                     }
                   ]
                 },
@@ -1130,6 +1433,23 @@ export const gitaData: GitaData = {
                         { sanskrit: 'tathā dehāntara-prāptiḥ', english: 'similarly, attaining another body' },
                         { sanskrit: 'dhīraḥ tatra', english: 'the wise person, in that' }
                       ]
+                    },
+                    {
+                      id: 'bg213_p3_t',
+                      type: 'translate',
+                      prompt: 'Write this in English',
+                      sanskrit: 'tathā dehāntara-prāptiḥ',
+                      answer: 'similarly attaining another body',
+                      tiles: ['similarly', 'attaining', 'another', 'body', 'wise', 'youth', 'deluded']
+                    },
+                    {
+                      id: 'bg213_p3_r',
+                      type: 'sentence_rebuilding',
+                      prompt: 'Arrange the words to form Part 3 of the verse.',
+                      hint: 'similarly, the wise are not bewildered by the attainment of another body.',
+                      targetSentence: 'tathā dehāntara-prāptiḥ dhīraḥ tatra',
+                      tiles: ['tathā', 'dehāntara-prāptiḥ', 'dhīraḥ', 'tatra'],
+                      explanation: 'Similarly, the wise person is not bewildered by the attainment of another body.'
                     }
                   ]
                 },
@@ -1153,6 +1473,32 @@ export const gitaData: GitaData = {
                         { sanskrit: 'na', english: 'not' },
                         { sanskrit: 'muhyati', english: 'is bewildered / deluded' }
                       ]
+                    },
+                    {
+                      id: 'bg213_p4_m',
+                      type: 'phrase_matching',
+                      prompt: 'Now match the joined phrases to their meanings.',
+                      pairs: [
+                        { sanskrit: 'na muhyati', english: 'is not deluded' },
+                        { sanskrit: 'dhīraḥ tatra', english: 'the wise person, in that' }
+                      ]
+                    },
+                    {
+                      id: 'bg213_p4_t',
+                      type: 'translate',
+                      prompt: 'Write this in English',
+                      sanskrit: 'dhīraḥ tatra na muhyati',
+                      answer: 'the wise person is not deluded',
+                      tiles: ['the', 'wise', 'person', 'is', 'not', 'deluded', 'body', 'youth', 'born']
+                    },
+                    {
+                      id: 'bg213_p4_r',
+                      type: 'sentence_rebuilding',
+                      prompt: 'Arrange the words to form Part 4 of the verse.',
+                      hint: 'is not deluded.',
+                      targetSentence: 'dhīraḥ tatra na muhyati',
+                      tiles: ['dhīraḥ', 'tatra', 'na', 'muhyati'],
+                      explanation: 'The wise person is not deluded by this.'
                     },
                     {
                       id: 'bg213_p4_q2',
@@ -1261,17 +1607,27 @@ export const gitaData: GitaData = {
                       ]
                     },
                     {
-                      id: 'bg220_p1_q2',
+                      id: 'bg220_p1_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrase to its meaning.',
+                      prompt: 'Now match the joined phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'na jāyate mriyate vā', english: 'it is never born, nor does it die' }
+                        { sanskrit: 'na jāyate', english: 'is never born' },
+                        { sanskrit: 'mriyate vā', english: 'or dies' }
                       ]
+                    },
+                    {
+                      id: 'bg220_p1_t',
+                      type: 'translate',
+                      prompt: 'Write this in English',
+                      sanskrit: 'na jāyate mriyate vā',
+                      answer: 'it is never born nor does it die',
+                      tiles: ['it', 'is', 'never', 'born', 'nor', 'does', 'it', 'die', 'slain', 'again', 'body']
                     },
                     {
                       id: 'bg220_p1_q3',
                       type: 'sentence_rebuilding',
                       prompt: 'Arrange the words to form Part 1 of the verse.',
+                      hint: 'It is never born, nor does it ever die.',
                       targetSentence: 'na jāyate mriyate vā',
                       tiles: ['na', 'jāyate', 'mriyate', 'vā'],
                       explanation: '"na jāyate mriyate vā" — It is never born, nor does it ever die.'
@@ -1302,12 +1658,30 @@ export const gitaData: GitaData = {
                       ]
                     },
                     {
-                      id: 'bg220_p2_q2',
+                      id: 'bg220_p2_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrase to its meaning.',
+                      prompt: 'Now match the joined phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'na ayam bhūtvā', english: 'this soul did not come into being' }
+                        { sanskrit: 'kadācit na', english: 'at no time' },
+                        { sanskrit: 'ayam bhūtvā', english: 'this soul, having come into being' }
                       ]
+                    },
+                    {
+                      id: 'bg220_p2_t',
+                      type: 'translate',
+                      prompt: 'Write this in English',
+                      sanskrit: 'kadācit na ayam bhūtvā',
+                      answer: 'this soul never came into being',
+                      tiles: ['this', 'soul', 'never', 'came', 'into', 'being', 'eternal', 'slain', 'body']
+                    },
+                    {
+                      id: 'bg220_p2_r',
+                      type: 'sentence_rebuilding',
+                      prompt: 'Arrange the words to form Part 2 of the verse.',
+                      hint: 'At no time did it come into being...',
+                      targetSentence: 'kadācit na ayam bhūtvā',
+                      tiles: ['kadācit', 'na', 'ayam', 'bhūtvā'],
+                      explanation: 'At no time did this soul come into being.'
                     }
                   ]
                 },
@@ -1333,12 +1707,30 @@ export const gitaData: GitaData = {
                       ]
                     },
                     {
-                      id: 'bg220_p3_q2',
+                      id: 'bg220_p3_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrase to its meaning.',
+                      prompt: 'Now match the joined phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'bhavitā vā na bhūyaḥ', english: 'nor will it ever come to be again' }
+                        { sanskrit: 'bhavitā vā', english: 'or will come to be' },
+                        { sanskrit: 'na bhūyaḥ', english: 'never again' }
                       ]
+                    },
+                    {
+                      id: 'bg220_p3_t',
+                      type: 'translate',
+                      prompt: 'Write this in English',
+                      sanskrit: 'bhavitā vā na bhūyaḥ',
+                      answer: 'nor will it come to be again',
+                      tiles: ['nor', 'will', 'it', 'come', 'to', 'be', 'again', 'born', 'body', 'slain']
+                    },
+                    {
+                      id: 'bg220_p3_r',
+                      type: 'sentence_rebuilding',
+                      prompt: 'Arrange the words to form Part 3 of the verse.',
+                      hint: '...nor will it ever come to be again.',
+                      targetSentence: 'bhavitā vā na bhūyaḥ',
+                      tiles: ['bhavitā', 'vā', 'na', 'bhūyaḥ'],
+                      explanation: 'Nor will it ever come to be again.'
                     }
                   ]
                 },
@@ -1368,9 +1760,27 @@ export const gitaData: GitaData = {
                       ]
                     },
                     {
+                      id: 'bg220_p4_m',
+                      type: 'phrase_matching',
+                      prompt: 'Now match the joined phrases to their meanings.',
+                      pairs: [
+                        { sanskrit: 'ajaḥ nityaḥ', english: 'unborn and eternal' },
+                        { sanskrit: 'śāśvataḥ purāṇaḥ', english: 'ever-existing and primeval' }
+                      ]
+                    },
+                    {
+                      id: 'bg220_p4_t',
+                      type: 'translate',
+                      prompt: 'Write this in English',
+                      sanskrit: 'ajaḥ nityaḥ',
+                      answer: 'unborn and eternal',
+                      tiles: ['unborn', 'and', 'eternal', 'slain', 'body', 'new']
+                    },
+                    {
                       id: 'bg220_p4_q2',
                       type: 'sentence_rebuilding',
                       prompt: 'Arrange the words to form Part 4 of the verse.',
+                      hint: 'It is unborn, eternal, ever-existing, and primeval.',
                       targetSentence: 'ajaḥ nityaḥ śāśvataḥ purāṇaḥ',
                       tiles: ['ajaḥ', 'nityaḥ', 'śāśvataḥ', 'purāṇaḥ'],
                       explanation: '"ajo nityaḥ śāśvato \'yaṁ purāṇaḥ" — Unborn, eternal, ever-existing, and primeval.'
@@ -1399,6 +1809,32 @@ export const gitaData: GitaData = {
                         { sanskrit: 'hanyamāne', english: 'when being slain' },
                         { sanskrit: 'śarīre', english: 'in the body' }
                       ]
+                    },
+                    {
+                      id: 'bg220_p5_m',
+                      type: 'phrase_matching',
+                      prompt: 'Now match the joined phrases to their meanings.',
+                      pairs: [
+                        { sanskrit: 'na hanyate', english: 'is not slain' },
+                        { sanskrit: 'hanyamāne śarīre', english: 'when the body is slain' }
+                      ]
+                    },
+                    {
+                      id: 'bg220_p5_t',
+                      type: 'translate',
+                      prompt: 'Write this in English',
+                      sanskrit: 'na hanyate hanyamāne śarīre',
+                      answer: 'not slain when the body is slain',
+                      tiles: ['not', 'slain', 'when', 'the', 'body', 'is', 'slain', 'born', 'soul', 'eternal']
+                    },
+                    {
+                      id: 'bg220_p5_r',
+                      type: 'sentence_rebuilding',
+                      prompt: 'Arrange the words to form Part 5 of the verse.',
+                      hint: 'it is not slain when the body is slain.',
+                      targetSentence: 'na hanyate hanyamāne śarīre',
+                      tiles: ['na', 'hanyate', 'hanyamāne', 'śarīre'],
+                      explanation: 'It is not slain when the body is slain.'
                     },
                     {
                       id: 'bg220_p5_q2',
@@ -1513,17 +1949,27 @@ export const gitaData: GitaData = {
                       ]
                     },
                     {
-                      id: 'bg222_p1_q2',
+                      id: 'bg222_p1_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrase to its meaning.',
+                      prompt: 'Now match the joined phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'vāsāṁsi jīrṇāni', english: 'garments that are worn out' }
+                        { sanskrit: 'vāsāṁsi jīrṇāni', english: 'garments that are worn out' },
+                        { sanskrit: 'yathā vihāya', english: 'just as, having given up' }
                       ]
+                    },
+                    {
+                      id: 'bg222_p1_t',
+                      type: 'translate',
+                      prompt: 'Write this in English',
+                      sanskrit: 'vāsāṁsi jīrṇāni yathā vihāya',
+                      answer: 'just as giving up worn-out garments',
+                      tiles: ['just', 'as', 'giving', 'up', 'worn-out', 'garments', 'new', 'bodies', 'takes']
                     },
                     {
                       id: 'bg222_p1_q3',
                       type: 'sentence_rebuilding',
                       prompt: 'Arrange the words to form Part 1 of the verse.',
+                      hint: 'As, giving up garments that are worn out...',
                       targetSentence: 'vāsāṁsi jīrṇāni yathā vihāya',
                       tiles: ['vāsāṁsi', 'jīrṇāni', 'yathā', 'vihāya'],
                       explanation: '"vāsāṁsi jīrṇāni yathā vihāya" — As, giving up garments that are worn out.'
@@ -1556,12 +2002,30 @@ export const gitaData: GitaData = {
                       ]
                     },
                     {
-                      id: 'bg222_p2_q2',
+                      id: 'bg222_p2_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrase to its meaning.',
+                      prompt: 'Now match the joined phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'naraḥ navāni aparāṇi gṛhṇāti', english: 'a person takes up other, new ones' }
+                        { sanskrit: 'navāni aparāṇi', english: 'other, new ones' },
+                        { sanskrit: 'naraḥ gṛhṇāti', english: 'a person takes' }
                       ]
+                    },
+                    {
+                      id: 'bg222_p2_t',
+                      type: 'translate',
+                      prompt: 'Write this in English',
+                      sanskrit: 'navāni gṛhṇāti naraḥ aparāṇi',
+                      answer: 'a person takes other new ones',
+                      tiles: ['a', 'person', 'takes', 'other', 'new', 'ones', 'bodies', 'worn-out', 'soul']
+                    },
+                    {
+                      id: 'bg222_p2_r',
+                      type: 'sentence_rebuilding',
+                      prompt: 'Arrange the words to form Part 2 of the verse.',
+                      hint: 'a person takes up other, new ones.',
+                      targetSentence: 'navāni gṛhṇāti naraḥ aparāṇi',
+                      tiles: ['navāni', 'gṛhṇāti', 'naraḥ', 'aparāṇi'],
+                      explanation: 'A person takes up other, new ones.'
                     }
                   ]
                 },
@@ -1589,12 +2053,31 @@ export const gitaData: GitaData = {
                       ]
                     },
                     {
-                      id: 'bg222_p3_q2',
+                      id: 'bg222_p3_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrase to its meaning.',
+                      prompt: 'Now match the joined phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'tathā śarīrāṇi vihāya', english: 'so too, giving up worn-out bodies' }
+                        { sanskrit: 'tathā śarīrāṇi', english: 'so too, the bodies' },
+                        { sanskrit: 'vihāya jīrṇāni', english: 'giving up the worn-out ones' },
+                        { sanskrit: 'anyāni', english: 'other ones' }
                       ]
+                    },
+                    {
+                      id: 'bg222_p3_t',
+                      type: 'translate',
+                      prompt: 'Write this in English',
+                      sanskrit: 'tathā śarīrāṇi vihāya jīrṇāni',
+                      answer: 'so too giving up worn-out bodies',
+                      tiles: ['so', 'too', 'giving', 'up', 'worn-out', 'bodies', 'garments', 'new', 'person']
+                    },
+                    {
+                      id: 'bg222_p3_r',
+                      type: 'sentence_rebuilding',
+                      prompt: 'Arrange the words to form Part 3 of the verse.',
+                      hint: 'so too, giving up worn-out bodies, for other ones...',
+                      targetSentence: 'tathā śarīrāṇi vihāya jīrṇāni anyāni',
+                      tiles: ['tathā', 'śarīrāṇi', 'vihāya', 'jīrṇāni', 'anyāni'],
+                      explanation: 'So too, giving up worn-out bodies, for other ones.'
                     }
                   ]
                 },
@@ -1618,6 +2101,32 @@ export const gitaData: GitaData = {
                         { sanskrit: 'saṁyāti', english: 'enters into / goes to' },
                         { sanskrit: 'dehī', english: 'the embodied soul' }
                       ]
+                    },
+                    {
+                      id: 'bg222_p4_m',
+                      type: 'phrase_matching',
+                      prompt: 'Now match the joined phrases to their meanings.',
+                      pairs: [
+                        { sanskrit: 'saṁyāti navāni', english: 'enters into new ones' },
+                        { sanskrit: 'dehī', english: 'the embodied soul' }
+                      ]
+                    },
+                    {
+                      id: 'bg222_p4_t',
+                      type: 'translate',
+                      prompt: 'Write this in English',
+                      sanskrit: 'saṁyāti navāni dehī',
+                      answer: 'the embodied soul enters new ones',
+                      tiles: ['the', 'embodied', 'soul', 'enters', 'new', 'ones', 'garments', 'person', 'worn-out']
+                    },
+                    {
+                      id: 'bg222_p4_r',
+                      type: 'sentence_rebuilding',
+                      prompt: 'Arrange the words to form Part 4 of the verse.',
+                      hint: 'the embodied soul enters into new ones.',
+                      targetSentence: 'saṁyāti navāni dehī',
+                      tiles: ['saṁyāti', 'navāni', 'dehī'],
+                      explanation: 'The embodied soul enters into new ones.'
                     },
                     {
                       id: 'bg222_p4_q2',
@@ -1713,17 +2222,27 @@ export const gitaData: GitaData = {
                       ]
                     },
                     {
-                      id: 'bg223_p1_q2',
+                      id: 'bg223_p1_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrase to its meaning.',
+                      prompt: 'Now match the joined phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'na enam chindanti śastrāṇi', english: 'weapons cannot cut it' }
+                        { sanskrit: 'na enam', english: 'not it (the soul)' },
+                        { sanskrit: 'chindanti śastrāṇi', english: 'weapons cut' }
                       ]
+                    },
+                    {
+                      id: 'bg223_p1_t',
+                      type: 'translate',
+                      prompt: 'Write this in English',
+                      sanskrit: 'na enam chindanti śastrāṇi',
+                      answer: 'weapons do not cut it',
+                      tiles: ['weapons', 'do', 'not', 'cut', 'it', 'fire', 'burn', 'water']
                     },
                     {
                       id: 'bg223_p1_q3',
                       type: 'sentence_rebuilding',
                       prompt: 'Arrange the words to form Part 1 of the verse.',
+                      hint: 'Weapons cannot cut it.',
                       targetSentence: 'na enam chindanti śastrāṇi',
                       tiles: ['na', 'enam', 'chindanti', 'śastrāṇi'],
                       explanation: '"nainaṁ chindanti śastrāṇi" — Weapons cannot cut it.'
@@ -1752,12 +2271,31 @@ export const gitaData: GitaData = {
                       ]
                     },
                     {
-                      id: 'bg223_p2_q2',
+                      id: 'bg223_p2_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrase to its meaning.',
+                      prompt: 'Now match the joined phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'na enam dahati pāvakaḥ', english: 'fire cannot burn it' }
+                        { sanskrit: 'na enam dahati', english: 'does not burn it' },
+                        { sanskrit: 'pāvakaḥ', english: 'fire' },
+                        { sanskrit: 'na enam chindanti', english: 'do not cut it' }
                       ]
+                    },
+                    {
+                      id: 'bg223_p2_t',
+                      type: 'translate',
+                      prompt: 'Write this in English',
+                      sanskrit: 'na enam dahati pāvakaḥ',
+                      answer: 'fire does not burn it',
+                      tiles: ['fire', 'does', 'not', 'burn', 'it', 'weapons', 'cut', 'wind']
+                    },
+                    {
+                      id: 'bg223_p2_r',
+                      type: 'sentence_rebuilding',
+                      prompt: 'Arrange the words to form Part 2 of the verse.',
+                      hint: 'Fire cannot burn it.',
+                      targetSentence: 'na enam dahati pāvakaḥ',
+                      tiles: ['na', 'enam', 'dahati', 'pāvakaḥ'],
+                      explanation: 'Fire cannot burn it.'
                     }
                   ]
                 },
@@ -1785,12 +2323,30 @@ export const gitaData: GitaData = {
                       ]
                     },
                     {
-                      id: 'bg223_p3_q2',
+                      id: 'bg223_p3_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrase to its meaning.',
+                      prompt: 'Now match the joined phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'na ca enam kledayanti āpaḥ', english: 'nor can water wet it' }
+                        { sanskrit: 'na ca enam', english: 'nor... it' },
+                        { sanskrit: 'kledayanti āpaḥ', english: 'waters wet' }
                       ]
+                    },
+                    {
+                      id: 'bg223_p3_t',
+                      type: 'translate',
+                      prompt: 'Write this in English',
+                      sanskrit: 'na ca enam kledayanti āpaḥ',
+                      answer: 'nor does water wet it',
+                      tiles: ['nor', 'does', 'water', 'wet', 'it', 'fire', 'dry', 'weapons']
+                    },
+                    {
+                      id: 'bg223_p3_r',
+                      type: 'sentence_rebuilding',
+                      prompt: 'Arrange the words to form Part 3 of the verse.',
+                      hint: 'nor can water wet it.',
+                      targetSentence: 'na ca enam kledayanti āpaḥ',
+                      tiles: ['na', 'ca', 'enam', 'kledayanti', 'āpaḥ'],
+                      explanation: 'Nor can water wet it.'
                     }
                   ]
                 },
@@ -1814,6 +2370,33 @@ export const gitaData: GitaData = {
                         { sanskrit: 'śoṣayati', english: 'dries' },
                         { sanskrit: 'mārutaḥ', english: 'wind' }
                       ]
+                    },
+                    {
+                      id: 'bg223_p4_m',
+                      type: 'phrase_matching',
+                      prompt: 'Now match the joined phrases to their meanings.',
+                      pairs: [
+                        { sanskrit: 'na śoṣayati', english: 'does not dry' },
+                        { sanskrit: 'mārutaḥ', english: 'wind' },
+                        { sanskrit: 'kledayanti āpaḥ', english: 'waters wet' }
+                      ]
+                    },
+                    {
+                      id: 'bg223_p4_t',
+                      type: 'translate',
+                      prompt: 'Write this in English',
+                      sanskrit: 'na śoṣayati mārutaḥ',
+                      answer: 'wind does not dry it',
+                      tiles: ['wind', 'does', 'not', 'dry', 'it', 'water', 'wet', 'burn']
+                    },
+                    {
+                      id: 'bg223_p4_r',
+                      type: 'sentence_rebuilding',
+                      prompt: 'Arrange the words to form Part 4 of the verse.',
+                      hint: 'nor can wind dry it.',
+                      targetSentence: 'na śoṣayati mārutaḥ',
+                      tiles: ['na', 'śoṣayati', 'mārutaḥ'],
+                      explanation: 'Nor can wind dry it.'
                     },
                     {
                       id: 'bg223_p4_q2',
