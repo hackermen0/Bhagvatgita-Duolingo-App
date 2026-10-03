@@ -1,3 +1,5 @@
+import type { DifficultyTier } from './onboarding';
+
 export interface SanskritDisplay {
   englishSyllables: string;
   devanagari: string;
@@ -20,6 +22,67 @@ export function toPhonetic(iast: string): string {
     .replace(/[ṁṃ](?=[kgcjṭḍtdnśṣsyrlh])/g, 'n')
     .replace(/([cC])(h?)/g, (_, c: string, h: string) => (c === 'c' ? 'ch' : 'Ch') + h)
     .replace(/[āīūṛṝḷṅñṇṭḍśṣḥṁṃĀĪŪṚṄÑṆṬḌŚṢḤṀṂ]/g, (ch) => PHONETIC_LETTERS[ch]);
+}
+
+/**
+ * Converts IAST or Devanagari into clean Romanized Hindi / English phonetics
+ * with no diacritics (e.g. kadācana -> kadachana, karmāṇi -> karmani).
+ */
+export function toHindiRoman(input: string): string {
+  if (!input) return '';
+  if (/[\u0900-\u097F]/.test(input)) {
+    const clean = input.replace(/[।॥]/g, '').trim();
+    for (const [iast, entry] of Object.entries(SANSKRIT_DICT)) {
+      if (entry.devanagari === clean) {
+        return toPhonetic(iast);
+      }
+    }
+  }
+  return toPhonetic(input);
+}
+
+/**
+ * Returns the appropriate verse text corresponding strictly to the selected difficulty tier:
+ * - beginner: Romanized Hindi / English phonetics (no Sanskrit Devanagari or IAST)
+ * - medium: Sanskrit in IAST / Roman script
+ * - hard: Full Sanskrit in Devanagari script
+ */
+export function getVerseText(
+  item: {
+    verseSanskrit?: string;
+    sanskrit?: string;
+    verseTransliteration?: string;
+    transliteration?: string;
+    verseHindiRoman?: string;
+    hindiRoman?: string;
+  },
+  tier: DifficultyTier
+): string {
+  if (tier === 'hard') {
+    return item.verseSanskrit ?? item.sanskrit ?? '';
+  }
+  if (tier === 'medium') {
+    return item.verseTransliteration ?? item.transliteration ?? '';
+  }
+  // beginner
+  return item.verseHindiRoman ?? item.hindiRoman ?? toHindiRoman(item.verseTransliteration ?? item.transliteration ?? '');
+}
+
+/**
+ * Returns word display text strictly for the given difficulty tier.
+ */
+export function getWordText(
+  word: string,
+  tier: DifficultyTier,
+  devanagariFallback?: string
+): string {
+  if (tier === 'hard') {
+    return devanagariFallback || getSanskritDisplay(word).devanagari;
+  }
+  if (tier === 'medium') {
+    return word;
+  }
+  return toHindiRoman(word);
 }
 
 // Dictionary of predefined Sanskrit words & phrases to English syllable breakdowns and Devanagari

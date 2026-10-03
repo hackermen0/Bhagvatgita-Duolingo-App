@@ -1,5 +1,16 @@
 import { browser } from '$app/environment';
-import { planById, type DevanagariAbility, type OnboardingProfile, type PracticePreference } from '../data/onboarding';
+import { planById, type DevanagariAbility, type OnboardingProfile, type PracticePreference, type DifficultyTier } from '../data/onboarding';
+
+export type { DifficultyTier };
+export type TierScriptMode = 'roman_hindi' | 'iast' | 'devanagari';
+
+export function scriptModeForTier(tier: DifficultyTier): TierScriptMode {
+  switch (tier) {
+    case 'beginner': return 'roman_hindi';
+    case 'medium': return 'iast';
+    case 'hard': return 'devanagari';
+  }
+}
 
 /** script: Devanāgarī only · both: Devanāgarī with romanized captions · roman: romanized first */
 export type ScriptDisplay = 'script' | 'both' | 'roman';
@@ -85,6 +96,7 @@ class GameState {
   levelProgress = $state<Record<string, number>>({});
   lastActiveDate = $state<string | null>(null);
   activeDays = $state<string[]>([]);
+  difficultyTier = $state<DifficultyTier>('beginner');
   scriptDisplay = $state<ScriptDisplay>('both');
   userReflections = $state<Record<string, string>>({});
   themeMode = $state<ThemeMode>('light');
@@ -100,6 +112,10 @@ class GameState {
 
   constructor() {
     this.loadState();
+  }
+
+  get tierScriptMode(): TierScriptMode {
+    return scriptModeForTier(this.difficultyTier);
   }
 
   get today(): DailyStats {
@@ -118,6 +134,7 @@ class GameState {
         this.completedLessons = parsed.completedLessons ?? [];
         this.levelProgress = parsed.levelProgress ?? {};
         this.activeDays = parsed.activeDays ?? [];
+        this.difficultyTier = parsed.difficultyTier ?? (parsed.profile?.difficultyTier ?? 'beginner');
         // Older saves stored a two-way scriptMode ('devanagari' | 'english')
         this.scriptDisplay =
           parsed.scriptDisplay ?? (parsed.scriptMode === 'english' ? 'roman' : 'both');
@@ -159,6 +176,7 @@ class GameState {
         levelProgress: $state.snapshot(this.levelProgress),
         lastActiveDate: this.lastActiveDate,
         activeDays: $state.snapshot(this.activeDays),
+        difficultyTier: this.difficultyTier,
         scriptDisplay: this.scriptDisplay,
         userReflections: $state.snapshot(this.userReflections),
         themeMode: this.themeMode,
@@ -186,6 +204,19 @@ class GameState {
     this.userReflections[promptId] = text;
     this.rollDaily();
     this.daily.reflections += 1;
+    this.saveState();
+  }
+
+  setDifficultyTier(tier: DifficultyTier) {
+    this.difficultyTier = tier;
+    if (tier === 'beginner' || tier === 'medium') {
+      this.scriptDisplay = 'roman';
+    } else {
+      this.scriptDisplay = 'script';
+    }
+    if (this.profile) {
+      this.profile = { ...this.profile, difficultyTier: tier };
+    }
     this.saveState();
   }
 
@@ -222,6 +253,9 @@ class GameState {
   completeOnboarding(profile: OnboardingProfile) {
     this.profile = profile;
     this.onboardingComplete = true;
+    if (profile.difficultyTier) {
+      this.difficultyTier = profile.difficultyTier;
+    }
     this.scriptDisplay = scriptDisplayFor(profile.devanagariAbility);
 
     const targetXP =
@@ -377,6 +411,7 @@ class GameState {
     this.levelProgress = {};
     this.lastActiveDate = null;
     this.activeDays = [];
+    this.difficultyTier = 'beginner';
     this.scriptDisplay = this.profile ? scriptDisplayFor(this.profile.devanagariAbility) : 'both';
     this.userReflections = {};
     this.wordMemory = {};

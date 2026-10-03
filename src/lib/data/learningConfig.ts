@@ -76,7 +76,7 @@ export function learningConfig(profile: OnboardingProfile | null): LearningConfi
     listening,
     autoPlayRecitation: listening === 'heavy',
     meaningFocus: goal === 'meaning' || goal === 'both' || pref === 'reading',
-    wordWarmups: !experienced,
+    wordWarmups: profile.difficultyTier === 'beginner' ? false : !experienced,
     skippableDiscovery: experienced || knowsVerses,
     translationHints: fam !== 'advanced',
     pathAccess: knowsVerses ? 'open' : known === 'few' ? 'jump' : 'sequential',

@@ -54,6 +54,30 @@
         </button>
       </div>
       <div class="px-4 py-4 flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+          <span class="text-base font-black">Difficulty tier</span>
+          <span class="text-xs font-extrabold text-primary uppercase tracking-wide">
+            {gameState.difficultyTier} tier
+          </span>
+        </div>
+        <div class="grid grid-cols-3 gap-2">
+          {#each [
+            { value: 'beginner', label: 'Beginner', sub: 'English phonetics' },
+            { value: 'medium', label: 'Medium', sub: 'Sanskrit IAST' },
+            { value: 'hard', label: 'Hard', sub: 'Devanagari' }
+          ] as const as tierOpt}
+            <button
+              type="button"
+              onclick={() => gameState.setDifficultyTier(tierOpt.value)}
+              class="tile py-2.5 px-1.5 flex flex-col items-center text-center {gameState.difficultyTier === tierOpt.value ? 'tile-selected' : ''}"
+            >
+              <span class="text-sm font-black">{tierOpt.label}</span>
+              <span class="text-[10px] font-bold text-text-muted mt-0.5">{tierOpt.sub}</span>
+            </button>
+          {/each}
+        </div>
+      </div>
+      <div class="px-4 py-4 flex flex-col gap-3">
         <span class="text-base font-black">Sanskrit script</span>
         <ScriptToggle />
       </div>

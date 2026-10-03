@@ -7,8 +7,10 @@ export type GitaKnowledge = 'none' | 'few' | 'many' | 'chapters';
 export type TimeBudget = '5-7' | '10-12' | '15-20' | 'variable';
 export type PracticePreference = 'listening' | 'reading' | 'balanced';
 export type PlanId = 'quick' | 'regular' | 'deep' | 'custom';
+export type DifficultyTier = 'beginner' | 'medium' | 'hard';
 
 export interface OnboardingProfile {
+  difficultyTier?: DifficultyTier;
   goal: Goal;
   devanagariAbility: DevanagariAbility;
   sanskritFamiliarity: SanskritFamiliarity;

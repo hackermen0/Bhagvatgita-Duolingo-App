@@ -108,6 +108,8 @@ export interface VersePart {
   title: string;
   sanskrit: string;
   transliteration: string;
+  /** Romanized Hindi / English phonetics without diacritics */
+  hindiRoman?: string;
   translation: string;
   wordBreakdown: WordMeaning[];
   questions: Question[];
@@ -128,6 +130,8 @@ export interface Lesson {
   essence?: string;
   verseSanskrit: string;
   verseTransliteration: string;
+  /** Romanized Hindi / English phonetics without diacritics */
+  verseHindiRoman?: string;
   translation: string;
   purport: string;
   commentary?: Commentary;
@@ -286,6 +290,8 @@ export const gitaData: GitaData = {
               essence: 'Do your duty with full effort, but let go of the results.',
               verseSanskrit: 'कर्मण्येवाधिकारस्ते मा फलेषु कदाचन ।\nमा कर्मफलहेतुर्भूर्मा ते सङ्गोऽस्त्वकर्मणि ॥',
               verseTransliteration: 'karmaṇy-evādhikāras te mā phaleṣu kadācana\nmā karma-phala-hetur bhūr mā te saṅgo \'stv akarmaṇi',
+
+              verseHindiRoman: 'karmany-evadhikaras te ma phaleshu kadachana\nma karma-phala-hetur bhur ma te sango \'stv akarmani',
               verseWordGuide: [
                 { devanagari: 'कर्मण्येवाधिकारस्ते', roman: 'karmaṇy-evādhikāras-te' },
                 { devanagari: 'मा', roman: 'mā' },
@@ -315,6 +321,8 @@ export const gitaData: GitaData = {
                   title: 'Part 1: Your Right to Action',
                   sanskrit: 'कर्मण्येवाधिकारस्ते',
                   transliteration: 'karmaṇy-evādhikāras te',
+
+                  hindiRoman: 'karmany-evadhikaras te',
                   translation: 'You have a right to perform your prescribed duties.',
                   wordBreakdown: [
                     { word: 'karmaṇi', devanagari: 'कर्मणि', meaning: 'in action / duty', partOfSpeech: 'noun' },
@@ -368,6 +376,8 @@ export const gitaData: GitaData = {
                   title: 'Part 2: Detachment from Results',
                   sanskrit: 'मा फलेषु कदाचन',
                   transliteration: 'mā phaleṣu kadācana',
+
+                  hindiRoman: 'ma phaleshu kadachana',
                   translation: 'Never in the fruits at any time.',
                   wordBreakdown: [
                     { word: 'mā', devanagari: 'मा', meaning: 'never / not', partOfSpeech: 'particle' },
@@ -428,6 +438,8 @@ export const gitaData: GitaData = {
                   title: 'Part 3: Freedom from Motive',
                   sanskrit: 'मा कर्मफलहेतुर्भूः',
                   transliteration: 'mā karma-phala-hetur bhūḥ',
+
+                  hindiRoman: 'ma karma-phala-hetur bhuh',
                   translation: 'Never be motivated by the fruits of action.',
                   wordBreakdown: [
                     { word: 'karma-phala', devanagari: 'कर्मफल', meaning: 'fruits of action', partOfSpeech: 'compound' },
@@ -488,6 +500,8 @@ export const gitaData: GitaData = {
                   title: 'Part 4: Not Attached to Inaction',
                   sanskrit: 'मा ते सङ्गोऽस्त्वकर्मणि',
                   transliteration: 'mā te saṅgo \'stv akarmaṇi',
+
+                  hindiRoman: 'ma te sango \'stv akarmani',
                   translation: 'Nor let your attachment be to inaction.',
                   wordBreakdown: [
                     { word: 'saṅgaḥ', devanagari: 'सङ्गः', meaning: 'attachment', partOfSpeech: 'noun' },
@@ -598,6 +612,8 @@ export const gitaData: GitaData = {
               essence: 'Stay steady in success and failure. That evenness of mind is Yoga.',
               verseSanskrit: 'योगस्थः कुरु कर्माणि सङ्गं त्यक्त्वा धनञ्जय ।\nसिद्ध्यसिद्ध्योः समो भूत्वा समत्वं योग उच्यते ॥',
               verseTransliteration: 'yoga-sthaḥ kuru karmāṇi saṅgaṁ tyaktvā dhanañjaya\nsiddhy-asiddhyoḥ samo bhūtvā samatvaṁ yoga ucyate',
+
+              verseHindiRoman: 'yoga-sthah kuru karmani sangam tyaktva dhananjaya\nsiddhy-asiddhyoh samo bhutva samatvam yoga uchyate',
               verseWordGuide: [
                 { devanagari: 'योगस्थः', roman: 'yogasthaḥ' },
                 { devanagari: 'कुरु', roman: 'kuru' },
@@ -633,6 +649,8 @@ export const gitaData: GitaData = {
                   title: 'Part 1: Established in Yoga',
                   sanskrit: 'योगस्थः कुरु कर्माणि',
                   transliteration: 'yoga-sthaḥ kuru karmāṇi',
+
+                  hindiRoman: 'yoga-sthah kuru karmani',
                   translation: 'Established in Yoga, perform your duties.',
                   wordBreakdown: [
                     { word: 'yogasthaḥ', devanagari: 'योगस्थः', meaning: 'established in Yoga', partOfSpeech: 'adjective' },
@@ -684,6 +702,8 @@ export const gitaData: GitaData = {
                   title: 'Part 2: Letting Go of Attachment',
                   sanskrit: 'सङ्गं त्यक्त्वा धनञ्जय',
                   transliteration: 'saṅgaṁ tyaktvā dhanañjaya',
+
+                  hindiRoman: 'sangam tyaktva dhananjaya',
                   translation: 'Abandoning all attachment, O Arjuna.',
                   wordBreakdown: [
                     { word: 'saṅgaṁ', devanagari: 'सङ्गं', meaning: 'attachment', partOfSpeech: 'noun' },
@@ -734,6 +754,8 @@ export const gitaData: GitaData = {
                   title: 'Part 3: Equal in Success and Failure',
                   sanskrit: 'सिद्ध्यसिद्ध्योः समो भूत्वा',
                   transliteration: 'siddhy-asiddhyoḥ samo bhūtvā',
+
+                  hindiRoman: 'siddhy-asiddhyoh samo bhutva',
                   translation: 'Being equal in success and failure.',
                   wordBreakdown: [
                     { word: 'siddhy-asiddhyoḥ', devanagari: 'सिद्ध्यसिद्ध्योः', meaning: 'in success and failure', partOfSpeech: 'noun (compound)' },
@@ -785,6 +807,8 @@ export const gitaData: GitaData = {
                   title: 'Part 4: Definition of Yoga',
                   sanskrit: 'समत्वं योग उच्यते',
                   transliteration: 'samatvaṁ yoga ucyate',
+
+                  hindiRoman: 'samatvam yoga uchyate',
                   translation: 'Such evenness of mind is called Yoga.',
                   wordBreakdown: [
                     { word: 'samatvaṁ', devanagari: 'समत्वम्', meaning: 'evenness of mind', partOfSpeech: 'noun' },
@@ -860,6 +884,8 @@ export const gitaData: GitaData = {
               essence: 'Wise action frees you from good and bad karma. Yoga is skill in action.',
               verseSanskrit: 'बुद्धियुक्तो जहातीह उभे सुकृतदुष्कृते ।\nतस्माद्योगाय युज्यस्व योगः कर्मसु कौशलम् ॥',
               verseTransliteration: 'buddhi-yukto jahātīha ubhe sukṛta-duṣkṛte\ntasmād yogāya yujyasva yogaḥ karmasu kauśalam',
+
+              verseHindiRoman: 'buddhi-yukto jahatiha ubhe sukrita-dushkrite\ntasmad yogaya yujyasva yogah karmasu kaushalam',
               verseWordGuide: [
                 { devanagari: 'बुद्धियुक्तो', roman: 'buddhi-yukto' },
                 { devanagari: 'जहातीह', roman: 'jahātīha' },
@@ -885,6 +911,8 @@ export const gitaData: GitaData = {
                   title: 'Part 1: Wisdom Overcomes Reaction',
                   sanskrit: 'बुद्धियुक्तो जहातीह उभे सुकृतदुष्कृते',
                   transliteration: 'buddhi-yukto jahātīha ubhe sukṛta-duṣkṛte',
+
+                  hindiRoman: 'buddhi-yukto jahatiha ubhe sukrita-dushkrite',
                   translation: 'One endowed with wisdom casts off both good and bad karma in this life.',
                   wordBreakdown: [
                     { word: 'buddhi-yukto', devanagari: 'बुद्धियुक्तो', meaning: 'endowed with wisdom', partOfSpeech: 'adjective' },
@@ -938,6 +966,8 @@ export const gitaData: GitaData = {
                   title: 'Part 2: Strive for Yoga',
                   sanskrit: 'तस्माद्योगाय युज्यस्व',
                   transliteration: 'tasmād yogāya yujyasva',
+
+                  hindiRoman: 'tasmad yogaya yujyasva',
                   translation: 'Therefore, strive for Yoga.',
                   wordBreakdown: [
                     { word: 'tasmād', devanagari: 'तस्मात्', meaning: 'therefore', partOfSpeech: 'adverb' },
@@ -989,6 +1019,8 @@ export const gitaData: GitaData = {
                   title: 'Part 3: Yoga is Skill in Action',
                   sanskrit: 'योगः कर्मसु कौशलम्',
                   transliteration: 'yogaḥ karmasu kauśalam',
+
+                  hindiRoman: 'yogah karmasu kaushalam',
                   translation: 'Yoga is skill in action.',
                   wordBreakdown: [
                     { word: 'yogaḥ', devanagari: 'योगः', meaning: 'Yoga', partOfSpeech: 'noun' },
@@ -1063,6 +1095,8 @@ export const gitaData: GitaData = {
               essence: 'Give up craving and ego, and real peace comes.',
               verseSanskrit: 'विहाय कामान्यः सर्वान्पुमांश्चरति निःस्पृहः ।\nनिर्ममो निरहङ्कारः स शान्तिमधिगच्छति ॥',
               verseTransliteration: 'vihāya kāmān yaḥ sarvān pumāṁś carati niḥspṛhaḥ\nnirmamo nirahaṅkāraḥ sa śāntim adhigacchati',
+
+              verseHindiRoman: 'vihaya kaman yah sarvan pumansh charati nihsprihah\nnirmamo nirahankarah sa shantim adhigachchhati',
               verseWordGuide: [
                 { devanagari: 'विहाय', roman: 'vihāya' },
                 { devanagari: 'कामान्यः', roman: 'kāmān-yaḥ' },
@@ -1088,6 +1122,8 @@ export const gitaData: GitaData = {
                   title: 'Part 1: Giving Up Desires',
                   sanskrit: 'विहाय कामान्यः सर्वान्पुमांश्चरति निःस्पृहः',
                   transliteration: 'vihāya kāmān yaḥ sarvān pumāṁś carati niḥspṛhaḥ',
+
+                  hindiRoman: 'vihaya kaman yah sarvan pumansh charati nihsprihah',
                   translation: 'That person who relinquishes all desires and moves about free from longing.',
                   wordBreakdown: [
                     { word: 'vihāya', devanagari: 'विहाय', meaning: 'giving up / abandoning', partOfSpeech: 'verb' },
@@ -1139,6 +1175,8 @@ export const gitaData: GitaData = {
                   title: 'Part 2: Without Ego & Possessiveness',
                   sanskrit: 'निर्ममो निरहङ्कारः',
                   transliteration: 'nirmamo nirahaṅkāraḥ',
+
+                  hindiRoman: 'nirmamo nirahankarah',
                   translation: 'Free from possessiveness and false ego.',
                   wordBreakdown: [
                     { word: 'nirmamo', devanagari: 'निर्ममः', meaning: 'without possessiveness', partOfSpeech: 'adjective' },
@@ -1187,6 +1225,8 @@ export const gitaData: GitaData = {
                   title: 'Part 3: Attains Real Peace',
                   sanskrit: 'स शान्तिमधिगच्छति',
                   transliteration: 'sa śāntim adhigacchati',
+
+                  hindiRoman: 'sa shantim adhigachchhati',
                   translation: 'He alone attains real peace.',
                   wordBreakdown: [
                     { word: 'sa', devanagari: 'सः', meaning: 'he', partOfSpeech: 'pronoun' },
@@ -1267,6 +1307,8 @@ export const gitaData: GitaData = {
               essence: 'The soul passes from childhood to old age to a new body. The wise are not shaken by it.',
               verseSanskrit: 'देहिनोऽस्मिन् यथा देहे कौमारं यौवनं जरा ।\nतथा देहान्तरप्राप्तिर्धीरस्तत्र न मुह्यति ॥',
               verseTransliteration: 'dehino \'smin yathā dehe kaumāraṁ yauvanaṁ jarā\ntathā dehāntara-prāptir dhīras tatra na muhyati',
+
+              verseHindiRoman: 'dehino \'smin yatha dehe kaumaram yauvanam jara\ntatha dehantara-praptir dhiras tatra na muhyati',
               verseWordGuide: [
                 { devanagari: 'देहिनोऽस्मिन्', roman: "dehino-'smin" },
                 { devanagari: 'यथा', roman: 'yathā' },
@@ -1353,6 +1395,8 @@ export const gitaData: GitaData = {
                   title: 'Part 2: The Stages of Life',
                   sanskrit: 'कौमारं यौवनं जरा',
                   transliteration: 'kaumāraṁ yauvanaṁ jarā',
+
+                  hindiRoman: 'kaumaram yauvanam jara',
                   translation: 'childhood, youth, and old age.',
                   wordBreakdown: [
                     { word: 'kaumāram', devanagari: 'कौमारम्', meaning: 'childhood', partOfSpeech: 'noun' },
@@ -1405,6 +1449,8 @@ export const gitaData: GitaData = {
                   title: 'Part 3: Passing to Another Body',
                   sanskrit: 'तथा देहान्तरप्राप्तिर्धीरस्तत्र',
                   transliteration: 'tathā dehāntara-prāptir dhīras tatra',
+
+                  hindiRoman: 'tatha dehantara-praptir dhiras tatra',
                   translation: 'similarly, the wise are not bewildered by the attainment of another body.',
                   wordBreakdown: [
                     { word: 'tathā', devanagari: 'तथा', meaning: 'similarly', partOfSpeech: 'adverb' },
@@ -1458,6 +1504,8 @@ export const gitaData: GitaData = {
                   title: 'Part 4: Not Bewildered',
                   sanskrit: 'न मुह्यति',
                   transliteration: 'na muhyati',
+
+                  hindiRoman: 'na muhyati',
                   translation: 'is not deluded.',
                   wordBreakdown: [
                     { word: 'na', devanagari: 'न', meaning: 'not', partOfSpeech: 'particle' },
@@ -1586,6 +1634,8 @@ export const gitaData: GitaData = {
                   title: 'Part 1: Never Born, Never Dies',
                   sanskrit: 'न जायते म्रियते वा',
                   transliteration: 'na jāyate mriyate vā',
+
+                  hindiRoman: 'na jayate mriyate va',
                   translation: 'It is never born, nor does it ever die.',
                   wordBreakdown: [
                     { word: 'na', devanagari: 'न', meaning: 'not / never', partOfSpeech: 'particle' },
@@ -1690,6 +1740,8 @@ export const gitaData: GitaData = {
                   title: 'Part 3: Nor Will It Cease',
                   sanskrit: 'भविता वा न भूयः',
                   transliteration: 'bhavitā vā na bhūyaḥ',
+
+                  hindiRoman: 'bhavita va na bhuyah',
                   translation: '...nor will it ever come to be again.',
                   wordBreakdown: [
                     { word: 'bhavitā', devanagari: 'भविता', meaning: 'will come into being', partOfSpeech: 'verb (future)' },
@@ -1792,6 +1844,8 @@ export const gitaData: GitaData = {
                   title: 'Part 5: Not Slain With the Body',
                   sanskrit: 'न हन्यते हन्यमाने शरीरे',
                   transliteration: 'na hanyate hanyamāne śarīre',
+
+                  hindiRoman: 'na hanyate hanyamane sharire',
                   translation: 'it is not slain when the body is slain.',
                   wordBreakdown: [
                     { word: 'hanyate', devanagari: 'हन्यते', meaning: 'is slain', partOfSpeech: 'verb (passive)' },
@@ -1928,6 +1982,8 @@ export const gitaData: GitaData = {
                   title: 'Part 1: Worn-Out Garments',
                   sanskrit: 'वासांसि जीर्णानि यथा विहाय',
                   transliteration: 'vāsāṁsi jīrṇāni yathā vihāya',
+
+                  hindiRoman: 'vasansi jirnani yatha vihaya',
                   translation: 'As, giving up garments that are worn out...',
                   wordBreakdown: [
                     { word: 'vāsāṁsi', devanagari: 'वासांसि', meaning: 'garments', partOfSpeech: 'noun (plural)' },
@@ -2034,6 +2090,8 @@ export const gitaData: GitaData = {
                   title: 'Part 3: Giving Up Worn-Out Bodies',
                   sanskrit: 'तथा शरीराणि विहाय जीर्णान्यन्यानि',
                   transliteration: 'tathā śarīrāṇi vihāya jīrṇāny anyāni',
+
+                  hindiRoman: 'tatha sharirani vihaya jirnany anyani',
                   translation: 'so too, giving up worn-out bodies, for other ones...',
                   wordBreakdown: [
                     { word: 'tathā', devanagari: 'तथा', meaning: 'so too / similarly', partOfSpeech: 'adverb' },
@@ -2086,6 +2144,8 @@ export const gitaData: GitaData = {
                   title: 'Part 4: The Soul Moves On',
                   sanskrit: 'संयाति नवानि देही',
                   transliteration: 'saṁyāti navāni dehī',
+
+                  hindiRoman: 'sanyati navani dehi',
                   translation: 'the embodied soul enters into new ones.',
                   wordBreakdown: [
                     { word: 'saṁyāti', devanagari: 'संयाति', meaning: 'enters into / goes to', partOfSpeech: 'verb' },
@@ -2166,6 +2226,8 @@ export const gitaData: GitaData = {
               essence: 'Weapons, fire, water and wind cannot harm the soul.',
               verseSanskrit: 'नैनं छिन्दन्ति शस्त्राणि नैनं दहति पावकः ।\nन चैनं क्लेदयन्त्यापो न शोषयति मारुतः ॥',
               verseTransliteration: 'nainaṁ chindanti śastrāṇi nainaṁ dahati pāvakaḥ\nna cainaṁ kledayanty āpo na śoṣayati mārutaḥ',
+
+              verseHindiRoman: 'nainam chhindanti shastrani nainam dahati pavakah\nna chainam kledayanty apo na shoshayati marutah',
               verseWordGuide: [
                 { devanagari: 'नैनं', roman: 'nainaṁ' },
                 { devanagari: 'छिन्दन्ति', roman: 'chindanti' },
@@ -2201,6 +2263,8 @@ export const gitaData: GitaData = {
                   title: 'Part 1: Weapons Cannot Cut It',
                   sanskrit: 'नैनं छिन्दन्ति शस्त्राणि',
                   transliteration: 'nainaṁ chindanti śastrāṇi',
+
+                  hindiRoman: 'nainam chhindanti shastrani',
                   translation: 'Weapons cannot cut it.',
                   wordBreakdown: [
                     { word: 'na', devanagari: 'न', meaning: 'not', partOfSpeech: 'particle' },
@@ -2254,6 +2318,8 @@ export const gitaData: GitaData = {
                   title: 'Part 2: Fire Cannot Burn It',
                   sanskrit: 'नैनं दहति पावकः',
                   transliteration: 'nainaṁ dahati pāvakaḥ',
+
+                  hindiRoman: 'nainam dahati pavakah',
                   translation: 'Fire cannot burn it.',
                   wordBreakdown: [
                     { word: 'dahati', devanagari: 'दहति', meaning: 'burns', partOfSpeech: 'verb' },
@@ -2355,6 +2421,8 @@ export const gitaData: GitaData = {
                   title: 'Part 4: Wind Cannot Dry It',
                   sanskrit: 'न शोषयति मारुतः',
                   transliteration: 'na śoṣayati mārutaḥ',
+
+                  hindiRoman: 'na shoshayati marutah',
                   translation: 'nor can wind dry it.',
                   wordBreakdown: [
                     { word: 'śoṣayati', devanagari: 'शोषयति', meaning: 'dries', partOfSpeech: 'verb' },

@@ -6,8 +6,10 @@
     planById,
     recommendPlan,
     labelFor,
-    type OnboardingProfile
+    type OnboardingProfile,
+    type DifficultyTier
   } from '../data/onboarding';
+  import { gameState } from '../state/gameState.svelte';
   import { playPopSound } from '../utils/soundEffects';
   import Mascot from './Mascot.svelte';
   import Icon from './Icon.svelte';
@@ -16,22 +18,84 @@
     onComplete: (profile: OnboardingProfile) => void;
   }>();
 
-  type Stage = 'welcome' | 'question' | 'recommend' | 'choosePlan' | 'customTime';
+  type Stage = 'welcome' | 'chooseDifficulty' | 'question' | 'recommend' | 'choosePlan' | 'customTime';
+
+  interface DifficultyOption {
+    tier: DifficultyTier;
+    title: string;
+    badge: string;
+    badgeColor: string;
+    subtitle: string;
+    sample: string;
+    description: string;
+  }
+
+  const DIFFICULTY_OPTIONS: DifficultyOption[] = [
+    {
+      tier: 'beginner',
+      title: 'Beginner',
+      badge: 'Easy',
+      badgeColor: 'bg-success/15 text-success border-success/30',
+      subtitle: 'Romanized Hindi / English phonetics',
+      sample: 'Karmany evadhikaras te ma phaleshu kadachana...',
+      description: 'Learn verses in clear, familiar English letters. No complex Devanagari script or diacritics.'
+    },
+    {
+      tier: 'medium',
+      title: 'Medium',
+      badge: 'Balanced',
+      badgeColor: 'bg-gold/15 text-gold-dark dark:text-gold border-gold/30',
+      subtitle: 'Sanskrit in IAST Roman script',
+      sample: 'karmaṇy-evādhikāras te mā phaleṣu kadācana...',
+      description: 'Standard academic Sanskrit with authentic transliteration marks (IAST) for precise pronunciation.'
+    },
+    {
+      tier: 'hard',
+      title: 'Hard',
+      badge: 'Authentic',
+      badgeColor: 'bg-accent/15 text-accent border-accent/30',
+      subtitle: 'Full Sanskrit Devanagari script',
+      sample: 'कर्मण्येवाधिकारस्ते मा फलेषु कदाचन...',
+      description: 'Deep immersion directly in sacred Devanagari script for traditional chanting and memorization.'
+    }
+  ];
 
   let stage = $state<Stage>('welcome');
+  let selectedTier = $state<DifficultyTier>(gameState.difficultyTier ?? 'beginner');
   let qIndex = $state(0);
-  let answers = $state<Partial<OnboardingProfile>>({});
+  let answers = $state<Partial<OnboardingProfile>>({ difficultyTier: selectedTier });
   // Where "Custom" was chosen from, so the back button on the minutes screen returns correctly
   let customFrom = $state<'recommend' | 'choosePlan'>('recommend');
   let pendingPlan = $state<OnboardingProfile['plan'] | null>(null);
 
   const question = $derived(ONBOARDING_QUESTIONS[qIndex]);
-  const currentAnswer = $derived((answers as Record<string, string>)[question.key]);
+  const currentAnswer = $derived((answers as Record<string, string>)[question?.key]);
 
-  // Welcome counts as step 0, then each question, then the plan screen
+  // Welcome counts as step 0, difficulty as step 1, questions, then plan
+  const totalSteps = ONBOARDING_QUESTIONS.length + 2;
   const progress = $derived(
-    stage === 'welcome' ? 0 : stage === 'question' ? (qIndex + 1) / (ONBOARDING_QUESTIONS.length + 1) : 1
+    stage === 'welcome'
+      ? 0
+      : stage === 'chooseDifficulty'
+        ? 1 / totalSteps
+        : stage === 'question'
+          ? (qIndex + 2) / totalSteps
+          : 1
   );
+
+  function selectTier(tier: DifficultyTier) {
+    playPopSound();
+    selectedTier = tier;
+    answers.difficultyTier = tier;
+    gameState.setDifficultyTier(tier);
+  }
+
+  function continueDifficulty() {
+    answers.difficultyTier = selectedTier;
+    gameState.setDifficultyTier(selectedTier);
+    stage = 'question';
+    qIndex = 0;
+  }
 
   function selectAnswer(value: string) {
     playPopSound();
@@ -73,8 +137,10 @@
   }
 
   function back() {
-    if (stage === 'question') {
-      if (qIndex === 0) stage = 'welcome';
+    if (stage === 'chooseDifficulty') {
+      stage = 'welcome';
+    } else if (stage === 'question') {
+      if (qIndex === 0) stage = 'chooseDifficulty';
       else qIndex -= 1;
     } else if (stage === 'recommend') {
       stage = 'question';
@@ -88,7 +154,8 @@
 
   function onKey(e: KeyboardEvent) {
     if (e.key !== 'Enter' || (e.target as HTMLElement | null)?.closest?.('button')) return;
-    if (stage === 'welcome') stage = 'question';
+    if (stage === 'welcome') stage = 'chooseDifficulty';
+    else if (stage === 'chooseDifficulty') continueDifficulty();
     else if (stage === 'question') continueQuestion();
     else if (stage === 'recommend') confirmRecommendedPlan();
     else if (stage === 'choosePlan') confirmChosenPlan();
@@ -129,8 +196,39 @@
         </div>
         <Mascot mood="affectionate" size="xl" animate={true} />
         <p class="text-base font-bold text-text-muted max-w-xs">
-          Answer {ONBOARDING_QUESTIONS.length} quick questions and we'll shape your daily practice around you.
+          Answer {ONBOARDING_QUESTIONS.length + 1} quick questions and we'll shape your daily practice around you.
         </p>
+      </div>
+
+    {:else if stage === 'chooseDifficulty'}
+      {@render askBubble('Choose your difficulty level', 'This controls how verses and words appear across the entire app.')}
+      <div class="flex flex-col gap-3.5 mt-6">
+        {#each DIFFICULTY_OPTIONS as option}
+          {@const isSelected = selectedTier === option.tier}
+          <button
+            type="button"
+            onclick={() => selectTier(option.tier)}
+            class="tile w-full text-left p-4 flex flex-col gap-2 transition-all relative {isSelected ? 'tile-selected border-primary! shadow-md ring-2 ring-primary/20' : ''}"
+          >
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="text-lg font-black">{option.title}</span>
+                <span class="text-[11px] font-extrabold uppercase px-2 py-0.5 rounded-full border {option.badgeColor}">{option.badge}</span>
+              </div>
+              <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors {isSelected ? 'border-primary bg-primary text-white' : 'border-border-warm bg-bg-surface'}">
+                {#if isSelected}
+                  <Icon name="check" class="w-3.5 h-3.5" />
+                {/if}
+              </div>
+            </div>
+            <p class="text-xs font-black uppercase tracking-wider text-primary">{option.subtitle}</p>
+            <div class="bg-bg-base/70 rounded-xl px-3 py-2 border border-border-warm text-sm font-semibold text-text-primary">
+              <span class="text-[11px] font-bold text-text-muted block mb-0.5">Sample text:</span>
+              <span class="{option.tier === 'hard' ? 'font-deva text-base font-bold' : option.tier === 'medium' ? 'italic font-medium' : 'font-bold'}">{option.sample}</span>
+            </div>
+            <p class="text-xs font-bold text-text-muted leading-relaxed">{option.description}</p>
+          </button>
+        {/each}
       </div>
 
     {:else if stage === 'question'}
@@ -201,7 +299,11 @@
 
   <div class="lesson-footer flex flex-col gap-3">
     {#if stage === 'welcome'}
-      <button type="button" onclick={() => (stage = 'question')} class="btn btn-primary w-full">Get started</button>
+      <button type="button" onclick={() => (stage = 'chooseDifficulty')} class="btn btn-primary w-full">Get started</button>
+    {:else if stage === 'chooseDifficulty'}
+      <button type="button" onclick={continueDifficulty} class="btn btn-primary w-full">
+        Continue with {DIFFICULTY_OPTIONS.find(o => o.tier === selectedTier)?.title ?? 'Selected'} Tier
+      </button>
     {:else if stage === 'question'}
       <button type="button" onclick={continueQuestion} disabled={!currentAnswer} class="btn w-full {currentAnswer ? 'btn-primary' : 'btn-disabled'}">
         Continue
