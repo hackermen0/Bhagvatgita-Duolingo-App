@@ -1,14 +1,15 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { lookupMeaning } from '../data/practice';
-  import { getSanskritDisplay, toPhonetic } from '../data/sanskritHelper';
-  import SanskritWord from './SanskritWord.svelte';
+  import { hindiTokens, wordKey } from '../data/hindi';
+  import type { HindiText } from '../data/gitaData';
+  import HindiWord from './HindiWord.svelte';
   import WordTilePicker from './WordTilePicker.svelte';
   import Mascot, { type MascotMood } from './Mascot.svelte';
 
-  // "Write this in English": Krishna says a Sanskrit phrase; the learner builds its meaning from English tiles
-  let { sanskrit, tiles, onChange, disabled = false, mascotMood = 'default', autoPlay = false } = $props<{
-    sanskrit: string;
+  // "Write this in English": Krishna says a Hindi phrase; the learner builds its meaning from English tiles
+  let { hindi, tiles, onChange, disabled = false, mascotMood = 'default', autoPlay = false } = $props<{
+    hindi: HindiText;
     tiles: string[];
     onChange: (words: string[]) => void;
     disabled?: boolean;
@@ -16,7 +17,7 @@
     autoPlay?: boolean;
   }>();
 
-  const words = $derived(sanskrit.split(/\s+/).filter(Boolean));
+  const words = $derived(hindiTokens(hindi));
   let hintIndex = $state<number | null>(null);
 
   let speechSupported = $state(false);
@@ -36,7 +37,7 @@
   function speak() {
     if (!speechSupported) return;
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(getSanskritDisplay(sanskrit).devanagari);
+    const utterance = new SpeechSynthesisUtterance(hindi.dev);
     utterance.lang = 'hi-IN';
     utterance.rate = 0.7;
     // Cancelling fires the old utterance's callbacks late; the identity check ignores stale ones
@@ -68,16 +69,16 @@
       <!-- Each word is tappable for its meaning, like Duolingo's dotted-underline hints -->
       <div class="flex flex-wrap gap-x-2 gap-y-2 items-end">
         {#each words as word, i}
-          {@const meaning = lookupMeaning(word)}
+          {@const meaning = lookupMeaning(wordKey(word.roman))}
           <button
             type="button"
             disabled={!meaning}
             onclick={() => (hintIndex = hintIndex === i ? null : i)}
-            aria-label={meaning ? `Show meaning of ${toPhonetic(word)}` : undefined}
+            aria-label={meaning ? `Show meaning of ${word.roman}` : undefined}
             class="relative flex flex-col items-center px-0.5 border-b-2 disabled:cursor-default
               {meaning ? 'border-dashed border-primary-edge cursor-help' : 'border-transparent'}"
           >
-            <SanskritWord text={word} />
+            <HindiWord hindi={word} />
             {#if hintIndex === i && meaning}
               <span class="absolute top-full mt-2 left-1/2 -translate-x-1/2 z-20 whitespace-nowrap px-3 py-1.5 rounded-xl bg-bg-surface border-2 border-border-warm text-sm font-bold text-text-primary shadow-lg animate-pop-in">
                 {meaning}
@@ -89,5 +90,5 @@
     </div>
   </div>
 
-  <WordTilePicker {tiles} onChange={(w: string[]) => { hintIndex = null; onChange(w); }} {disabled} plain />
+  <WordTilePicker {tiles} onChange={(w: string[]) => { hintIndex = null; onChange(w); }} {disabled} />
 </div>

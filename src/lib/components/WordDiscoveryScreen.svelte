@@ -2,6 +2,7 @@
   import type { VersePart } from '../data/gitaData';
   import WordCard from './WordCard.svelte';
   import VerseText from './VerseText.svelte';
+  import { hindiOf } from '../data/hindi';
 
   let { part, partIndex, totalParts, onComplete, canSkip = false } = $props<{
     part: VersePart;
@@ -59,7 +60,10 @@
   </div>
 
   <div class="card bg-bg-surface-alt! px-4 py-3 text-center mt-4">
-    <VerseText sanskrit={part.sanskrit} transliteration={part.transliteration} class="text-base font-bold text-primary-dark dark:text-primary leading-relaxed" />
+    <VerseText
+      hindi={hindiOf(part)}
+      class="text-base font-bold text-primary-dark dark:text-primary leading-relaxed"
+    />
   </div>
 
   <div class="flex items-center justify-center gap-2 mt-5" aria-label="{seenCount} of {words.length} revealed">

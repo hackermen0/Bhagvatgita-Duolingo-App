@@ -1,9 +1,8 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { gameState, DAILY_GOAL_OPTIONS } from '$lib/state/gameState.svelte';
-  import { planById, type PracticePreference } from '$lib/data/onboarding';
+  import { planById, DIFFICULTY_TIERS, type PracticePreference } from '$lib/data/onboarding';
   import Icon from '$lib/components/Icon.svelte';
-  import ScriptToggle from '$lib/components/ScriptToggle.svelte';
 
   const PRACTICE_STYLES: { value: PracticePreference; label: string }[] = [
     { value: 'listening', label: 'Listening' },
@@ -61,25 +60,20 @@
           </span>
         </div>
         <div class="grid grid-cols-3 gap-2">
-          {#each [
-            { value: 'beginner', label: 'Beginner', sub: 'English phonetics' },
-            { value: 'medium', label: 'Medium', sub: 'Sanskrit IAST' },
-            { value: 'hard', label: 'Hard', sub: 'Devanagari' }
-          ] as const as tierOpt}
+          {#each DIFFICULTY_TIERS as tierOpt}
             <button
               type="button"
-              onclick={() => gameState.setDifficultyTier(tierOpt.value)}
-              class="tile py-2.5 px-1.5 flex flex-col items-center text-center {gameState.difficultyTier === tierOpt.value ? 'tile-selected' : ''}"
+              onclick={() => gameState.setDifficultyTier(tierOpt.tier)}
+              class="tile py-2.5 px-1.5 flex flex-col items-center text-center {gameState.difficultyTier === tierOpt.tier ? 'tile-selected' : ''}"
             >
-              <span class="text-sm font-black">{tierOpt.label}</span>
-              <span class="text-[10px] font-bold text-text-muted mt-0.5">{tierOpt.sub}</span>
+              <span class="text-sm font-black">{tierOpt.title}</span>
+              <span class="text-[10px] font-bold text-text-muted mt-0.5">{tierOpt.short}</span>
             </button>
           {/each}
         </div>
-      </div>
-      <div class="px-4 py-4 flex flex-col gap-3">
-        <span class="text-base font-black">Sanskrit script</span>
-        <ScriptToggle />
+        <p class="text-xs font-bold text-text-muted leading-relaxed">
+          {DIFFICULTY_TIERS.find((t) => t.tier === gameState.difficultyTier)?.description} You always answer in English.
+        </p>
       </div>
       {#if gameState.profile}
         <div class="px-4 py-4 flex flex-col gap-3">

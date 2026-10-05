@@ -1,14 +1,12 @@
 <script lang="ts">
   import { onDestroy, onMount, tick } from 'svelte';
   import { playPopSound } from '../utils/soundEffects';
-  import SanskritWord from './SanskritWord.svelte';
 
-  let { tiles, onChange, disabled = false, plain = false } = $props<{
+  // The learner builds their English answer from these word tiles
+  let { tiles, onChange, disabled = false } = $props<{
     tiles: string[];
     onChange: (selectedWords: string[]) => void;
     disabled?: boolean;
-    /** Tiles are plain (English) words rather than Sanskrit shown in the learner's script */
-    plain?: boolean;
   }>();
 
   interface TileItem {
@@ -169,11 +167,7 @@
 </script>
 
 {#snippet label(text: string)}
-  {#if plain}
-    <span class="text-base font-bold leading-tight">{text}</span>
-  {:else}
-    <SanskritWord {text} />
-  {/if}
+  <span class="text-base font-bold leading-tight">{text}</span>
 {/snippet}
 
 <div class="flex flex-col gap-10 w-full select-none">

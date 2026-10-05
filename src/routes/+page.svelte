@@ -12,7 +12,7 @@
   import StoryReward from '$lib/components/StoryReward.svelte';
   import { storyForSection, type UnitStory } from '$lib/data/stories';
 
-  const cfg = $derived(learningConfig(gameState.profile));
+  const cfg = $derived(learningConfig(gameState.profile, gameState.difficultyTier));
   const allLessons = gitaData.chapters.flatMap((c) => c.sections.flatMap((s) => s.lessons));
   const practice = $derived(practiceStatus());
 

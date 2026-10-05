@@ -20,7 +20,7 @@
       .find(l => l.id === lessonId);
     if (!base) return undefined;
     return untrack(() =>
-      personalizeLesson(base, learningConfig(gameState.profile), {
+      personalizeLesson(base, learningConfig(gameState.profile, gameState.difficultyTier), {
         speech: typeof window !== 'undefined' && 'speechSynthesis' in window
       })
     );

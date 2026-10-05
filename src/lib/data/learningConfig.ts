@@ -1,4 +1,4 @@
-import type { OnboardingProfile } from './onboarding';
+import type { DifficultyTier, OnboardingProfile } from './onboarding';
 
 export type ListeningLevel = 'none' | 'light' | 'heavy';
 /** sequential: finish lessons in order · jump: locked lessons offer a "Jump here?" test · open: whole path unlocked */
@@ -15,12 +15,12 @@ export interface LearningConfig {
   autoPlayRecitation: boolean;
   /** Commentary and an extra reflection in lessons */
   meaningFocus: boolean;
-  /** Word-by-word matching before phrase-level matching */
+  /** Word-by-word matching before phrase-level matching (every tier but Beginner) */
   wordWarmups: boolean;
+  /** Extra vocabulary and word-matching rounds closing each verse (Hard tier) */
+  vocabDrills: boolean;
   /** "I know these words" skip on word-discovery cards */
   skippableDiscovery: boolean;
-  /** Fill-in-the-blank shows the English translation up front (otherwise behind a hint button) */
-  translationHints: boolean;
   pathAccess: PathAccess;
   /** Extra recall exercises at the end of each lesson */
   deepRecall: boolean;
@@ -33,8 +33,8 @@ const DEFAULT_CONFIG: LearningConfig = {
   autoPlayRecitation: false,
   meaningFocus: false,
   wordWarmups: true,
+  vocabDrills: false,
   skippableDiscovery: false,
-  translationHints: true,
   pathAccess: 'sequential',
   deepRecall: false,
   practiceSize: 5,
@@ -57,10 +57,8 @@ function newContentRule(minutes: number): NewContentRule {
   return { reviewFirstAtDue: 5, maxNewPerDay: minutes >= 20 ? 2 : 1 };
 }
 
-export function learningConfig(profile: OnboardingProfile | null): LearningConfig {
-  if (!profile) return DEFAULT_CONFIG;
-
-  const { goal, practicePreference: pref, sanskritFamiliarity: fam, gitaKnowledge: known } = profile;
+function configFromProfile(profile: OnboardingProfile): LearningConfig {
+  const { goal, practicePreference: pref, gitaKnowledge: known } = profile;
   const soundGoal = goal === 'recitation' || goal === 'pronunciation';
   // An explicit "reading" preference still gets a little listening if the goal is about sound
   const listening: ListeningLevel =
@@ -68,21 +66,28 @@ export function learningConfig(profile: OnboardingProfile | null): LearningConfi
     : pref === 'reading' ? (soundGoal ? 'light' : 'none')
     : soundGoal ? 'heavy' : 'light';
 
-  const experienced = fam === 'studied' || fam === 'advanced';
   const knowsVerses = known === 'many' || known === 'chapters';
   const minutes = sessionMinutes(profile);
 
   return {
+    ...DEFAULT_CONFIG,
     listening,
     autoPlayRecitation: listening === 'heavy',
     meaningFocus: goal === 'meaning' || goal === 'both' || pref === 'reading',
-    wordWarmups: profile.difficultyTier === 'beginner' ? false : !experienced,
-    skippableDiscovery: experienced || knowsVerses,
-    translationHints: fam !== 'advanced',
+    skippableDiscovery: knowsVerses,
     pathAccess: knowsVerses ? 'open' : known === 'few' ? 'jump' : 'sequential',
     deepRecall: minutes >= 15,
     practiceSize: Math.min(8, Math.max(3, Math.floor(minutes / 2))),
     newContent: newContentRule(minutes)
+  };
+}
+
+/** The learner's profile sets the pacing; the difficulty tier sets how much vocabulary work each verse carries. */
+export function learningConfig(profile: OnboardingProfile | null, tier: DifficultyTier): LearningConfig {
+  return {
+    ...(profile ? configFromProfile(profile) : DEFAULT_CONFIG),
+    wordWarmups: tier !== 'beginner',
+    vocabDrills: tier === 'hard'
   };
 }
 

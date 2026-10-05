@@ -1,16 +1,17 @@
 import type { Lesson, Question, WordMeaning } from './gitaData';
 import type { LearningConfig } from './learningConfig';
-import { allLessons, lessonWords, listeningQuestion, reverseQuestion, shuffle } from './practice';
+import { allLessons, lessonWords, listeningQuestion, reverseQuestion, shuffle, wordMatchingQuestion } from './practice';
 
 const pickOne = <T>(items: T[]): T | undefined => items[Math.floor(Math.random() * items.length)];
 
 /**
  * Returns a copy of a curriculum lesson adjusted to the learner. The authored content is
  * never mutated; this only removes steps the learner doesn't need and adds generated ones:
- * - experienced learners skip the word-by-word warm-up matching
  * - listening-focused learners get a "tap what you hear" exercise after each part
  * - everyone else with listening on gets one in the final stage
  * - Deep-plan learners get extra recall exercises at the end
+ * - Hard-tier learners close each verse with a vocabulary word-matching round and recall exercises
+ * - Beginner-tier learners skip the word-by-word warm-up matching (via `cfg.wordWarmups`)
  * - meaning-focused learners get the lesson's reflection prompt if it has none
  */
 export function personalizeLesson(lesson: Lesson, cfg: LearningConfig, opts: { speech: boolean }): Lesson {
@@ -40,7 +41,10 @@ export function personalizeLesson(lesson: Lesson, cfg: LearningConfig, opts: { s
     const target = pickOne(fresh.length ? fresh : pool);
     if (target) extras.push(listeningQuestion(target, `${lesson.id}_syn`, pool));
   }
-  if (cfg.deepRecall) {
+  if (cfg.vocabDrills && pool.length >= 2) {
+    extras.push(wordMatchingQuestion(shuffle(pool).slice(0, 5), `${lesson.id}_vocab`));
+  }
+  if (cfg.deepRecall || cfg.vocabDrills) {
     for (const [i, w] of shuffle(pool).slice(0, 2).entries()) {
       extras.push(reverseQuestion(w, `${lesson.id}_syn_${i}`, pool));
     }
@@ -95,12 +99,11 @@ export function buildJumpTest(targetId: string, completed: string[]): JumpTest |
       id: `jump_${targetId}`,
       title: `Jump to ${target.verseRef}`,
       verseRef: target.verseRef,
-      verseSanskrit: '',
-      verseTransliteration: '',
+      hindiTranslationDevanagari: '',
+      hindiTranslationRoman: '',
       translation: '',
       purport: 'Show what you already know to skip ahead.',
       wordBreakdown: [...words.values()],
-      teachingSlides: [],
       questions: [],
       parts: [],
       finalSynthesisQuestions: questions

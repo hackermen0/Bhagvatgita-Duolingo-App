@@ -4,12 +4,11 @@
   import { gitaData, sectionForLesson, type Lesson, type VersePart, type Question } from '../data/gitaData';
   import { lessonWords, wordsTestedBy } from '../data/practice';
   import { learningConfig, goalNudge } from '../data/learningConfig';
-  import { toPhonetic } from '../data/sanskritHelper';
+  import { hindiOf, romanWords, scriptText } from '../data/hindi';
   import { storyForSection, type UnitStory } from '../data/stories';
   import LessonProgress from './LessonProgress.svelte';
   import FeedbackModal from './FeedbackModal.svelte';
   import PhraseMatcher from './PhraseMatcher.svelte';
-  import WordTilePicker from './WordTilePicker.svelte';
   import MultipleChoice from './MultipleChoice.svelte';
   import FillInBlank from './FillInBlank.svelte';
   import ListeningChoice from './ListeningChoice.svelte';
@@ -41,7 +40,7 @@
 
   const isPractice = $derived(mode === 'practice');
   const isJump = $derived(mode === 'jump');
-  const cfg = learningConfig(gameState.profile);
+  const cfg = learningConfig(gameState.profile, gameState.difficultyTier);
 
   // A jump test is a placement check: hearts aren't spent, but too many mistakes ends it
   const JUMP_MISTAKES_ALLOWED = 3;
@@ -147,7 +146,7 @@
   let canCheck = $derived(() => {
     if (!activeQuestion) return false;
     if (activeQuestion.type === 'phrase_matching') return matchComplete;
-    if (activeQuestion.type === 'sentence_rebuilding' || activeQuestion.type === 'translate') return selectedWords.length > 0;
+    if (activeQuestion.type === 'translate') return selectedWords.length > 0;
     return selectedOption !== null;
   });
 
@@ -245,7 +244,7 @@
     clearTimeout(shockTimer);
     shockTimer = setTimeout(() => (matchShock = false), 900);
     wrongCount += 1;
-    confusedTerms.flatMap((t) => t.split(/\s+/)).forEach((w) => missedWords.add(w));
+    confusedTerms.flatMap(romanWords).forEach((w) => missedWords.add(w));
     loseHeart();
     if (outOfLives()) isGameOver = true;
   }
@@ -317,11 +316,8 @@
       case 'listening':
         isCorrect = selectedOption === q.answer;
         break;
-      case 'sentence_rebuilding':
-        isCorrect = normalize(selectedWords.join(' ')) === normalize(q.targetSentence);
-        break;
       case 'translate': {
-        // Graded on meaning, not on one fixed English sentence: English allows many valid orders
+        // The prompt is Hindi, the answer always English. Graded on meaning, not on one fixed English sentence: English allows many valid orders
         // ("your right is only in action" / "action is your only right"), and small grammar words
         // are the learner's choice. Right = every meaning word of the reference, no decoys; a
         // different phrasing still gets the reference shown.
@@ -476,15 +472,14 @@
       case 'multiple_choice':
         return activeQuestion.options.find((o) => o.isCorrect)?.text || '';
       case 'fill_in_the_blank':
-        return toPhonetic(activeQuestion.answer);
-      case 'sentence_rebuilding':
-        return toPhonetic(activeQuestion.targetSentence);
+        return activeQuestion.sentence.replace('____', activeQuestion.answer);
       case 'translate':
         return activeQuestion.answer;
       case 'listening': {
+        // The answer word, written in the learner's script
         const q = activeQuestion;
-        const opt = q.options.find((o) => o.word === q.answer);
-        return opt ? `${opt.devanagari} (${toPhonetic(opt.word)})` : toPhonetic(q.answer);
+        const heard = q.options.find((o) => o.word === q.answer);
+        return heard ? scriptText({ dev: heard.devanagari, roman: heard.word }, gameState.tierScriptMode) : q.answer;
       }
       default:
         return '';
@@ -497,7 +492,6 @@
       case 'multiple_choice':
         return selectedOption?.explanation || activeQuestion.options.find((o) => o.isCorrect)?.explanation || '';
       case 'fill_in_the_blank':
-      case 'sentence_rebuilding':
       case 'listening':
         return activeQuestion.explanation;
       case 'translate':
@@ -649,8 +643,7 @@
           <p class="text-xs font-black uppercase tracking-wider text-primary">{lesson.verseRef}</p>
           <div class="text-center">
             <VerseText
-              sanskrit={lesson.verseSanskrit}
-              transliteration={lesson.verseTransliteration}
+              hindi={hindiOf(lesson)}
               class="text-lg font-bold text-primary-dark dark:text-primary leading-relaxed"
             />
           </div>
@@ -699,9 +692,6 @@
               {#if activeQuestion.type === 'phrase_matching'}
                 <p class="text-[15px] font-bold text-text-muted mt-1">{cleanPrompt(activeQuestion.prompt)}</p>
               {/if}
-              {#if activeQuestion.type === 'sentence_rebuilding' && activeQuestion.hint}
-                <p class="text-[15px] font-bold text-text-muted mt-1">"{activeQuestion.hint}"</p>
-              {/if}
             {/if}
           </div>
           <!-- Fill-in-the-blank and translate show Krishna beside their speech bubble instead; reflections have their own -->
@@ -726,11 +716,9 @@
                 onIncorrect={handleMatchIncorrect}
                 onAllMatched={() => (matchComplete = true)}
               />
-            {:else if activeQuestion.type === 'sentence_rebuilding'}
-              <WordTilePicker tiles={activeQuestion.tiles} onChange={handleWordChange} disabled={isChecked} />
             {:else if activeQuestion.type === 'translate'}
               <TranslateExercise
-                sanskrit={activeQuestion.sanskrit}
+                hindi={activeQuestion.hindi}
                 tiles={activeQuestion.tiles}
                 onChange={handleWordChange}
                 disabled={isChecked}
@@ -739,11 +727,10 @@
               />
             {:else if activeQuestion.type === 'fill_in_the_blank'}
               <FillInBlank
-                prompt={activeQuestion.prompt}
-                translation={activeQuestion.translation}
+                hindi={activeQuestion.hindi}
+                sentence={activeQuestion.sentence}
                 options={activeQuestion.options}
                 onSelect={handleSelect}
-                showTranslation={cfg.translationHints}
                 disabled={isChecked}
                 mascotMood={exerciseMood}
               />

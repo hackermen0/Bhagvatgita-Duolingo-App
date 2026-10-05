@@ -1,7 +1,7 @@
 import { gitaData, type Lesson, type Question, type WordMeaning } from './gitaData';
 import { gameState, isDue } from '../state/gameState.svelte';
 import { learningConfig } from './learningConfig';
-import { toPhonetic } from './sanskritHelper';
+import { romanWords, scriptText } from './hindi';
 
 export const allLessons: Lesson[] = gitaData.chapters.flatMap((c) => c.sections.flatMap((s) => s.lessons));
 
@@ -25,17 +25,15 @@ export function lookupMeaning(word: string): string | undefined {
   return glossary.get(word.toLowerCase())?.meaning;
 }
 
-/** IAST words an exercise tests, for attributing mistakes to specific words. */
+/** Romanized Hindi words an exercise tests, for attributing mistakes to specific words. */
 export function wordsTestedBy(q: Question): string[] {
   if (q.targetWords) return q.targetWords;
   switch (q.type) {
-    case 'fill_in_the_blank':
     case 'listening':
       return [q.answer];
-    case 'sentence_rebuilding':
-      return q.tiles;
     case 'translate':
-      return q.sanskrit.split(/\s+/);
+    case 'fill_in_the_blank':
+      return romanWords(q.hindi.roman);
     default:
       return [];
   }
@@ -126,7 +124,8 @@ function pickTargets(max: number, focusMistakes = false): WordMeaning[] {
   return targets;
 }
 
-const label = (w: WordMeaning) => `${w.devanagari} (${toPhonetic(w.word)})`;
+/** A word as the learner reads it: Roman letters on Beginner, Devanagari otherwise. */
+const label = (w: WordMeaning) => scriptText({ dev: w.devanagari, roman: w.word }, gameState.tierScriptMode);
 
 export function meaningQuestion(w: WordMeaning, id: string | number, pool: WordMeaning[] = []): Question {
   const wrong = distractors(w, 2, pool);
@@ -136,8 +135,8 @@ export function meaningQuestion(w: WordMeaning, id: string | number, pool: WordM
     prompt: `What does ${label(w)} mean?`,
     targetWords: [w.word],
     options: shuffle([
-      { text: w.meaning, isCorrect: true, explanation: `Yes — "${toPhonetic(w.word)}" means "${w.meaning}".` },
-      ...wrong.map((d) => ({ text: d.meaning, isCorrect: false, explanation: `"${toPhonetic(w.word)}" means "${w.meaning}".` }))
+      { text: w.meaning, isCorrect: true, explanation: `Yes — ${label(w)} means "${w.meaning}".` },
+      ...wrong.map((d) => ({ text: d.meaning, isCorrect: false, explanation: `${label(w)} means "${w.meaning}".` }))
     ])
   };
 }
@@ -169,6 +168,17 @@ export function listeningQuestion(w: WordMeaning, id: string | number, pool: Wor
   };
 }
 
+/** "Match each Hindi word to its meaning" over the given words. */
+export function wordMatchingQuestion(words: WordMeaning[], id: string): Question {
+  return {
+    id,
+    type: 'phrase_matching',
+    prompt: 'Match each Hindi word to its meaning.',
+    targetWords: words.map((w) => w.word),
+    pairs: words.map((w) => ({ hindi: { dev: w.devanagari, roman: w.word }, english: w.meaning }))
+  };
+}
+
 /**
  * A short mixed-review session: recognition (matching) first, then recall in both
  * directions, with listening — the hardest — saved for the end. Session size follows the
@@ -177,7 +187,7 @@ export function listeningQuestion(w: WordMeaning, id: string | number, pool: Wor
 export function buildPracticeLesson(opts: { listening: boolean; kind?: PracticeKind }): Lesson | null {
   const kind = opts.kind ?? 'review';
   if (kind === 'listening' && !opts.listening) return null;
-  const cfg = learningConfig(gameState.profile);
+  const cfg = learningConfig(gameState.profile, gameState.difficultyTier);
   const targets = pickTargets(cfg.practiceSize, kind === 'mistakes');
   if (targets.length < MIN_PRACTICE_WORDS) return null;
 
@@ -195,25 +205,18 @@ export function buildPracticeLesson(opts: { listening: boolean; kind?: PracticeK
       k === 'meaning' ? meaningQuestion(w, i) : k === 'reverse' ? reverseQuestion(w, i) : listeningQuestion(w, i)
     );
 
-  const matching: Question = {
-    id: 'practice_match',
-    type: 'phrase_matching',
-    prompt: 'Match each word to its meaning.',
-    targetWords: targets.map((w) => w.word),
-    pairs: targets.map((w) => ({ sanskrit: w.word, english: w.meaning }))
-  };
+  const matching = wordMatchingQuestion(targets, 'practice_match');
 
   const titles: Record<PracticeKind, string> = { review: 'Smart Review', listening: 'Listening', mistakes: 'Mistakes' };
   return {
     id: 'practice',
     title: titles[kind],
     verseRef: 'Review',
-    verseSanskrit: '',
-    verseTransliteration: '',
+    hindiTranslationDevanagari: '',
+    hindiTranslationRoman: '',
     translation: '',
     purport: 'Reviewing a word just as you begin to forget it is what makes it last.',
     wordBreakdown: targets,
-    teachingSlides: [],
     questions: [],
     parts: [],
     finalSynthesisQuestions: kind === 'listening' ? perWord : [matching, ...perWord]

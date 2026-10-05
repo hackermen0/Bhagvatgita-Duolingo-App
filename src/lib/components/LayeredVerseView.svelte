@@ -1,17 +1,12 @@
 <script lang="ts">
-  import type { WordMeaning, Commentary } from "../data/gitaData";
-  import { getSanskritDisplay, toPhonetic } from "../data/sanskritHelper";
+  import type { WordMeaning, Commentary, HindiText } from "../data/gitaData";
+  import { scriptText } from "../data/hindi";
+  import { gameState } from "../state/gameState.svelte";
 
-  let {
-    verseSanskrit,
-    verseTransliteration,
-    wordBreakdown,
-    translation,
-    commentary,
-    verseRef,
-  } = $props<{
-    verseSanskrit: string;
-    verseTransliteration: string;
+  // A verse unpacked in layers: its Hindi translation (in the tier's script), the Hindi words one by
+  // one, the English translation, then cited commentary.
+  let { hindi, wordBreakdown, translation, commentary, verseRef } = $props<{
+    hindi: HindiText;
     wordBreakdown: WordMeaning[];
     translation: string;
     commentary?: Commentary;
@@ -21,14 +16,18 @@
   // Active word popover modal state
   let activeWord = $state<WordMeaning | null>(null);
 
-  // Single-slide index (0: Sanskrit, 1: Transliteration, 2: Word Breakdown, 3: Translation, 4: Commentary)
+  // Single-slide index (0: Hindi verse, 1: word breakdown, 2: English translation, 3: commentary)
   let currentSlide = $state(0);
 
   // Secondary "Full View" toggle state
   let isFullView = $state(false);
 
-  const totalSlides = $derived(commentary ? 5 : 4);
-  const romanVerse = $derived(toPhonetic(verseTransliteration));
+  const mode = $derived(gameState.tierScriptMode);
+  const isDeva = $derived(mode === 'devanagari');
+  const scriptLabel = $derived(isDeva ? 'Hindi (Devanagari)' : 'Hindi (Roman)');
+  const totalSlides = $derived(commentary ? 4 : 3);
+  const verseDisplay = $derived(scriptText(hindi, mode));
+  const wordText = (w: WordMeaning) => scriptText({ dev: w.devanagari, roman: w.word }, mode);
 
   function nextSlide() {
     if (currentSlide < totalSlides - 1) {
@@ -86,7 +85,7 @@
     <div class="relative min-h-[300px] flex flex-col justify-between">
       <!-- Slide Content -->
       {#if currentSlide === 0}
-        <!-- SLIDE 1: SANSKRIT -->
+        <!-- SLIDE 1: HINDI VERSE (tier-dependent script) -->
         <div
           class="bg-bg-surface border border-primary/40 p-6 rounded-3xl shadow-xl flex flex-col gap-4 relative overflow-hidden animate-[fade-in_0.2s_ease-out]"
         >
@@ -94,10 +93,9 @@
             class="flex items-center justify-between border-b border-primary/20 pb-3"
           >
             <span
-              class="text-[10px] font-black uppercase tracking-[0.2em] text-primary flex items-center gap-1.5"
+              class="text-[10px] font-black uppercase tracking-[0.2em] text-primary"
             >
-              <span class="font-cinzel font-bold text-xs">ॐ</span> Layer 1 · Sacred
-              Sanskrit
+              Layer 1 · {scriptLabel}
             </span>
             {#if verseRef}
               <span
@@ -110,37 +108,14 @@
 
           <div class="py-6 text-center">
             <p
-              class="text-2xl sm:text-3xl font-extrabold font-cinzel text-primary-dark dark:text-primary tracking-wide leading-relaxed whitespace-pre-line drop-shadow-md"
+              class="text-2xl sm:text-3xl font-extrabold {isDeva ? 'font-deva' : ''} text-primary-dark dark:text-primary leading-relaxed whitespace-pre-line"
             >
-              {verseSanskrit}
+              {verseDisplay}
             </p>
           </div>
         </div>
       {:else if currentSlide === 1}
-        <!-- SLIDE 2: TRANSLITERATION -->
-        <div
-          class="bg-bg-surface border border-success/40 p-6 rounded-3xl shadow-xl flex flex-col gap-4 animate-[fade-in_0.2s_ease-out]"
-        >
-          <div
-            class="flex items-center justify-between border-b border-success/20 pb-3"
-          >
-            <span
-              class="text-[10px] font-black uppercase tracking-[0.2em] text-success"
-            >
-              Layer 2 · Transliteration
-            </span>
-          </div>
-
-          <div class="py-6 text-center">
-            <p
-              class="text-base sm:text-lg font-semibold text-success italic font-mono leading-relaxed whitespace-pre-line"
-            >
-              {romanVerse}
-            </p>
-          </div>
-        </div>
-      {:else if currentSlide === 2}
-        <!-- SLIDE 3: WORD BREAKDOWN -->
+        <!-- SLIDE 2: WORD BREAKDOWN -->
         <div
           class="bg-bg-surface border border-accent/40 p-6 rounded-3xl shadow-xl flex flex-col gap-4 animate-[fade-in_0.2s_ease-out]"
         >
@@ -150,7 +125,7 @@
             <span
               class="text-[10px] font-black uppercase tracking-[0.2em] text-accent"
             >
-              Layer 3 · Word-by-Word Breakdown
+              Layer 2 · Word-by-Word Breakdown
             </span>
             <span class="text-[9px] text-text-muted font-bold">
               Tap tile for details
@@ -159,7 +134,6 @@
 
           <div class="flex flex-wrap gap-2.5 items-stretch justify-center py-2">
             {#each wordBreakdown as item}
-              {@const display = getSanskritDisplay(item.word)}
               <button
                 onclick={() => (activeWord = item)}
                 class="flex flex-col items-center group cursor-pointer active:scale-95 transition-all text-center"
@@ -168,15 +142,8 @@
                   class="px-3 py-2 rounded-2xl bg-bg-surface-alt border border-border-warm group-hover:border-accent/50 shadow-sm transition-all border-b-4 flex flex-col items-center justify-center min-w-[70px]"
                 >
                   <span
-                    class="text-[9px] font-semibold text-text-muted group-hover:text-accent tracking-wider"
-                  >
-                    {display.englishSyllables}
-                  </span>
-                  <span
-                    class="text-sm font-black text-text-primary font-cinzel mt-0.5"
-                  >
-                    {item.devanagari}
-                  </span>
+                    class="text-sm font-black text-text-primary leading-tight {isDeva ? 'font-deva' : ''}"
+                  >{wordText(item)}</span>
                 </div>
                 <span
                   class="text-[10px] font-bold text-accent/90 group-hover:text-accent max-w-[100px] leading-tight text-center mt-1 border-b border-dashed border-accent/30 pb-0.5"
@@ -187,8 +154,8 @@
             {/each}
           </div>
         </div>
-      {:else if currentSlide === 3}
-        <!-- SLIDE 4: ENGLISH TRANSLATION -->
+      {:else if currentSlide === 2}
+        <!-- SLIDE 3: ENGLISH TRANSLATION -->
         <div
           class="bg-bg-surface border border-border-warm p-6 rounded-3xl shadow-xl flex flex-col gap-4 animate-[fade-in_0.2s_ease-out]"
         >
@@ -198,7 +165,7 @@
             <span
               class="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted"
             >
-              Layer 4 · Full English Translation
+              Layer 3 · Full English Translation
             </span>
           </div>
 
@@ -210,8 +177,8 @@
             </p>
           </div>
         </div>
-      {:else if currentSlide === 4 && commentary}
-        <!-- SLIDE 5: CITED COMMENTARY -->
+      {:else if currentSlide === 3 && commentary}
+        <!-- SLIDE 4: CITED COMMENTARY -->
         <div
           class="bg-bg-surface border border-primary/40 p-6 rounded-3xl shadow-xl flex flex-col gap-4 animate-[fade-in_0.2s_ease-out]"
         >
@@ -221,7 +188,7 @@
             <span
               class="text-[10px] font-black uppercase tracking-[0.2em] text-primary"
             >
-              Layer 5 · Philosophical Commentary
+              Layer 4 · Philosophical Commentary
             </span>
             <span
               class="text-[10px] font-extrabold text-primary bg-primary/10 border border-primary/30 px-2 py-0.5 rounded-full"
@@ -294,7 +261,7 @@
   {:else}
     <!-- FULL STACKED VIEW MODE -->
     <div class="flex flex-col gap-4">
-      <!-- Layer 1: Sanskrit -->
+      <!-- Layer 1: Hindi verse (tier-dependent) -->
       <div
         class="bg-bg-surface border border-primary/30 p-5 rounded-3xl shadow-xl flex flex-col gap-3"
       >
@@ -304,75 +271,56 @@
           <span
             class="text-[10px] font-black uppercase tracking-[0.2em] text-primary"
           >
-            Layer 1 · Sacred Sanskrit
+            Layer 1 · {scriptLabel}
           </span>
         </div>
         <p
-          class="text-xl sm:text-2xl font-extrabold font-cinzel text-primary-dark dark:text-primary text-center leading-relaxed whitespace-pre-line"
+          class="text-xl sm:text-2xl font-extrabold {isDeva ? 'font-deva' : ''} text-primary-dark dark:text-primary text-center leading-relaxed whitespace-pre-line"
         >
-          {verseSanskrit}
+          {verseDisplay}
         </p>
       </div>
 
-      <!-- Layer 2: Transliteration -->
-      <div
-        class="bg-bg-surface border border-success/30 p-4 rounded-3xl flex flex-col gap-2"
-      >
-        <span
-          class="text-[9px] font-black uppercase tracking-widest text-success"
-        >
-          Layer 2 · Transliteration
-        </span>
-        <p
-          class="text-xs sm:text-sm font-semibold text-success italic font-mono leading-relaxed whitespace-pre-line"
-        >
-          {romanVerse}
-        </p>
-      </div>
-
-      <!-- Layer 3: Word Breakdown -->
+      <!-- Layer 2: Word-by-Word Breakdown -->
       <div
         class="bg-bg-surface border border-border-warm p-5 rounded-3xl flex flex-col gap-3"
       >
         <span
           class="text-[10px] font-black uppercase tracking-[0.2em] text-accent"
         >
-          Layer 3 · Word-by-Word Breakdown
+          Layer 2 · Word-by-Word Breakdown
         </span>
         <div class="flex flex-wrap gap-2 items-center justify-center">
           {#each wordBreakdown as item}
-            {@const display = getSanskritDisplay(item.word)}
             <button
               onclick={() => (activeWord = item)}
               class="px-3 py-1.5 rounded-xl bg-bg-surface-alt border border-border-warm text-center active:scale-95 transition-all"
             >
               <span
-                class="text-xs font-bold text-text-primary block font-cinzel"
-                >{item.devanagari}</span
-              >
+                class="text-xs font-black text-text-primary block {isDeva ? 'font-deva' : ''}"
+              >{wordText(item)}</span>
               <span class="text-[9px] font-semibold text-accent block"
-                >{item.meaning}</span
-              >
+                >{item.meaning}</span>
             </button>
           {/each}
         </div>
       </div>
 
-      <!-- Layer 4: Translation -->
+      <!-- Layer 3: Translation -->
       <div
         class="bg-bg-surface border border-border-warm p-4 rounded-3xl flex flex-col gap-1"
       >
         <span
           class="text-[10px] font-black uppercase tracking-widest text-text-muted"
         >
-          Layer 4 · Translation
+          Layer 3 · Translation
         </span>
         <p class="text-xs sm:text-sm text-text-primary italic leading-relaxed">
           "{translation}"
         </p>
       </div>
 
-      <!-- Layer 5: Commentary -->
+      <!-- Layer 4: Commentary -->
       {#if commentary}
         <div
           class="bg-bg-surface border border-primary/40 p-4 rounded-3xl flex flex-col gap-2"
@@ -380,7 +328,7 @@
           <span
             class="text-[10px] font-black uppercase tracking-widest text-primary"
           >
-            Layer 5 · Commentary by {commentary.author}
+            Layer 4 · Commentary by {commentary.author}
           </span>
           <p class="text-xs text-text-primary leading-relaxed">
             {commentary.text}
@@ -402,14 +350,9 @@
           <div class="flex flex-col">
             <span
               class="text-[10px] uppercase font-bold tracking-widest text-text-muted"
-              >{activeWord.partOfSpeech}</span
-            >
-            <h3 class="text-3xl font-black text-text-primary font-cinzel mt-0.5">
-              {activeWord.devanagari}
-            </h3>
-            <span class="text-base font-bold text-primary"
-              >{toPhonetic(activeWord.word)}</span
-            >
+              >{activeWord.partOfSpeech}</span>
+            <h3 class="text-3xl font-black text-text-primary mt-0.5 {isDeva ? 'font-deva' : ''}">
+              {wordText(activeWord)}</h3>
           </div>
           <button
             onclick={() => (activeWord = null)}

@@ -1,23 +1,16 @@
 import { browser } from '$app/environment';
-import { planById, type DevanagariAbility, type OnboardingProfile, type PracticePreference, type DifficultyTier } from '../data/onboarding';
+import { planById, type OnboardingProfile, type PracticePreference, type DifficultyTier } from '../data/onboarding';
 
 export type { DifficultyTier };
-export type TierScriptMode = 'roman_hindi' | 'iast' | 'devanagari';
-
-export function scriptModeForTier(tier: DifficultyTier): TierScriptMode {
-  switch (tier) {
-    case 'beginner': return 'roman_hindi';
-    case 'medium': return 'iast';
-    case 'hard': return 'devanagari';
-  }
-}
-
-/** script: Devanāgarī only · both: Devanāgarī with romanized captions · roman: romanized first */
-export type ScriptDisplay = 'script' | 'both' | 'roman';
+/** How Hindi is written on screen: Roman letters (Hinglish) or Devanagari. */
+export type TierScriptMode = 'roman_hindi' | 'devanagari';
 export type ThemeMode = 'light' | 'dark';
 
-export function scriptDisplayFor(ability: DevanagariAbility): ScriptDisplay {
-  return ability === 'none' ? 'roman' : ability === 'comfortable' ? 'script' : 'both';
+export const DIFFICULTY_TIER_IDS: readonly DifficultyTier[] = ['beginner', 'medium', 'hard'];
+
+/** beginner → Romanized Hindi (Hinglish) · medium / hard → Devanagari Hindi */
+export function scriptModeForTier(tier: DifficultyTier): TierScriptMode {
+  return tier === 'beginner' ? 'roman_hindi' : 'devanagari';
 }
 
 export interface WordMemory {
@@ -97,7 +90,6 @@ class GameState {
   lastActiveDate = $state<string | null>(null);
   activeDays = $state<string[]>([]);
   difficultyTier = $state<DifficultyTier>('beginner');
-  scriptDisplay = $state<ScriptDisplay>('both');
   userReflections = $state<Record<string, string>>({});
   themeMode = $state<ThemeMode>('light');
   wordMemory = $state<Record<string, WordMemory>>({});
@@ -134,10 +126,8 @@ class GameState {
         this.completedLessons = parsed.completedLessons ?? [];
         this.levelProgress = parsed.levelProgress ?? {};
         this.activeDays = parsed.activeDays ?? [];
-        this.difficultyTier = parsed.difficultyTier ?? (parsed.profile?.difficultyTier ?? 'beginner');
-        // Older saves stored a two-way scriptMode ('devanagari' | 'english')
-        this.scriptDisplay =
-          parsed.scriptDisplay ?? (parsed.scriptMode === 'english' ? 'roman' : 'both');
+        const savedTier = parsed.difficultyTier ?? parsed.profile?.difficultyTier;
+        this.difficultyTier = DIFFICULTY_TIER_IDS.includes(savedTier) ? savedTier : 'beginner';
         this.userReflections = parsed.userReflections ?? {};
         this.themeMode = parsed.themeMode ?? 'light';
         this.wordMemory = parsed.wordMemory ?? {};
@@ -177,7 +167,6 @@ class GameState {
         lastActiveDate: this.lastActiveDate,
         activeDays: $state.snapshot(this.activeDays),
         difficultyTier: this.difficultyTier,
-        scriptDisplay: this.scriptDisplay,
         userReflections: $state.snapshot(this.userReflections),
         themeMode: this.themeMode,
         wordMemory: $state.snapshot(this.wordMemory),
@@ -209,19 +198,9 @@ class GameState {
 
   setDifficultyTier(tier: DifficultyTier) {
     this.difficultyTier = tier;
-    if (tier === 'beginner' || tier === 'medium') {
-      this.scriptDisplay = 'roman';
-    } else {
-      this.scriptDisplay = 'script';
-    }
     if (this.profile) {
       this.profile = { ...this.profile, difficultyTier: tier };
     }
-    this.saveState();
-  }
-
-  setScriptDisplay(mode: ScriptDisplay) {
-    this.scriptDisplay = mode;
     this.saveState();
   }
 
@@ -253,10 +232,7 @@ class GameState {
   completeOnboarding(profile: OnboardingProfile) {
     this.profile = profile;
     this.onboardingComplete = true;
-    if (profile.difficultyTier) {
-      this.difficultyTier = profile.difficultyTier;
-    }
-    this.scriptDisplay = scriptDisplayFor(profile.devanagariAbility);
+    this.difficultyTier = profile.difficultyTier;
 
     const targetXP =
       profile.plan === 'custom' && profile.customMinutes
@@ -411,8 +387,7 @@ class GameState {
     this.levelProgress = {};
     this.lastActiveDate = null;
     this.activeDays = [];
-    this.difficultyTier = 'beginner';
-    this.scriptDisplay = this.profile ? scriptDisplayFor(this.profile.devanagariAbility) : 'both';
+    // The difficulty tier is a preference, not progress, so a progress reset keeps it
     this.userReflections = {};
     this.wordMemory = {};
     this.daily = emptyDaily(dateKey());

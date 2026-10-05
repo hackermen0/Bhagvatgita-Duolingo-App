@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { Lesson, VersePart, VerseWord, WordMeaning } from "../data/gitaData";
-  import { getSanskritDisplay, toPhonetic } from "../data/sanskritHelper";
+  import type { Lesson } from "../data/gitaData";
   import { gameState } from "../state/gameState.svelte";
+  import { hindiOf, hindiTokens, type HindiToken } from "../data/hindi";
   import { CHUNK_COLORS } from "../data/chunkColors";
   import { onMount } from "svelte";
 
@@ -11,71 +11,27 @@
     autoPlay?: boolean;
   }>();
 
-  const scriptDisplay = $derived(gameState.scriptDisplay);
+  const isDeva = $derived(gameState.tierScriptMode === 'devanagari');
 
-  // Word-by-word phonetic pairing. Neither `lesson.wordBreakdown` (a short "key vocab"
-  // highlight list on most lessons) nor any single part's wordBreakdown is guaranteed to
-  // cover every token of the verse — so the actual verse text (line by line) is always the
-  // source of truth for which words are shown, matching what the lesson preview displays.
-  // Each token's phonetic caption is looked up from curated word data where an exact
-  // Devanagari match exists (most accurate), then the same-position transliteration token
-  // in that line (handles sandhi-fused compounds reasonably), then the raw token itself.
-  let wordPairs = $derived.by(() => {
-    if (lesson.verseWordGuide?.length) {
-      return lesson.verseWordGuide.map((w: VerseWord) => ({
-        devanagari: w.devanagari,
-        phonetic: getSanskritDisplay(w.roman).englishSyllables,
-        roman: toPhonetic(w.roman)
-      }));
-    }
-
-    const devLines = lesson.verseSanskrit.split("\n").map((l: string) => l.trim().split(/\s+/).filter(Boolean));
-    const translitLines = lesson.verseTransliteration.split("\n").map((l: string) => l.trim().split(/\s+/).filter(Boolean));
-
-    const curated = new Map<string, string>();
-    const addEntries = (entries?: WordMeaning[]) => {
-      entries?.forEach((w) => {
-        if (!curated.has(w.devanagari)) curated.set(w.devanagari, w.word);
-      });
-    };
-    addEntries(lesson.wordBreakdown);
-    lesson.parts?.forEach((p: VersePart) => addEntries(p.wordBreakdown));
-
-    const pairs: { devanagari: string; phonetic: string; roman: string }[] = [];
-    devLines.forEach((tokens: string[], lineIdx: number) => {
-      const translitTokens = translitLines[lineIdx] ?? [];
-      tokens.forEach((tok: string, i: number) => {
-        const cleaned = tok.replace(/[।॥]/g, "").trim();
-        if (!cleaned) return;
-        const phoneticSource = curated.get(cleaned) ?? translitTokens[i] ?? cleaned;
-        pairs.push({
-          devanagari: cleaned,
-          phonetic: getSanskritDisplay(phoneticSource).englishSyllables,
-          roman: toPhonetic(phoneticSource)
-        });
-      });
-    });
-
-    return pairs;
-  });
-
-  // The verse is shown as its lesson parts (numbered chunks, each with its English clause) so a
-  // newcomer sees a few labelled pieces instead of one wall of unfamiliar text. Words are assigned
-  // to parts in reading order by token count; if the counts ever disagree with the word list, fall
-  // back to a single unlabelled chunk rather than mislabel words.
+  // The verse's Hindi is its parts read in order, so the parts are the chunks: each one is a numbered
+  // piece with its own English clause, so a newcomer sees a few labelled pieces instead of one wall of
+  // text. A lesson with no parts shows its whole Hindi translation as a single unlabelled chunk.
   type Chunk = { start: number; end: number; number: number | null; translation: string };
+  const parts = $derived(lesson.parts ?? []);
+  const wordPairs = $derived<HindiToken[]>(
+    parts.length
+      ? parts.flatMap((p: { hindiTranslationDevanagari: string; hindiTranslationRoman: string }) => hindiTokens(hindiOf(p)))
+      : hindiTokens(hindiOf(lesson))
+  );
   const chunks = $derived.by<Chunk[]>(() => {
-    const parts: VersePart[] = lesson.parts ?? [];
-    const counts = parts.map((p) => p.sanskrit.replace(/[।॥]/g, " ").trim().split(/\s+/).filter(Boolean).length);
-    if (parts.length && counts.reduce((a, b) => a + b, 0) === wordPairs.length) {
-      let start = 0;
-      return parts.map((p, i) => {
-        const chunk = { start, end: start + counts[i], number: i + 1, translation: p.translation };
-        start += counts[i];
-        return chunk;
-      });
-    }
-    return [{ start: 0, end: wordPairs.length, number: null, translation: lesson.translation }];
+    if (!parts.length) return [{ start: 0, end: wordPairs.length, number: null, translation: lesson.translation }];
+    let start = 0;
+    return parts.map((p: { hindiTranslationDevanagari: string; translation: string }, i: number) => {
+      const count = p.hindiTranslationDevanagari.split(/\s+/).filter(Boolean).length;
+      const chunk = { start, end: start + count, number: i + 1, translation: p.translation };
+      start += count;
+      return chunk;
+    });
   });
   const isChunked = $derived(chunks.length > 1 || chunks[0]?.number !== null);
   const activeChunk = $derived(
@@ -90,9 +46,9 @@
   let hasListened = $state(false);
 
   // Spoken text is built by joining the SAME word tokens shown on screen (space-separated),
-  // so a boundary event's charIndex maps back to a display word unambiguously — the original
-  // sandhi-joined verse text can't be aligned this way since word counts don't match.
-  let spokenWords = $derived(wordPairs.map((w: { devanagari: string }) => w.devanagari));
+  // so a boundary event's charIndex maps back to a display word unambiguously. Speech is always
+  // the Devanagari, whichever script the tier displays.
+  let spokenWords = $derived(wordPairs.map((w: HindiToken) => w.dev));
   let wordOffsets = $derived.by(() => {
     let offset = 0;
     return spokenWords.map((w: string) => {
@@ -243,7 +199,7 @@
     <h2 class="text-2xl font-black leading-tight mt-1">What you'll learn to say</h2>
   </div>
 
-  <!-- The meaning comes first, so the Sanskrit below has something to attach to -->
+  <!-- The meaning comes first, so the Hindi below has something to attach to -->
   <div class="card bg-bg-surface-alt! px-4 py-3">
     <p class="text-lg font-black leading-snug">{lesson.essence ?? lesson.translation}</p>
     {#if isChunked}
@@ -314,14 +270,7 @@
             {#each wordPairs.slice(chunk.start, chunk.end) as pair, wi}
               {@const isActive = chunk.start + wi === activeWordIndex}
               <span class="flex flex-col rounded-lg px-1 -mx-1 transition-colors duration-150 {isActive ? 'bg-primary-soft' : ''}">
-                {#if scriptDisplay === 'roman'}
-                  <span class="text-lg font-black leading-tight break-words {isActive ? 'text-primary-dark dark:text-primary' : 'text-text-primary'}">{pair.roman}</span>
-                {:else}
-                  <span class="text-xl font-deva leading-tight break-words {isActive ? 'text-primary-dark dark:text-primary' : 'text-text-primary'}">{pair.devanagari}</span>
-                  {#if scriptDisplay === 'both'}
-                    <span class="text-[11px] font-bold tracking-wide {isActive ? 'text-primary-dark dark:text-primary' : 'text-text-muted'}">{pair.phonetic}</span>
-                  {/if}
-                {/if}
+                <span class="text-xl leading-tight break-words {isDeva ? 'font-deva' : 'font-black'} {isActive ? 'text-primary-dark dark:text-primary' : 'text-text-primary'}">{isDeva ? pair.dev : pair.roman}</span>
               </span>
             {/each}
           </div>

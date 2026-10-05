@@ -3,6 +3,7 @@
     ONBOARDING_QUESTIONS,
     PLANS,
     CUSTOM_MINUTES_OPTIONS,
+    DIFFICULTY_TIERS,
     planById,
     recommendPlan,
     labelFor,
@@ -20,50 +21,17 @@
 
   type Stage = 'welcome' | 'chooseDifficulty' | 'question' | 'recommend' | 'choosePlan' | 'customTime';
 
-  interface DifficultyOption {
-    tier: DifficultyTier;
-    title: string;
-    badge: string;
-    badgeColor: string;
-    subtitle: string;
-    sample: string;
-    description: string;
-  }
-
-  const DIFFICULTY_OPTIONS: DifficultyOption[] = [
-    {
-      tier: 'beginner',
-      title: 'Beginner',
-      badge: 'Easy',
-      badgeColor: 'bg-success/15 text-success border-success/30',
-      subtitle: 'Romanized Hindi / English phonetics',
-      sample: 'Karmany evadhikaras te ma phaleshu kadachana...',
-      description: 'Learn verses in clear, familiar English letters. No complex Devanagari script or diacritics.'
-    },
-    {
-      tier: 'medium',
-      title: 'Medium',
-      badge: 'Balanced',
-      badgeColor: 'bg-gold/15 text-gold-dark dark:text-gold border-gold/30',
-      subtitle: 'Sanskrit in IAST Roman script',
-      sample: 'karmaṇy-evādhikāras te mā phaleṣu kadācana...',
-      description: 'Standard academic Sanskrit with authentic transliteration marks (IAST) for precise pronunciation.'
-    },
-    {
-      tier: 'hard',
-      title: 'Hard',
-      badge: 'Authentic',
-      badgeColor: 'bg-accent/15 text-accent border-accent/30',
-      subtitle: 'Full Sanskrit Devanagari script',
-      sample: 'कर्मण्येवाधिकारस्ते मा फलेषु कदाचन...',
-      description: 'Deep immersion directly in sacred Devanagari script for traditional chanting and memorization.'
-    }
-  ];
+  // Colors for each tier's badge; the copy lives in DIFFICULTY_TIERS so Settings shows the same wording
+  const BADGE_COLORS: Record<DifficultyTier, string> = {
+    beginner: 'bg-success/15 text-success border-success/30',
+    medium: 'bg-gold/15 text-gold-dark dark:text-gold border-gold/30',
+    hard: 'bg-accent/15 text-accent border-accent/30'
+  };
 
   let stage = $state<Stage>('welcome');
   let selectedTier = $state<DifficultyTier>(gameState.difficultyTier ?? 'beginner');
   let qIndex = $state(0);
-  let answers = $state<Partial<OnboardingProfile>>({ difficultyTier: selectedTier });
+  let answers = $state<Partial<OnboardingProfile>>({});
   // Where "Custom" was chosen from, so the back button on the minutes screen returns correctly
   let customFrom = $state<'recommend' | 'choosePlan'>('recommend');
   let pendingPlan = $state<OnboardingProfile['plan'] | null>(null);
@@ -201,9 +169,9 @@
       </div>
 
     {:else if stage === 'chooseDifficulty'}
-      {@render askBubble('Choose your difficulty level', 'This controls how verses and words appear across the entire app.')}
+      {@render askBubble('Choose your difficulty level', 'Every verse comes in Hindi and you always answer in English. This sets how the Hindi is written.')}
       <div class="flex flex-col gap-3.5 mt-6">
-        {#each DIFFICULTY_OPTIONS as option}
+        {#each DIFFICULTY_TIERS as option}
           {@const isSelected = selectedTier === option.tier}
           <button
             type="button"
@@ -213,7 +181,7 @@
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <span class="text-lg font-black">{option.title}</span>
-                <span class="text-[11px] font-extrabold uppercase px-2 py-0.5 rounded-full border {option.badgeColor}">{option.badge}</span>
+                <span class="text-[11px] font-extrabold uppercase px-2 py-0.5 rounded-full border {BADGE_COLORS[option.tier]}">{option.badge}</span>
               </div>
               <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors {isSelected ? 'border-primary bg-primary text-white' : 'border-border-warm bg-bg-surface'}">
                 {#if isSelected}
@@ -224,7 +192,7 @@
             <p class="text-xs font-black uppercase tracking-wider text-primary">{option.subtitle}</p>
             <div class="bg-bg-base/70 rounded-xl px-3 py-2 border border-border-warm text-sm font-semibold text-text-primary">
               <span class="text-[11px] font-bold text-text-muted block mb-0.5">Sample text:</span>
-              <span class="{option.tier === 'hard' ? 'font-deva text-base font-bold' : option.tier === 'medium' ? 'italic font-medium' : 'font-bold'}">{option.sample}</span>
+              <span class="{option.tier === 'beginner' ? 'font-bold' : 'font-deva text-base font-bold'}">{option.sample}</span>
             </div>
             <p class="text-xs font-bold text-text-muted leading-relaxed">{option.description}</p>
           </button>
@@ -257,7 +225,7 @@
         <p class="text-base font-bold text-text-muted">{plan.purpose}</p>
         <ul class="mt-4 pt-4 border-t-2 border-border-warm flex flex-col gap-2.5">
           <li class="flex items-start gap-2.5 text-[15px] font-bold"><Icon name="target" class="w-5 h-5 text-primary shrink-0" /> {labelFor('goal', answers.goal)}</li>
-          <li class="flex items-start gap-2.5 text-[15px] font-bold"><Icon name="book" class="w-5 h-5 text-primary shrink-0" /> {labelFor('sanskritFamiliarity', answers.sanskritFamiliarity)} in Sanskrit</li>
+          <li class="flex items-start gap-2.5 text-[15px] font-bold"><Icon name="book" class="w-5 h-5 text-primary shrink-0" /> {DIFFICULTY_TIERS.find((t) => t.tier === selectedTier)?.title} tier · {DIFFICULTY_TIERS.find((t) => t.tier === selectedTier)?.subtitle}</li>
           <li class="flex items-start gap-2.5 text-[15px] font-bold"><Icon name="clock" class="w-5 h-5 text-primary shrink-0" /> {labelFor('timeBudget', answers.timeBudget)} a day</li>
         </ul>
       </div>
@@ -302,7 +270,7 @@
       <button type="button" onclick={() => (stage = 'chooseDifficulty')} class="btn btn-primary w-full">Get started</button>
     {:else if stage === 'chooseDifficulty'}
       <button type="button" onclick={continueDifficulty} class="btn btn-primary w-full">
-        Continue with {DIFFICULTY_OPTIONS.find(o => o.tier === selectedTier)?.title ?? 'Selected'} Tier
+        Continue with {DIFFICULTY_TIERS.find((o) => o.tier === selectedTier)?.title ?? 'Selected'} Tier
       </button>
     {:else if stage === 'question'}
       <button type="button" onclick={continueQuestion} disabled={!currentAnswer} class="btn w-full {currentAnswer ? 'btn-primary' : 'btn-disabled'}">

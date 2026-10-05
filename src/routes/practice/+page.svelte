@@ -5,8 +5,7 @@
   import { practiceStatus, learnedWordList, MIN_PRACTICE_WORDS } from '$lib/data/practice';
   import Mascot from '$lib/components/Mascot.svelte';
   import Icon from '$lib/components/Icon.svelte';
-  import SanskritWord from '$lib/components/SanskritWord.svelte';
-  import { toPhonetic } from '$lib/data/sanskritHelper';
+  import HindiWord from '$lib/components/HindiWord.svelte';
 
   const status = $derived(practiceStatus());
   const words = $derived(
@@ -120,7 +119,7 @@
             {#if speechSupported}
               <button
                 type="button"
-                aria-label="Hear {toPhonetic(w.word)}"
+                aria-label="Hear {w.word}"
                 onclick={() => speak(w.devanagari)}
                 class="shrink-0 w-10 h-10 rounded-xl bg-info/15 text-info flex items-center justify-center active:scale-95"
               >
@@ -128,7 +127,7 @@
               </button>
             {/if}
             <div class="flex-1 min-w-0 flex flex-col">
-              <div class="flex flex-col items-start"><SanskritWord text={w.word} /></div>
+              <div class="flex flex-col items-start"><HindiWord hindi={{ dev: w.devanagari, roman: w.word }} /></div>
               <span class="text-sm text-text-muted truncate">{w.meaning}</span>
             </div>
             <div class="flex items-end gap-0.5 shrink-0" aria-label="Strength {b} of 4">

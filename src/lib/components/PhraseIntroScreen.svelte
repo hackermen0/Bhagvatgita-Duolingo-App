@@ -3,6 +3,7 @@
   import type { VersePart } from '../data/gitaData';
   import { chunkColor } from '../data/chunkColors';
   import VerseText from './VerseText.svelte';
+  import { hindiOf } from '../data/hindi';
 
   let { part, partIndex, totalParts, onComplete } = $props<{
     part: VersePart;
@@ -44,7 +45,7 @@
 
   function startSpeaking() {
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(part.sanskrit);
+    const utterance = new SpeechSynthesisUtterance(part.hindiTranslationDevanagari);
     utterance.lang = 'hi-IN';
     utterance.rate = rate === 'slow' ? 0.4 : 0.75;
     // Cancelling fires the old utterance's callbacks late; the identity check ignores stale ones
@@ -79,7 +80,10 @@
   </div>
 
   <div class="card px-4 py-5 flex flex-col items-center gap-4 text-center" style="border-color: {chunkColor(partIndex - 1)}">
-    <VerseText sanskrit={part.sanskrit} transliteration={part.transliteration} class="text-xl font-black text-primary-dark dark:text-primary leading-relaxed" />
+    <VerseText
+      hindi={hindiOf(part)}
+      class="text-xl font-black text-primary-dark dark:text-primary leading-relaxed"
+    />
     <p class="text-base font-bold text-text-muted leading-snug pt-3 border-t-2 border-border-warm w-full">{part.translation}</p>
   </div>
 

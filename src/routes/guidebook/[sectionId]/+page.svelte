@@ -7,10 +7,10 @@
   import { lessonWords } from '$lib/data/practice';
   import { storyForSection, type UnitStory } from '$lib/data/stories';
   import Icon from '$lib/components/Icon.svelte';
-  import SanskritWord from '$lib/components/SanskritWord.svelte';
+  import HindiWord from '$lib/components/HindiWord.svelte';
   import VerseText from '$lib/components/VerseText.svelte';
   import StoryReward from '$lib/components/StoryReward.svelte';
-  import { toPhonetic } from '$lib/data/sanskritHelper';
+  import { hindiOf } from '$lib/data/hindi';
 
   const found = $derived.by(() => {
     for (const chapter of gitaData.chapters) {
@@ -75,7 +75,10 @@
           {#if unlocked}
             <div class="card p-4 mb-3">
               <div class="text-center">
-                <VerseText sanskrit={lesson.verseSanskrit} transliteration={lesson.verseTransliteration} class="text-lg font-bold leading-relaxed" />
+                <VerseText
+                  hindi={hindiOf(lesson)}
+                  class="text-lg font-bold leading-relaxed"
+                />
               </div>
               <p class="text-[15px] text-text-muted leading-relaxed mt-3 pt-3 border-t-2 border-border-warm">{lesson.translation}</p>
             </div>
@@ -87,7 +90,7 @@
                   {#if speechSupported}
                     <button
                       type="button"
-                      aria-label="Hear {toPhonetic(w.word)}"
+                      aria-label="Hear {w.word}"
                       onclick={() => speak(w.devanagari)}
                       class="shrink-0 w-10 h-10 rounded-xl bg-info text-white flex items-center justify-center active:translate-y-0.5"
                       style="box-shadow: 0 3px 0 var(--color-info-dark)"
@@ -96,7 +99,7 @@
                     </button>
                   {/if}
                   <div class="flex flex-col items-start min-w-0">
-                    <SanskritWord text={w.word} />
+                    <HindiWord hindi={{ dev: w.devanagari, roman: w.word }} />
                   </div>
                   <span class="ml-auto text-sm font-bold text-text-muted text-right">{w.meaning}</span>
                 </li>

@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import type { WordMeaning } from "../data/gitaData";
-  import { toPhonetic } from "../data/sanskritHelper";
   import { gameState } from "../state/gameState.svelte";
   import Icon from "./Icon.svelte";
 
@@ -65,11 +64,14 @@
     if (isSpeaking) startSpeaking();
   }
 
+  // The difficulty tier decides the script: Roman Hindi on Beginner, Devanagari on Medium and Hard
+  const isDeva = $derived(gameState.tierScriptMode === "devanagari");
+
   // Grid cards are narrow, so long compounds step down a size rather than wrap mid-word
   const devSize = $derived(
     word.devanagari.length > 13 ? "text-lg" : word.devanagari.length > 9 ? "text-2xl" : "text-3xl"
   );
-  const romanSize = $derived(toPhonetic(word.word).length > 13 ? "text-xl" : "text-2xl");
+  const romanSize = $derived(word.word.length > 13 ? "text-xl" : "text-2xl");
   const meaningSize = $derived(word.meaning.length > 14 ? "text-base" : "text-xl");
 </script>
 
@@ -80,18 +82,16 @@
   role="button"
   tabindex="0"
   onkeydown={(e) => e.key === " " && (e.preventDefault(), onFlip())}
-  aria-label="Vocabulary card for {toPhonetic(word.word)}. Tap to flip."
+  aria-label="Vocabulary card for {word.word}. Tap to flip."
   aria-pressed={flipped}
 >
   <div class="card-inner w-full h-full {flipped ? 'card-flipped' : ''} {entered ? 'card-entered' : 'card-pending'}">
     <!-- FRONT -->
     <div class="card-face card border-b-[5px]! flex flex-col items-center justify-center gap-2 p-3">
-      {#if gameState.scriptDisplay === 'roman'}
-        <p class="{romanSize} font-black text-primary leading-tight text-center">{toPhonetic(word.word)}</p>
-        <p class="text-base text-text-muted font-deva text-center">{word.devanagari}</p>
-      {:else}
+      {#if isDeva}
         <p class="{devSize} font-bold text-primary font-deva leading-tight text-center">{word.devanagari}</p>
-        <p class="text-sm text-text-muted font-bold italic text-center">{toPhonetic(word.word)}</p>
+      {:else}
+        <p class="{romanSize} font-black text-primary leading-tight text-center">{word.word}</p>
       {/if}
 
       {#if speechSupported}
@@ -130,11 +130,11 @@
     <div class="card-face card-back card border-b-[5px]! border-primary-edge! bg-primary-soft! flex flex-col items-center justify-center gap-1.5 p-3">
       <p class="text-[10px] font-black uppercase tracking-wider text-primary-dark dark:text-primary">Meaning</p>
       <p class="{meaningSize} font-black text-center text-lg leading-tight">{word.meaning}</p>
-      <!-- One-line reminder of which word this is, in the reader's own script -->
-      {#if gameState.scriptDisplay === 'roman'}
-        <p class="text-sm mt-1 font-black text-primary-dark dark:text-primary text-center leading-tight">{toPhonetic(word.word)}</p>
-      {:else}
+      <!-- One-line reminder of which word this is, in the learner's script -->
+      {#if isDeva}
         <p class="text-lg text-primary-dark dark:text-primary font-deva leading-tight">{word.devanagari}</p>
+      {:else}
+        <p class="text-sm mt-1 font-black text-primary-dark dark:text-primary text-center leading-tight">{word.word}</p>
       {/if}
     </div>
   </div>

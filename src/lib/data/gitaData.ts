@@ -1,5 +1,19 @@
+// Every verse is taught through its Hindi translation. The learner reads the Hindi — in Roman script on the
+// Beginner tier, in Devanagari on Medium and Hard (see `scriptModeForTier`) — and always answers in English.
+// No Sanskrit is shown anywhere in the learning path.
+
+/**
+ * Hindi in both scripts. `dev` and `roman` are word-for-word parallel: the same number of
+ * whitespace-separated tokens, so a word can be paired with its romanization by position.
+ */
+export interface HindiText {
+  dev: string;
+  roman: string;
+}
+
+/** A Hindi word or phrase and the English it means — one pair in a matching exercise. */
 export interface PhrasePair {
-  sanskrit: string;
+  hindi: HindiText;
   english: string;
 }
 
@@ -9,6 +23,10 @@ export interface MCQOption {
   explanation: string;
 }
 
+/**
+ * A Hindi vocabulary word. `word` is the romanized Hindi spelling — it is also the word's identity
+ * (spaced-repetition key, glossary key), so one spelling always carries one meaning.
+ */
 export interface WordMeaning {
   word: string;
   devanagari: string;
@@ -22,23 +40,14 @@ export interface Commentary {
   text: string;
 }
 
-export interface TeachingSlide {
-  type: 'verse_intro' | 'word_card' | 'meaning_reveal';
-  title: string;
-  content: string;
-  highlight?: string;
-  wordData?: WordMeaning;
-}
-
+/** `word` is the romanized key; `devanagari` is what gets spoken. */
 export interface ListeningOption {
   word: string;
   devanagari: string;
 }
 
-// targetWords: IAST words an exercise tests — lets mistakes be attributed to specific words
-// for spaced review. Hand-authored lesson exercises derive this from their content instead.
-// warmup: a word-by-word matching step before the phrase-level one; learners who already
-// know Sanskrit skip it.
+// targetWords: romanized Hindi words an exercise tests — lets mistakes be attributed to specific words
+// for spaced review. warmup: a word-by-word matching step that opens each part; the Beginner tier skips it.
 type QuestionMeta = { targetWords?: string[]; warmup?: boolean };
 
 export type Question = QuestionMeta & (
@@ -46,6 +55,7 @@ export type Question = QuestionMeta & (
       id: string;
       type: 'listening';
       prompt: string;
+      /** Devanagari text that is spoken aloud */
       audioText: string;
       options: ListeningOption[];
       answer: string;
@@ -59,20 +69,10 @@ export type Question = QuestionMeta & (
     }
   | {
       id: string;
-      type: 'sentence_rebuilding';
-      prompt: string;
-      /** The phrase's meaning, shown as a cue when it builds a single phrase */
-      hint?: string;
-      targetSentence: string;
-      tiles: string[];
-      explanation: string;
-    }
-  | {
-      id: string;
       type: 'translate';
       prompt: string;
-      /** IAST phrase Krishna says (shown and spoken in his speech bubble) */
-      sanskrit: string;
+      /** The Hindi Krishna says (shown in his speech bubble and spoken aloud) */
+      hindi: HindiText;
       /** The English the learner assembles from tiles — graded by its words, in any order */
       answer: string;
       /** The answer's words plus a few distractors; shuffled on screen */
@@ -83,7 +83,10 @@ export type Question = QuestionMeta & (
       id: string;
       type: 'fill_in_the_blank';
       prompt: string;
-      translation: string;
+      /** The Hindi phrase that is the clue */
+      hindi: HindiText;
+      /** English sentence with a `____` gap */
+      sentence: string;
       options: string[];
       answer: string;
       explanation: string;
@@ -106,20 +109,14 @@ export type Question = QuestionMeta & (
 export interface VersePart {
   partIndex: number;
   title: string;
-  sanskrit: string;
-  transliteration: string;
-  /** Romanized Hindi / English phonetics without diacritics */
-  hindiRoman?: string;
+  hindiTranslationDevanagari: string;
+  hindiTranslationRoman: string;
+  /** English meaning of this part */
   translation: string;
   wordBreakdown: WordMeaning[];
   questions: Question[];
   commentary?: Commentary;
   reflectionPrompt?: string;
-}
-
-export interface VerseWord {
-  devanagari: string;
-  roman: string;
 }
 
 export interface Lesson {
@@ -128,10 +125,11 @@ export interface Lesson {
   verseRef: string;
   /** One plain-English sentence of what the verse says, shown up-front on the verse-intro screen. */
   essence?: string;
-  verseSanskrit: string;
-  verseTransliteration: string;
-  /** Romanized Hindi / English phonetics without diacritics */
-  verseHindiRoman?: string;
+  /** The source shloka. Reference only — never rendered in the learning path. */
+  verseSanskrit?: string;
+  /** The verse's Hindi translation, one line per line of the verse. It is the parts' Hindi read in order. */
+  hindiTranslationDevanagari: string;
+  hindiTranslationRoman: string;
   translation: string;
   purport: string;
   commentary?: Commentary;
@@ -139,18 +137,9 @@ export interface Lesson {
   parts?: VersePart[];
   finalSynthesisQuestions?: Question[];
   wordBreakdown: WordMeaning[];
-  teachingSlides: TeachingSlide[];
   questions: Question[];
   /** One narrative sentence for this lesson's frame in the unit's story reward; falls back to `translation`. */
   storyCaption?: string;
-  /**
-   * Hand-verified Devanagari-token → romanization pairing for the whole verse, in reading order.
-   * Devanagari fuses sandhi compounds into single space-delimited tokens that `verseTransliteration`
-   * (kept more granular, for readability) doesn't line up with word-for-word — matching them by
-   * position breaks as soon as one line's token counts diverge. Used by the verse-hook recitation
-   * screen; lessons without one fall back to that best-effort positional match.
-   */
-  verseWordGuide?: VerseWord[];
 }
 
 export interface Section {
@@ -181,96 +170,6 @@ export function sectionForLesson(gita: GitaData, lessonId: string): { chapter: C
   return undefined;
 }
 
-const bg247WordBreakdown: WordMeaning[] = [
-  { word: 'karmaṇi', devanagari: 'कर्मणि', meaning: 'in action / prescribed duty', partOfSpeech: 'noun (locative)' },
-  { word: 'eva', devanagari: 'एव', meaning: 'only / certainly', partOfSpeech: 'particle' },
-  { word: 'adhikāraḥ', devanagari: 'अधिकारः', meaning: 'right / authority', partOfSpeech: 'noun' },
-  { word: 'te', devanagari: 'ते', meaning: 'your', partOfSpeech: 'pronoun' },
-  { word: 'mā', devanagari: 'मा', meaning: 'never / not', partOfSpeech: 'particle' },
-  { word: 'phaleṣu', devanagari: 'फलेषु', meaning: 'in the fruits / results', partOfSpeech: 'noun (locative)' },
-  { word: 'kadācana', devanagari: 'कदाचन', meaning: 'at any time', partOfSpeech: 'adverb' },
-  { word: 'karma-phala', devanagari: 'कर्मफल', meaning: 'fruits of action', partOfSpeech: 'compound noun' },
-  { word: 'hetuḥ', devanagari: 'हेतुः', meaning: 'cause / motive', partOfSpeech: 'noun' },
-  { word: 'bhūḥ', devanagari: 'भूः', meaning: 'become', partOfSpeech: 'verb' },
-  { word: 'saṅgaḥ', devanagari: 'सङ्गः', meaning: 'attachment', partOfSpeech: 'noun' },
-  { word: 'akarmaṇi', devanagari: 'अकर्मणि', meaning: 'in inaction / not doing duty', partOfSpeech: 'noun (locative)' },
-];
-
-const bg247TeachingSlides: TeachingSlide[] = [
-  {
-    type: 'verse_intro',
-    title: 'BG 2.47 — The Heart of Karma Yoga',
-    content: 'This is one of the most famous verses in the Bhagavad Gita. Krishna teaches Arjuna the essence of selfless action — how to act without being enslaved by the desire for results.',
-  },
-  {
-    type: 'word_card',
-    title: 'New Word',
-    content: 'Your right is to action alone — "karmani" is the locative case of "karma", meaning the field of duty or prescribed action.',
-    wordData: { word: 'karmaṇi', devanagari: 'कर्मणि', meaning: 'in action / prescribed duty', partOfSpeech: 'noun (locative)' },
-  },
-  {
-    type: 'word_card',
-    title: 'New Word',
-    content: '"eva" is an emphatic particle that means "only" or "certainly". It stresses that your right is ONLY in action, nothing else.',
-    wordData: { word: 'eva', devanagari: 'एव', meaning: 'only / certainly', partOfSpeech: 'particle' },
-  },
-  {
-    type: 'word_card',
-    title: 'New Word',
-    content: '"adhikarah" means right, authority, or entitlement. Combined with "te" (your), it says: your right/authority…',
-    wordData: { word: 'adhikāraḥ', devanagari: 'अधिकारः', meaning: 'right / authority', partOfSpeech: 'noun' },
-  },
-  {
-    type: 'word_card',
-    title: 'New Word',
-    content: '"ma" is a prohibition particle — it means "never" or "do not". Krishna is commanding: do NOT claim rights over the fruits.',
-    wordData: { word: 'mā', devanagari: 'मा', meaning: 'never / not', partOfSpeech: 'particle' },
-  },
-  {
-    type: 'word_card',
-    title: 'New Word',
-    content: '"phaleshu" comes from "phala" (fruit/result). In locative case, it means "in the fruits". You have no right in the results of your work.',
-    wordData: { word: 'phaleṣu', devanagari: 'फलेषु', meaning: 'in the fruits / results', partOfSpeech: 'noun (locative)' },
-  },
-  {
-    type: 'word_card',
-    title: 'New Word',
-    content: '"karma-phala-hetuh" is a compound: the one who acts motivated ONLY by results. Krishna says: never be such a person.',
-    wordData: { word: 'karma-phala', devanagari: 'कर्मफल', meaning: 'fruits of action', partOfSpeech: 'compound noun' },
-  },
-  {
-    type: 'word_card',
-    title: 'New Word',
-    content: '"sangah" means attachment or clinging. "akarmani" means inaction. The final warning: don\'t become attached to NOT doing your duty either.',
-    wordData: { word: 'akarmaṇi', devanagari: 'अकर्मणि', meaning: 'in inaction / not doing duty', partOfSpeech: 'noun (locative)' },
-  },
-  {
-    type: 'meaning_reveal',
-    title: 'Putting It All Together',
-    content: 'karmany-evadhikaras te — Your right is in action only\nma phaleshu kadachana — Never in the fruits at any time\nma karma-phala-hetur bhuh — Never be motivated only by results\nma te sango \'stv akarmani — Nor be attached to inaction',
-  },
-];
-
-// Mock data for BG 2.48
-const bg248TeachingSlides: TeachingSlide[] = [
-  {
-    type: 'verse_intro',
-    title: 'BG 2.48 — Equanimity in Action',
-    content: 'Perform your duty equipoised, O Arjuna, abandoning all attachment to success or failure. Such equanimity is called Yoga.',
-  },
-  {
-    type: 'word_card',
-    title: 'New Word',
-    content: '"yogasthah" means established in Yoga (balanced mind).',
-    wordData: { word: 'yogasthaḥ', devanagari: 'योगस्थः', meaning: 'established in Yoga', partOfSpeech: 'adjective' },
-  },
-  {
-    type: 'meaning_reveal',
-    title: 'Equanimity is Yoga',
-    content: 'yogasthah kuru karmani — Perform duty established in Yoga\nsamatvam yoga uchyate — Evenness of mind is called Yoga',
-  }
-];
-
 export const gitaData: GitaData = {
   chapters: [
     {
@@ -289,20 +188,8 @@ export const gitaData: GitaData = {
               verseRef: 'BG 2.47',
               essence: 'Do your duty with full effort, but let go of the results.',
               verseSanskrit: 'कर्मण्येवाधिकारस्ते मा फलेषु कदाचन ।\nमा कर्मफलहेतुर्भूर्मा ते सङ्गोऽस्त्वकर्मणि ॥',
-              verseTransliteration: 'karmaṇy-evādhikāras te mā phaleṣu kadācana\nmā karma-phala-hetur bhūr mā te saṅgo \'stv akarmaṇi',
-
-              verseHindiRoman: 'karmany-evadhikaras te ma phaleshu kadachana\nma karma-phala-hetur bhur ma te sango \'stv akarmani',
-              verseWordGuide: [
-                { devanagari: 'कर्मण्येवाधिकारस्ते', roman: 'karmaṇy-evādhikāras-te' },
-                { devanagari: 'मा', roman: 'mā' },
-                { devanagari: 'फलेषु', roman: 'phaleṣu' },
-                { devanagari: 'कदाचन', roman: 'kadācana' },
-                { devanagari: 'मा', roman: 'mā' },
-                { devanagari: 'कर्मफलहेतुर्भूर्', roman: 'karma-phala-hetur-bhūr' },
-                { devanagari: 'मा', roman: 'mā' },
-                { devanagari: 'ते', roman: 'te' },
-                { devanagari: 'सङ्गोऽस्त्वकर्मणि', roman: "saṅgo-'stv-akarmaṇi" }
-              ],
+              hindiTranslationDevanagari: 'आपका अधिकार केवल कर्म करने पर है, उसके फलों पर कभी नहीं।\nआप कर्मफल को अपना हेतु न बनाएँ और अकर्म में भी आपकी आसक्ति न हो।',
+              hindiTranslationRoman: 'aapka adhikar keval karma karne par hai, uske phalon par kabhi nahi.\naap karmaphal ko apna hetu na banayen aur akarma mein bhi aapki aasakti na ho.',
               translation: 'You have a right to perform your prescribed duties, but you are not entitled to the fruits of your actions. Never consider yourself to be the cause of the results of your activities, and never be attached to not doing your duty.',
               purport: 'This famous verse outlines the foundation of Karma Yoga. Krishna advises Arjuna to focus entirely on his duty (action) without anxiety about the outcomes (fruits) of those actions, and warns against resolving not to do work (inaction) just because he cannot control the results.',
               commentary: {
@@ -312,185 +199,213 @@ export const gitaData: GitaData = {
               },
               reflectionPrompt: 'Where in your life today are you clinging to results rather than bringing full presence and dedication to the action itself?',
               storyCaption: 'Arjuna raised his bow, and Krishna raised a hand. "Your right is to action alone," he said, "never to its fruit."',
-              wordBreakdown: bg247WordBreakdown,
-              teachingSlides: [],
+              wordBreakdown: [
+                { word: 'aapka', devanagari: 'आपका', meaning: 'your', partOfSpeech: 'pronoun' },
+                { word: 'adhikar', devanagari: 'अधिकार', meaning: 'right / authority', partOfSpeech: 'noun' },
+                { word: 'keval', devanagari: 'केवल', meaning: 'only', partOfSpeech: 'adverb' },
+                { word: 'karma', devanagari: 'कर्म', meaning: 'action / duty', partOfSpeech: 'noun' },
+                { word: 'uske', devanagari: 'उसके', meaning: 'its / of that', partOfSpeech: 'pronoun' },
+                { word: 'phalon', devanagari: 'फलों', meaning: 'fruits / results', partOfSpeech: 'noun (plural)' },
+                { word: 'kabhi', devanagari: 'कभी', meaning: 'ever / at any time', partOfSpeech: 'adverb' },
+                { word: 'nahi', devanagari: 'नहीं', meaning: 'not', partOfSpeech: 'adverb' },
+                { word: 'karmaphal', devanagari: 'कर्मफल', meaning: 'fruit of action', partOfSpeech: 'noun' },
+                { word: 'hetu', devanagari: 'हेतु', meaning: 'motive / cause', partOfSpeech: 'noun' },
+                { word: 'apna', devanagari: 'अपना', meaning: 'your own', partOfSpeech: 'pronoun' },
+                { word: 'banayen', devanagari: 'बनाएँ', meaning: 'make / let be', partOfSpeech: 'verb' },
+                { word: 'akarma', devanagari: 'अकर्म', meaning: 'inaction', partOfSpeech: 'noun' },
+                { word: 'aasakti', devanagari: 'आसक्ति', meaning: 'attachment', partOfSpeech: 'noun' },
+                { word: 'bhi', devanagari: 'भी', meaning: 'also / even', partOfSpeech: 'particle' },
+                { word: 'aur', devanagari: 'और', meaning: 'and', partOfSpeech: 'conjunction' }
+              ],
               questions: [],
               parts: [
                 {
                   partIndex: 1,
                   title: 'Part 1: Your Right to Action',
-                  sanskrit: 'कर्मण्येवाधिकारस्ते',
-                  transliteration: 'karmaṇy-evādhikāras te',
-
-                  hindiRoman: 'karmany-evadhikaras te',
+                  hindiTranslationDevanagari: 'आपका अधिकार केवल कर्म करने पर है,',
+                  hindiTranslationRoman: 'aapka adhikar keval karma karne par hai,',
                   translation: 'You have a right to perform your prescribed duties.',
                   wordBreakdown: [
-                    { word: 'karmaṇi', devanagari: 'कर्मणि', meaning: 'in action / duty', partOfSpeech: 'noun' },
-                    { word: 'eva', devanagari: 'एव', meaning: 'only / certainly', partOfSpeech: 'particle' },
-                    { word: 'adhikāraḥ', devanagari: 'अधिकारः', meaning: 'right / entitlement', partOfSpeech: 'noun' },
-                    { word: 'te', devanagari: 'ते', meaning: 'your', partOfSpeech: 'pronoun' }
+                    { word: 'aapka', devanagari: 'आपका', meaning: 'your', partOfSpeech: 'pronoun' },
+                    { word: 'adhikar', devanagari: 'अधिकार', meaning: 'right / authority', partOfSpeech: 'noun' },
+                    { word: 'keval', devanagari: 'केवल', meaning: 'only', partOfSpeech: 'adverb' },
+                    { word: 'karma', devanagari: 'कर्म', meaning: 'action / duty', partOfSpeech: 'noun' }
                   ],
                   questions: [
                     {
-                      id: 'p1_q1',
+                      id: 'bg247_p1_w',
                       type: 'phrase_matching',
                       warmup: true,
-                      prompt: 'Match each word in Part 1 to its meaning.',
+                      targetWords: ['aapka', 'adhikar', 'keval', 'karma'],
+                      prompt: 'Match each Hindi word to its meaning.',
                       pairs: [
-                        { sanskrit: 'karmaṇi', english: 'in action / duty' },
-                        { sanskrit: 'eva', english: 'only / certainly' },
-                        { sanskrit: 'adhikāraḥ', english: 'right / entitlement' },
-                        { sanskrit: 'te', english: 'your' }
+                        { hindi: { dev: 'आपका', roman: 'aapka' }, english: 'your' },
+                        { hindi: { dev: 'अधिकार', roman: 'adhikar' }, english: 'right / authority' },
+                        { hindi: { dev: 'केवल', roman: 'keval' }, english: 'only' },
+                        { hindi: { dev: 'कर्म', roman: 'karma' }, english: 'action / duty' }
                       ]
                     },
                     {
-                      id: 'p1_q2',
+                      id: 'bg247_p1_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrases to their meanings.',
+                      targetWords: ['aapka', 'adhikar', 'keval', 'karma'],
+                      prompt: 'Now match the Hindi phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'karmaṇi eva', english: 'in prescribed duty only' },
-                        { sanskrit: 'adhikāraḥ te', english: 'your right is' }
+                        { hindi: { dev: 'आपका अधिकार', roman: 'aapka adhikar' }, english: 'your right' },
+                        { hindi: { dev: 'केवल कर्म करने पर', roman: 'keval karma karne par' }, english: 'only in action' }
                       ]
+                    },
+                    {
+                      id: 'bg247_p1_c',
+                      type: 'fill_in_the_blank',
+                      targetWords: ['aapka', 'adhikar', 'keval', 'karma'],
+                      prompt: 'Complete the English sentence.',
+                      hindi: { dev: 'आपका अधिकार केवल कर्म करने पर है,', roman: 'aapka adhikar keval karma karne par hai,' },
+                      sentence: 'Your right is only in ____',
+                      options: ['action', 'fruits', 'never', 'results'],
+                      answer: 'action',
+                      explanation: 'The full phrase: "Your right is only in action."'
                     },
                     {
                       id: 'bg247_p1_t',
                       type: 'translate',
+                      targetWords: ['aapka', 'adhikar', 'keval', 'karma'],
                       prompt: 'Write this in English',
-                      sanskrit: 'karmaṇi eva adhikāraḥ te',
+                      hindi: { dev: 'आपका अधिकार केवल कर्म करने पर है,', roman: 'aapka adhikar keval karma karne par hai,' },
                       answer: 'your right is only in action',
-                      tiles: ['your', 'right', 'is', 'only', 'in', 'action', 'fruits', 'never', 'results']
-                    },
-                    {
-                      id: 'p1_q3',
-                      type: 'sentence_rebuilding',
-                      prompt: 'Arrange the words to form Part 1 of the verse.',
-                      hint: 'You have a right to perform your prescribed duties.',
-                      targetSentence: 'karmaṇi eva adhikāraḥ te',
-                      tiles: ['karmaṇi', 'eva', 'adhikāraḥ', 'te'],
-                      explanation: '"karmani eva adhikarah te" — Your right is in action only.'
+                      tiles: ['your', 'right', 'is', 'only', 'in', 'action', 'fruits', 'never', 'results'],
+                      explanation: 'You have a right to perform your prescribed duties.'
                     }
                   ]
                 },
                 {
                   partIndex: 2,
                   title: 'Part 2: Detachment from Results',
-                  sanskrit: 'मा फलेषु कदाचन',
-                  transliteration: 'mā phaleṣu kadācana',
-
-                  hindiRoman: 'ma phaleshu kadachana',
+                  hindiTranslationDevanagari: 'उसके फलों पर कभी नहीं।',
+                  hindiTranslationRoman: 'uske phalon par kabhi nahi.',
                   translation: 'Never in the fruits at any time.',
                   wordBreakdown: [
-                    { word: 'mā', devanagari: 'मा', meaning: 'never / not', partOfSpeech: 'particle' },
-                    { word: 'phaleṣu', devanagari: 'फलेषु', meaning: 'in the fruits / results', partOfSpeech: 'noun' },
-                    { word: 'kadācana', devanagari: 'कदाचन', meaning: 'at any time', partOfSpeech: 'adverb' }
+                    { word: 'uske', devanagari: 'उसके', meaning: 'its / of that', partOfSpeech: 'pronoun' },
+                    { word: 'phalon', devanagari: 'फलों', meaning: 'fruits / results', partOfSpeech: 'noun (plural)' },
+                    { word: 'kabhi', devanagari: 'कभी', meaning: 'ever / at any time', partOfSpeech: 'adverb' },
+                    { word: 'nahi', devanagari: 'नहीं', meaning: 'not', partOfSpeech: 'adverb' }
                   ],
                   questions: [
                     {
-                      id: 'p2_q1',
+                      id: 'bg247_p2_w',
                       type: 'phrase_matching',
                       warmup: true,
-                      prompt: 'Match each word in Part 2 to its meaning.',
+                      targetWords: ['uske', 'phalon', 'kabhi', 'nahi'],
+                      prompt: 'Match each Hindi word to its meaning.',
                       pairs: [
-                        { sanskrit: 'mā', english: 'never / not' },
-                        { sanskrit: 'phaleṣu', english: 'in the fruits / results' },
-                        { sanskrit: 'kadācana', english: 'at any time' }
+                        { hindi: { dev: 'उसके', roman: 'uske' }, english: 'its / of that' },
+                        { hindi: { dev: 'फलों', roman: 'phalon' }, english: 'fruits / results' },
+                        { hindi: { dev: 'कभी', roman: 'kabhi' }, english: 'ever / at any time' },
+                        { hindi: { dev: 'नहीं', roman: 'nahi' }, english: 'not' }
                       ]
                     },
                     {
-                      id: 'p2_q2',
-                      type: 'fill_in_the_blank',
-                      prompt: 'Complete Part 2: "mā phaleṣu ______"',
-                      translation: 'Never in the fruits at any time.',
-                      options: ['kadācana', 'akarmaṇi', 'eva', 'karmasu'],
-                      answer: 'kadācana',
-                      explanation: '"kadachana" means at any time. You are never entitled to results.'
-                    },
-                    {
-                      id: 'p2_q3',
+                      id: 'bg247_p2_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrases to their meanings.',
+                      targetWords: ['uske', 'phalon', 'kabhi', 'nahi'],
+                      prompt: 'Now match the Hindi phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'mā phaleṣu', english: 'never in the fruits' },
-                        { sanskrit: 'kadācana', english: 'at any time' }
+                        { hindi: { dev: 'उसके फलों पर', roman: 'uske phalon par' }, english: 'on its fruits' },
+                        { hindi: { dev: 'कभी नहीं', roman: 'kabhi nahi' }, english: 'never' }
                       ]
+                    },
+                    {
+                      id: 'bg247_p2_c',
+                      type: 'fill_in_the_blank',
+                      targetWords: ['uske', 'phalon', 'kabhi', 'nahi'],
+                      prompt: 'Complete the English sentence.',
+                      hindi: { dev: 'उसके फलों पर कभी नहीं।', roman: 'uske phalon par kabhi nahi.' },
+                      sentence: 'Never in its ____',
+                      options: ['fruits', 'action', 'right', 'duty'],
+                      answer: 'fruits',
+                      explanation: 'The full phrase: "Never in its fruits."'
                     },
                     {
                       id: 'bg247_p2_t',
                       type: 'translate',
+                      targetWords: ['uske', 'phalon', 'kabhi', 'nahi'],
                       prompt: 'Write this in English',
-                      sanskrit: 'mā phaleṣu kadācana',
-                      answer: 'never in the fruits at any time',
-                      tiles: ['never', 'in', 'the', 'fruits', 'at', 'any', 'time', 'action', 'right', 'duty']
-                    },
-                    {
-                      id: 'bg247_p2_r',
-                      type: 'sentence_rebuilding',
-                      prompt: 'Arrange the words to form Part 2 of the verse.',
-                      hint: 'Never in the fruits at any time.',
-                      targetSentence: 'mā phaleṣu kadācana',
-                      tiles: ['mā', 'phaleṣu', 'kadācana'],
-                      explanation: 'Never in the fruits, at any time. You may act, but the results are not yours to claim.'
+                      hindi: { dev: 'उसके फलों पर कभी नहीं।', roman: 'uske phalon par kabhi nahi.' },
+                      answer: 'never in its fruits',
+                      tiles: ['never', 'in', 'its', 'fruits', 'action', 'right', 'duty', 'always'],
+                      explanation: 'Never in the fruits at any time.'
                     }
                   ]
                 },
                 {
                   partIndex: 3,
                   title: 'Part 3: Freedom from Motive',
-                  sanskrit: 'मा कर्मफलहेतुर्भूः',
-                  transliteration: 'mā karma-phala-hetur bhūḥ',
-
-                  hindiRoman: 'ma karma-phala-hetur bhuh',
+                  hindiTranslationDevanagari: 'आप कर्मफल को अपना हेतु न बनाएँ',
+                  hindiTranslationRoman: 'aap karmaphal ko apna hetu na banayen',
                   translation: 'Never be motivated by the fruits of action.',
                   wordBreakdown: [
-                    { word: 'karma-phala', devanagari: 'कर्मफल', meaning: 'fruits of action', partOfSpeech: 'compound' },
-                    { word: 'hetuḥ', devanagari: 'हेतुः', meaning: 'motive / cause', partOfSpeech: 'noun' },
-                    { word: 'bhūḥ', devanagari: 'भूः', meaning: 'become', partOfSpeech: 'verb' }
+                    { word: 'karmaphal', devanagari: 'कर्मफल', meaning: 'fruit of action', partOfSpeech: 'noun' },
+                    { word: 'hetu', devanagari: 'हेतु', meaning: 'motive / cause', partOfSpeech: 'noun' },
+                    { word: 'apna', devanagari: 'अपना', meaning: 'your own', partOfSpeech: 'pronoun' },
+                    { word: 'banayen', devanagari: 'बनाएँ', meaning: 'make / let be', partOfSpeech: 'verb' }
                   ],
                   questions: [
                     {
-                      id: 'p3_q1',
+                      id: 'bg247_p3_w',
                       type: 'phrase_matching',
                       warmup: true,
-                      prompt: 'Match each word in Part 3 to its meaning.',
+                      targetWords: ['karmaphal', 'hetu', 'apna', 'banayen'],
+                      prompt: 'Match each Hindi word to its meaning.',
                       pairs: [
-                        { sanskrit: 'karma-phala', english: 'fruits of action' },
-                        { sanskrit: 'hetuḥ', english: 'motive / cause' },
-                        { sanskrit: 'bhūḥ', english: 'become' }
+                        { hindi: { dev: 'कर्मफल', roman: 'karmaphal' }, english: 'fruit of action' },
+                        { hindi: { dev: 'हेतु', roman: 'hetu' }, english: 'motive / cause' },
+                        { hindi: { dev: 'अपना', roman: 'apna' }, english: 'your own' },
+                        { hindi: { dev: 'बनाएँ', roman: 'banayen' }, english: 'make / let be' }
                       ]
                     },
                     {
                       id: 'bg247_p3_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrases to their meanings.',
+                      targetWords: ['karmaphal', 'hetu', 'apna', 'banayen'],
+                      prompt: 'Now match the Hindi phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'karma-phala hetuḥ', english: 'the fruit of action as your motive' },
-                        { sanskrit: 'mā bhūḥ', english: 'do not be' }
+                        { hindi: { dev: 'कर्मफल', roman: 'karmaphal' }, english: 'the fruit of action' },
+                        { hindi: { dev: 'अपना हेतु', roman: 'apna hetu' }, english: 'your motive' },
+                        { hindi: { dev: 'न बनाएँ', roman: 'na banayen' }, english: 'do not make' }
                       ]
+                    },
+                    {
+                      id: 'bg247_p3_c',
+                      type: 'fill_in_the_blank',
+                      targetWords: ['karmaphal', 'hetu', 'apna', 'banayen'],
+                      prompt: 'Complete the English sentence.',
+                      hindi: { dev: 'आप कर्मफल को अपना हेतु न बनाएँ', roman: 'aap karmaphal ko apna hetu na banayen' },
+                      sentence: 'Do not make the fruit of action your ____',
+                      options: ['motive', 'results', 'attached', 'duty'],
+                      answer: 'motive',
+                      explanation: 'The full phrase: "Do not make the fruit of action your motive."'
                     },
                     {
                       id: 'bg247_p3_t',
                       type: 'translate',
+                      targetWords: ['karmaphal', 'hetu', 'apna', 'banayen'],
                       prompt: 'Write this in English',
-                      sanskrit: 'mā karma-phala hetuḥ bhūḥ',
-                      answer: 'never be motivated by results',
-                      tiles: ['never', 'be', 'motivated', 'by', 'results', 'duty', 'right', 'attached']
-                    },
-                    {
-                      id: 'bg247_p3_r',
-                      type: 'sentence_rebuilding',
-                      prompt: 'Arrange the words to form Part 3 of the verse.',
-                      hint: 'Never be motivated by the fruits of action.',
-                      targetSentence: 'mā karma-phala hetuḥ bhūḥ',
-                      tiles: ['mā', 'karma-phala', 'hetuḥ', 'bhūḥ'],
+                      hindi: { dev: 'आप कर्मफल को अपना हेतु न बनाएँ', roman: 'aap karmaphal ko apna hetu na banayen' },
+                      answer: 'do not make the fruit of action your motive',
+                      tiles: ['do', 'not', 'make', 'the', 'fruit', 'of', 'action', 'your', 'motive', 'results', 'attached', 'duty'],
                       explanation: 'Never be motivated by the fruits of action.'
                     },
                     {
-                      id: 'p3_q2',
+                      id: 'bg247_p3_q',
                       type: 'multiple_choice',
-                      prompt: 'What does "ma karma-phala-hetur bhuh" instruct us to do?',
+                      prompt: 'What does Krishna ask about the motive behind your work?',
                       options: [
-                        { text: 'Do not let the desire for results be the motive for your work.', isCorrect: true, explanation: 'Correct! Work for the sake of duty, not greed for results.' },
-                        { text: 'Always demand high rewards before working.', isCorrect: false, explanation: 'Incorrect.' }
+                        {
+                          text: 'Do not let the desire for results be the motive for your work.',
+                          isCorrect: true,
+                          explanation: 'Correct! Work for the sake of duty, not greed for results.'
+                        },
+                        { text: 'Always demand high rewards before working.', isCorrect: false, explanation: 'Incorrect. Krishna asks the opposite.' }
                       ]
                     }
                   ]
@@ -498,89 +413,160 @@ export const gitaData: GitaData = {
                 {
                   partIndex: 4,
                   title: 'Part 4: Not Attached to Inaction',
-                  sanskrit: 'मा ते सङ्गोऽस्त्वकर्मणि',
-                  transliteration: 'mā te saṅgo \'stv akarmaṇi',
-
-                  hindiRoman: 'ma te sango \'stv akarmani',
+                  hindiTranslationDevanagari: 'और अकर्म में भी आपकी आसक्ति न हो।',
+                  hindiTranslationRoman: 'aur akarma mein bhi aapki aasakti na ho.',
                   translation: 'Nor let your attachment be to inaction.',
                   wordBreakdown: [
-                    { word: 'saṅgaḥ', devanagari: 'सङ्गः', meaning: 'attachment', partOfSpeech: 'noun' },
-                    { word: 'astu', devanagari: 'अस्तु', meaning: 'let there be', partOfSpeech: 'verb (imperative)' },
-                    { word: 'akarmaṇi', devanagari: 'अकर्मणि', meaning: 'in inaction', partOfSpeech: 'noun' }
+                    { word: 'akarma', devanagari: 'अकर्म', meaning: 'inaction', partOfSpeech: 'noun' },
+                    { word: 'aasakti', devanagari: 'आसक्ति', meaning: 'attachment', partOfSpeech: 'noun' },
+                    { word: 'bhi', devanagari: 'भी', meaning: 'also / even', partOfSpeech: 'particle' },
+                    { word: 'aur', devanagari: 'और', meaning: 'and', partOfSpeech: 'conjunction' }
                   ],
                   questions: [
                     {
-                      id: 'p4_q1',
+                      id: 'bg247_p4_w',
                       type: 'phrase_matching',
                       warmup: true,
-                      prompt: 'Match each word in Part 4 to its meaning.',
+                      targetWords: ['akarma', 'aasakti', 'bhi', 'aur'],
+                      prompt: 'Match each Hindi word to its meaning.',
                       pairs: [
-                        { sanskrit: 'saṅgaḥ', english: 'attachment' },
-                        { sanskrit: 'astu', english: 'let there be' },
-                        { sanskrit: 'akarmaṇi', english: 'in inaction' }
+                        { hindi: { dev: 'अकर्म', roman: 'akarma' }, english: 'inaction' },
+                        { hindi: { dev: 'आसक्ति', roman: 'aasakti' }, english: 'attachment' },
+                        { hindi: { dev: 'भी', roman: 'bhi' }, english: 'also / even' },
+                        { hindi: { dev: 'और', roman: 'aur' }, english: 'and' }
                       ]
                     },
                     {
                       id: 'bg247_p4_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrases to their meanings.',
+                      targetWords: ['akarma', 'aasakti', 'bhi', 'aur'],
+                      prompt: 'Now match the Hindi phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'mā te', english: 'not your' },
-                        { sanskrit: 'saṅgaḥ astu', english: 'let there be attachment' },
-                        { sanskrit: 'akarmaṇi', english: 'in inaction' }
+                        { hindi: { dev: 'अकर्म में भी', roman: 'akarma mein bhi' }, english: 'even in inaction' },
+                        { hindi: { dev: 'आपकी आसक्ति', roman: 'aapki aasakti' }, english: 'your attachment' },
+                        { hindi: { dev: 'न हो', roman: 'na ho' }, english: 'let there not be' }
                       ]
+                    },
+                    {
+                      id: 'bg247_p4_c',
+                      type: 'fill_in_the_blank',
+                      targetWords: ['akarma', 'aasakti', 'bhi', 'aur'],
+                      prompt: 'Complete the English sentence.',
+                      hindi: { dev: 'और अकर्म में भी आपकी आसक्ति न हो।', roman: 'aur akarma mein bhi aapki aasakti na ho.' },
+                      sentence: 'And let your attachment not be to ____',
+                      options: ['inaction', 'fruits', 'duty', 'results'],
+                      answer: 'inaction',
+                      explanation: 'The full phrase: "And let your attachment not be to inaction."'
                     },
                     {
                       id: 'bg247_p4_t',
                       type: 'translate',
+                      targetWords: ['akarma', 'aasakti', 'bhi', 'aur'],
                       prompt: 'Write this in English',
-                      sanskrit: 'mā te saṅgaḥ astu akarmaṇi',
-                      answer: 'do not be attached to inaction',
-                      tiles: ['do', 'not', 'be', 'attached', 'to', 'inaction', 'fruits', 'right', 'duty']
-                    },
-                    {
-                      id: 'bg247_p4_r',
-                      type: 'sentence_rebuilding',
-                      prompt: 'Arrange the words to form Part 4 of the verse.',
-                      hint: 'Nor let your attachment be to inaction.',
-                      targetSentence: 'mā te saṅgaḥ astu akarmaṇi',
-                      tiles: ['mā', 'te', 'saṅgaḥ', 'astu', 'akarmaṇi'],
+                      hindi: { dev: 'और अकर्म में भी आपकी आसक्ति न हो।', roman: 'aur akarma mein bhi aapki aasakti na ho.' },
+                      answer: 'and let your attachment not be to inaction',
+                      tiles: ['and', 'let', 'your', 'attachment', 'not', 'be', 'to', 'inaction', 'fruits', 'duty', 'results'],
                       explanation: 'Nor let your attachment be to inaction.'
-                    },
-                    {
-                      id: 'p4_q2',
-                      type: 'fill_in_the_blank',
-                      prompt: 'Complete: "mā te saṅgo \'stv ______"',
-                      translation: '...let not your attachment be to inaction.',
-                      options: ['akarmaṇi', 'karmaṇi', 'phaleṣu', 'karmasu'],
-                      answer: 'akarmaṇi',
-                      explanation: '"akarmani" means inaction. Krishna warns: never quit your duty out of frustration.'
                     }
                   ]
                 }
               ],
               finalSynthesisQuestions: [
                 {
-                  id: 'syn_q1',
+                  id: 'bg247_syn_m',
                   type: 'phrase_matching',
-                  prompt: 'FINAL MASTER STAGE: Match all phrase parts of the complete verse!',
+                  targetWords: [
+                    'aapka',
+                    'adhikar',
+                    'keval',
+                    'karma',
+                    'uske',
+                    'phalon',
+                    'kabhi',
+                    'nahi',
+                    'karmaphal',
+                    'hetu',
+                    'apna',
+                    'banayen',
+                    'akarma',
+                    'aasakti',
+                    'bhi',
+                    'aur'
+                  ],
+                  prompt: 'Match every phrase of the verse to its meaning.',
                   pairs: [
-                    { sanskrit: 'karmaṇi eva', english: 'in duty only' },
-                    { sanskrit: 'adhikāraḥ te', english: 'your right is' },
-                    { sanskrit: 'mā phaleṣu', english: 'never in results' },
-                    { sanskrit: 'akarmaṇi', english: 'in inaction' }
+                    { hindi: { dev: 'आपका अधिकार केवल कर्म करने पर है,', roman: 'aapka adhikar keval karma karne par hai,' }, english: 'your right is only in action' },
+                    { hindi: { dev: 'उसके फलों पर कभी नहीं।', roman: 'uske phalon par kabhi nahi.' }, english: 'never in its fruits' },
+                    {
+                      hindi: { dev: 'आप कर्मफल को अपना हेतु न बनाएँ', roman: 'aap karmaphal ko apna hetu na banayen' },
+                      english: 'do not make the fruit of action your motive'
+                    },
+                    {
+                      hindi: { dev: 'और अकर्म में भी आपकी आसक्ति न हो।', roman: 'aur akarma mein bhi aapki aasakti na ho.' },
+                      english: 'and let your attachment not be to inaction'
+                    }
                   ]
                 },
                 {
-                  id: 'syn_q2',
-                  type: 'sentence_rebuilding',
-                  prompt: 'REBUILD THE ENTIRE VERSE: Arrange the complete first half of BG 2.47!',
-                  targetSentence: 'karmaṇi eva adhikāraḥ te mā phaleṣu kadācana',
-                  tiles: ['karmaṇi', 'eva', 'adhikāraḥ', 'te', 'mā', 'phaleṣu', 'kadācana'],
-                  explanation: '"karmani eva adhikarah te ma phaleshu kadachana" — You have a right to action alone, never to its fruits.'
+                  id: 'bg247_syn_t1',
+                  type: 'translate',
+                  targetWords: ['aapka', 'adhikar', 'keval', 'karma', 'uske', 'phalon', 'kabhi', 'nahi'],
+                  prompt: 'Write this in English',
+                  hindi: { dev: 'आपका अधिकार केवल कर्म करने पर है, उसके फलों पर कभी नहीं।', roman: 'aapka adhikar keval karma karne par hai, uske phalon par kabhi nahi.' },
+                  answer: 'your right is only in action never in its fruits',
+                  tiles: [
+                    'your',
+                    'right',
+                    'is',
+                    'only',
+                    'in',
+                    'action',
+                    'never',
+                    'in',
+                    'its',
+                    'fruits',
+                    'results',
+                    'duty',
+                    'always'
+                  ],
+                  explanation: 'You have a right to perform your prescribed duties. Never in the fruits at any time.'
                 },
                 {
-                  id: 'syn_q3',
+                  id: 'bg247_syn_t2',
+                  type: 'translate',
+                  targetWords: ['karmaphal', 'hetu', 'apna', 'banayen', 'akarma', 'aasakti', 'bhi', 'aur'],
+                  prompt: 'Write this in English',
+                  hindi: {
+                    dev: 'आप कर्मफल को अपना हेतु न बनाएँ और अकर्म में भी आपकी आसक्ति न हो।',
+                    roman: 'aap karmaphal ko apna hetu na banayen aur akarma mein bhi aapki aasakti na ho.'
+                  },
+                  answer: 'do not make the fruit of action your motive and let your attachment not be to inaction',
+                  tiles: [
+                    'do',
+                    'not',
+                    'make',
+                    'the',
+                    'fruit',
+                    'of',
+                    'action',
+                    'your',
+                    'motive',
+                    'and',
+                    'let',
+                    'your',
+                    'attachment',
+                    'not',
+                    'be',
+                    'to',
+                    'inaction',
+                    'results',
+                    'attached',
+                    'duty'
+                  ],
+                  explanation: 'Never be motivated by the fruits of action. Nor let your attachment be to inaction.'
+                },
+                {
+                  id: 'bg247_syn_q3',
                   type: 'multiple_choice',
                   prompt: 'How does mastering BG 2.47 reduce performance anxiety in modern daily life?',
                   options: [
@@ -589,18 +575,14 @@ export const gitaData: GitaData = {
                       isCorrect: true,
                       explanation: 'Correct! Directing mind power to the task itself eliminates fear of failure.'
                     },
-                    {
-                      text: 'By quitting difficult projects immediately.',
-                      isCorrect: false,
-                      explanation: 'Incorrect. Krishna warns against attachment to inaction ("ma te sango \'stv akarmani").'
-                    }
+                    { text: 'By quitting difficult projects immediately.', isCorrect: false, explanation: 'Incorrect. Krishna warns against attachment to inaction.' }
                   ]
                 },
                 {
                   id: 'syn_q4',
                   type: 'reflection',
                   prompt: 'Personal Reflection on Karma Yoga:',
-                  verseContext: 'BG 2.47: "karmany-evadhikaras te ma phaleshu kadachana — You have a right to perform your prescribed duties, but never to the fruits."',
+                  verseContext: 'BG 2.47: "You have a right to perform your prescribed duties, but never to the fruits of your actions."',
                   guidance: 'Reflect on a personal project or goal you are currently pursuing. How would your peace of mind and effort change if you detached from the final outcome and focused entirely on the craftsmanship of your action today?'
                 }
               ]
@@ -611,23 +593,8 @@ export const gitaData: GitaData = {
               verseRef: 'BG 2.48',
               essence: 'Stay steady in success and failure. That evenness of mind is Yoga.',
               verseSanskrit: 'योगस्थः कुरु कर्माणि सङ्गं त्यक्त्वा धनञ्जय ।\nसिद्ध्यसिद्ध्योः समो भूत्वा समत्वं योग उच्यते ॥',
-              verseTransliteration: 'yoga-sthaḥ kuru karmāṇi saṅgaṁ tyaktvā dhanañjaya\nsiddhy-asiddhyoḥ samo bhūtvā samatvaṁ yoga ucyate',
-
-              verseHindiRoman: 'yoga-sthah kuru karmani sangam tyaktva dhananjaya\nsiddhy-asiddhyoh samo bhutva samatvam yoga uchyate',
-              verseWordGuide: [
-                { devanagari: 'योगस्थः', roman: 'yogasthaḥ' },
-                { devanagari: 'कुरु', roman: 'kuru' },
-                { devanagari: 'कर्माणि', roman: 'karmāṇi' },
-                { devanagari: 'सङ्गं', roman: 'saṅgaṁ' },
-                { devanagari: 'त्यक्त्वा', roman: 'tyaktvā' },
-                { devanagari: 'धनञ्जय', roman: 'dhanañjaya' },
-                { devanagari: 'सिद्ध्यसिद्ध्योः', roman: 'siddhy-asiddhyoḥ' },
-                { devanagari: 'समो', roman: 'samo' },
-                { devanagari: 'भूत्वा', roman: 'bhūtvā' },
-                { devanagari: 'समत्वं', roman: 'samatvaṁ' },
-                { devanagari: 'योग', roman: 'yoga' },
-                { devanagari: 'उच्यते', roman: 'ucyate' }
-              ],
+              hindiTranslationDevanagari: 'योग में स्थित होकर कर्म कीजिए, आसक्ति को त्यागकर, हे धनञ्जय,\nसफलता और असफलता में समान रहकर, समभाव ही योग कहलाता है।',
+              hindiTranslationRoman: 'yog mein sthit hokar karma kijiye, aasakti ko tyagkar, he dhananjay,\nsafalta aur asafalta mein samaan rahkar, samabhav hi yog kehlata hai.',
               translation: 'Perform your duty equipoised, O Arjuna, abandoning all attachment to success or failure. Such equanimity is called Yoga.',
               purport: 'Krishna advises Arjuna to maintain a balanced mind regardless of victory or defeat.',
               commentary: {
@@ -638,166 +605,190 @@ export const gitaData: GitaData = {
               reflectionPrompt: 'Recall a recent situation where an unexpected outcome disturbed your peace. How could practicing "samatvam" (evenness of mind) help you respond differently next time?',
               storyCaption: 'Do your duty, and let go of the outcome, Krishna taught. To remain even in victory and in defeat — that is Yoga.',
               wordBreakdown: [
-                { word: 'yogasthaḥ', devanagari: 'योगस्थः', meaning: 'established in Yoga', partOfSpeech: 'adjective' },
-                { word: 'samatvaṁ', devanagari: 'समत्वम्', meaning: 'evenness of mind', partOfSpeech: 'noun' }
+                { word: 'yog', devanagari: 'योग', meaning: 'Yoga', partOfSpeech: 'noun' },
+                { word: 'sthit', devanagari: 'स्थित', meaning: 'established', partOfSpeech: 'adjective' },
+                { word: 'karma', devanagari: 'कर्म', meaning: 'action / duty', partOfSpeech: 'noun' },
+                { word: 'kijiye', devanagari: 'कीजिए', meaning: 'do / perform', partOfSpeech: 'verb' },
+                { word: 'aasakti', devanagari: 'आसक्ति', meaning: 'attachment', partOfSpeech: 'noun' },
+                { word: 'tyagkar', devanagari: 'त्यागकर', meaning: 'giving up / having abandoned', partOfSpeech: 'verb' },
+                { word: 'dhananjay', devanagari: 'धनञ्जय', meaning: 'Arjuna ("winner of wealth")', partOfSpeech: 'noun (name)' },
+                { word: 'safalta', devanagari: 'सफलता', meaning: 'success', partOfSpeech: 'noun' },
+                { word: 'asafalta', devanagari: 'असफलता', meaning: 'failure', partOfSpeech: 'noun' },
+                { word: 'samaan', devanagari: 'समान', meaning: 'equal / even', partOfSpeech: 'adjective' },
+                { word: 'samabhav', devanagari: 'समभाव', meaning: 'evenness of mind', partOfSpeech: 'noun' },
+                { word: 'kehlata', devanagari: 'कहलाता', meaning: 'is called', partOfSpeech: 'verb' }
               ],
-              teachingSlides: [],
               questions: [],
               parts: [
                 {
                   partIndex: 1,
                   title: 'Part 1: Established in Yoga',
-                  sanskrit: 'योगस्थः कुरु कर्माणि',
-                  transliteration: 'yoga-sthaḥ kuru karmāṇi',
-
-                  hindiRoman: 'yoga-sthah kuru karmani',
+                  hindiTranslationDevanagari: 'योग में स्थित होकर कर्म कीजिए,',
+                  hindiTranslationRoman: 'yog mein sthit hokar karma kijiye,',
                   translation: 'Established in Yoga, perform your duties.',
                   wordBreakdown: [
-                    { word: 'yogasthaḥ', devanagari: 'योगस्थः', meaning: 'established in Yoga', partOfSpeech: 'adjective' },
-                    { word: 'kuru', devanagari: 'कुरु', meaning: 'do / perform', partOfSpeech: 'verb' },
-                    { word: 'karmāṇi', devanagari: 'कर्माणि', meaning: 'duties / actions', partOfSpeech: 'noun' }
+                    { word: 'yog', devanagari: 'योग', meaning: 'Yoga', partOfSpeech: 'noun' },
+                    { word: 'sthit', devanagari: 'स्थित', meaning: 'established', partOfSpeech: 'adjective' },
+                    { word: 'karma', devanagari: 'कर्म', meaning: 'action / duty', partOfSpeech: 'noun' },
+                    { word: 'kijiye', devanagari: 'कीजिए', meaning: 'do / perform', partOfSpeech: 'verb' }
                   ],
                   questions: [
                     {
-                      id: 'bg248_p1_q1',
+                      id: 'bg248_p1_w',
                       type: 'phrase_matching',
                       warmup: true,
-                      prompt: 'Match each word in Part 1 to its meaning.',
+                      targetWords: ['yog', 'sthit', 'karma', 'kijiye'],
+                      prompt: 'Match each Hindi word to its meaning.',
                       pairs: [
-                        { sanskrit: 'yogasthaḥ', english: 'established in Yoga' },
-                        { sanskrit: 'kuru', english: 'do / perform' },
-                        { sanskrit: 'karmāṇi', english: 'duties / actions' }
+                        { hindi: { dev: 'योग', roman: 'yog' }, english: 'Yoga' },
+                        { hindi: { dev: 'स्थित', roman: 'sthit' }, english: 'established' },
+                        { hindi: { dev: 'कर्म', roman: 'karma' }, english: 'action / duty' },
+                        { hindi: { dev: 'कीजिए', roman: 'kijiye' }, english: 'do / perform' }
                       ]
                     },
                     {
-                      id: 'bg248_p1_q2',
+                      id: 'bg248_p1_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrases to their meanings.',
+                      targetWords: ['yog', 'sthit', 'karma', 'kijiye'],
+                      prompt: 'Now match the Hindi phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'yogasthaḥ', english: 'established in Yoga' },
-                        { sanskrit: 'kuru karmāṇi', english: 'perform duties' }
+                        { hindi: { dev: 'योग में स्थित होकर', roman: 'yog mein sthit hokar' }, english: 'established in yoga' },
+                        { hindi: { dev: 'कर्म कीजिए', roman: 'karma kijiye' }, english: 'perform actions' }
                       ]
+                    },
+                    {
+                      id: 'bg248_p1_c',
+                      type: 'fill_in_the_blank',
+                      targetWords: ['yog', 'sthit', 'karma', 'kijiye'],
+                      prompt: 'Complete the English sentence.',
+                      hindi: { dev: 'योग में स्थित होकर कर्म कीजिए,', roman: 'yog mein sthit hokar karma kijiye,' },
+                      sentence: 'Established in yoga perform ____',
+                      options: ['actions', 'abandon', 'failure', 'wealth'],
+                      answer: 'actions',
+                      explanation: 'The full phrase: "Established in yoga perform actions."'
                     },
                     {
                       id: 'bg248_p1_t',
                       type: 'translate',
+                      targetWords: ['yog', 'sthit', 'karma', 'kijiye'],
                       prompt: 'Write this in English',
-                      sanskrit: 'yogasthaḥ kuru karmāṇi',
+                      hindi: { dev: 'योग में स्थित होकर कर्म कीजिए,', roman: 'yog mein sthit hokar karma kijiye,' },
                       answer: 'established in yoga perform actions',
-                      tiles: ['established', 'in', 'yoga', 'perform', 'actions', 'abandon', 'failure', 'wealth']
-                    },
-                    {
-                      id: 'bg248_p1_q3',
-                      type: 'sentence_rebuilding',
-                      prompt: 'Arrange the words to form Part 1 of the verse.',
-                      hint: 'Established in Yoga, perform your duties.',
-                      targetSentence: 'yogasthaḥ kuru karmāṇi',
-                      tiles: ['yogasthaḥ', 'kuru', 'karmāṇi'],
-                      explanation: '"yogasthah kuru karmani" — Established in Yoga, perform your duties.'
+                      tiles: ['established', 'in', 'yoga', 'perform', 'actions', 'abandon', 'failure', 'wealth'],
+                      explanation: 'Established in Yoga, perform your duties.'
                     }
                   ]
                 },
                 {
                   partIndex: 2,
                   title: 'Part 2: Letting Go of Attachment',
-                  sanskrit: 'सङ्गं त्यक्त्वा धनञ्जय',
-                  transliteration: 'saṅgaṁ tyaktvā dhanañjaya',
-
-                  hindiRoman: 'sangam tyaktva dhananjaya',
+                  hindiTranslationDevanagari: 'आसक्ति को त्यागकर, हे धनञ्जय,',
+                  hindiTranslationRoman: 'aasakti ko tyagkar, he dhananjay,',
                   translation: 'Abandoning all attachment, O Arjuna.',
                   wordBreakdown: [
-                    { word: 'saṅgaṁ', devanagari: 'सङ्गं', meaning: 'attachment', partOfSpeech: 'noun' },
-                    { word: 'tyaktvā', devanagari: 'त्यक्त्वा', meaning: 'abandoning', partOfSpeech: 'verb' },
-                    { word: 'dhanañjaya', devanagari: 'धनञ्जय', meaning: 'O Arjuna (winner of wealth)', partOfSpeech: 'noun (vocative)' }
+                    { word: 'aasakti', devanagari: 'आसक्ति', meaning: 'attachment', partOfSpeech: 'noun' },
+                    { word: 'tyagkar', devanagari: 'त्यागकर', meaning: 'giving up / having abandoned', partOfSpeech: 'verb' },
+                    { word: 'dhananjay', devanagari: 'धनञ्जय', meaning: 'Arjuna ("winner of wealth")', partOfSpeech: 'noun (name)' }
                   ],
                   questions: [
                     {
-                      id: 'bg248_p2_q1',
+                      id: 'bg248_p2_w',
                       type: 'phrase_matching',
                       warmup: true,
-                      prompt: 'Match each word in Part 2 to its meaning.',
+                      targetWords: ['aasakti', 'tyagkar', 'dhananjay'],
+                      prompt: 'Match each Hindi word to its meaning.',
                       pairs: [
-                        { sanskrit: 'saṅgaṁ', english: 'attachment' },
-                        { sanskrit: 'tyaktvā', english: 'abandoning' },
-                        { sanskrit: 'dhanañjaya', english: 'O Arjuna (winner of wealth)' }
+                        { hindi: { dev: 'आसक्ति', roman: 'aasakti' }, english: 'attachment' },
+                        { hindi: { dev: 'त्यागकर', roman: 'tyagkar' }, english: 'giving up / having abandoned' },
+                        { hindi: { dev: 'धनञ्जय', roman: 'dhananjay' }, english: 'Arjuna ("winner of wealth")' }
                       ]
                     },
                     {
-                      id: 'bg248_p2_q2',
+                      id: 'bg248_p2_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrases to their meanings.',
+                      targetWords: ['aasakti', 'tyagkar', 'dhananjay'],
+                      prompt: 'Now match the Hindi phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'saṅgaṁ tyaktvā', english: 'abandoning attachment' },
-                        { sanskrit: 'dhanañjaya', english: 'O Arjuna' }
+                        { hindi: { dev: 'आसक्ति को त्यागकर', roman: 'aasakti ko tyagkar' }, english: 'abandoning attachment' },
+                        { hindi: { dev: 'हे धनञ्जय', roman: 'he dhananjay' }, english: 'O Arjuna' }
                       ]
+                    },
+                    {
+                      id: 'bg248_p2_c',
+                      type: 'fill_in_the_blank',
+                      targetWords: ['aasakti', 'tyagkar', 'dhananjay'],
+                      prompt: 'Complete the English sentence.',
+                      hindi: { dev: 'आसक्ति को त्यागकर, हे धनञ्जय,', roman: 'aasakti ko tyagkar, he dhananjay,' },
+                      sentence: 'Abandoning attachment O ____',
+                      options: ['Arjuna', 'success', 'duties', 'equal'],
+                      answer: 'Arjuna',
+                      explanation: 'The full phrase: "Abandoning attachment O Arjuna."'
                     },
                     {
                       id: 'bg248_p2_t',
                       type: 'translate',
+                      targetWords: ['aasakti', 'tyagkar', 'dhananjay'],
                       prompt: 'Write this in English',
-                      sanskrit: 'saṅgaṁ tyaktvā dhanañjaya',
+                      hindi: { dev: 'आसक्ति को त्यागकर, हे धनञ्जय,', roman: 'aasakti ko tyagkar, he dhananjay,' },
                       answer: 'abandoning attachment O Arjuna',
-                      tiles: ['abandoning', 'attachment', 'O', 'Arjuna', 'success', 'duties', 'equal']
-                    },
-                    {
-                      id: 'bg248_p2_q3',
-                      type: 'sentence_rebuilding',
-                      prompt: 'Now arrange the whole first line of the verse.',
-                      targetSentence: 'yogasthaḥ kuru karmāṇi saṅgaṁ tyaktvā dhanañjaya',
-                      tiles: ['yogasthaḥ', 'kuru', 'karmāṇi', 'saṅgaṁ', 'tyaktvā', 'dhanañjaya'],
-                      explanation: '"yogasthah kuru karmani sangam tyaktva dhananjaya" — Established in Yoga, perform your duties, abandoning attachment, O Arjuna.'
+                      tiles: ['abandoning', 'attachment', 'O', 'Arjuna', 'success', 'duties', 'equal'],
+                      explanation: 'Abandoning all attachment, O Arjuna.'
                     }
                   ]
                 },
                 {
                   partIndex: 3,
                   title: 'Part 3: Equal in Success and Failure',
-                  sanskrit: 'सिद्ध्यसिद्ध्योः समो भूत्वा',
-                  transliteration: 'siddhy-asiddhyoḥ samo bhūtvā',
-
-                  hindiRoman: 'siddhy-asiddhyoh samo bhutva',
+                  hindiTranslationDevanagari: 'सफलता और असफलता में समान रहकर,',
+                  hindiTranslationRoman: 'safalta aur asafalta mein samaan rahkar,',
                   translation: 'Being equal in success and failure.',
                   wordBreakdown: [
-                    { word: 'siddhy-asiddhyoḥ', devanagari: 'सिद्ध्यसिद्ध्योः', meaning: 'in success and failure', partOfSpeech: 'noun (compound)' },
-                    { word: 'samo', devanagari: 'समो', meaning: 'equal / equipoised', partOfSpeech: 'adjective' },
-                    { word: 'bhūtvā', devanagari: 'भूत्वा', meaning: 'having become / being', partOfSpeech: 'verb (participle)' }
+                    { word: 'safalta', devanagari: 'सफलता', meaning: 'success', partOfSpeech: 'noun' },
+                    { word: 'asafalta', devanagari: 'असफलता', meaning: 'failure', partOfSpeech: 'noun' },
+                    { word: 'samaan', devanagari: 'समान', meaning: 'equal / even', partOfSpeech: 'adjective' }
                   ],
                   questions: [
                     {
-                      id: 'bg248_p3_q1',
+                      id: 'bg248_p3_w',
                       type: 'phrase_matching',
                       warmup: true,
-                      prompt: 'Match each word in Part 3 to its meaning.',
+                      targetWords: ['safalta', 'asafalta', 'samaan'],
+                      prompt: 'Match each Hindi word to its meaning.',
                       pairs: [
-                        { sanskrit: 'siddhy-asiddhyoḥ', english: 'in success and failure' },
-                        { sanskrit: 'samo', english: 'equal / equipoised' },
-                        { sanskrit: 'bhūtvā', english: 'having become / being' }
+                        { hindi: { dev: 'सफलता', roman: 'safalta' }, english: 'success' },
+                        { hindi: { dev: 'असफलता', roman: 'asafalta' }, english: 'failure' },
+                        { hindi: { dev: 'समान', roman: 'samaan' }, english: 'equal / even' }
                       ]
                     },
                     {
-                      id: 'bg248_p3_q2',
+                      id: 'bg248_p3_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrases to their meanings.',
+                      targetWords: ['safalta', 'asafalta', 'samaan'],
+                      prompt: 'Now match the Hindi phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'siddhy-asiddhyoḥ', english: 'in success and failure' },
-                        { sanskrit: 'samo bhūtvā', english: 'being equal' }
+                        { hindi: { dev: 'सफलता और असफलता में', roman: 'safalta aur asafalta mein' }, english: 'in success and failure' },
+                        { hindi: { dev: 'समान रहकर', roman: 'samaan rahkar' }, english: 'remaining equal' }
                       ]
+                    },
+                    {
+                      id: 'bg248_p3_c',
+                      type: 'fill_in_the_blank',
+                      targetWords: ['safalta', 'asafalta', 'samaan'],
+                      prompt: 'Complete the English sentence.',
+                      hindi: { dev: 'सफलता और असफलता में समान रहकर,', roman: 'safalta aur asafalta mein samaan rahkar,' },
+                      sentence: 'Being equal in success and ____',
+                      options: ['failure', 'attachment', 'abandoning', 'duties'],
+                      answer: 'failure',
+                      explanation: 'The full phrase: "Being equal in success and failure."'
                     },
                     {
                       id: 'bg248_p3_t',
                       type: 'translate',
+                      targetWords: ['safalta', 'asafalta', 'samaan'],
                       prompt: 'Write this in English',
-                      sanskrit: 'siddhy-asiddhyoḥ samo bhūtvā',
+                      hindi: { dev: 'सफलता और असफलता में समान रहकर,', roman: 'safalta aur asafalta mein samaan rahkar,' },
                       answer: 'being equal in success and failure',
-                      tiles: ['being', 'equal', 'in', 'success', 'and', 'failure', 'attachment', 'abandoning', 'duties']
-                    },
-                    {
-                      id: 'bg248_p3_r',
-                      type: 'sentence_rebuilding',
-                      prompt: 'Arrange the words to form Part 3 of the verse.',
-                      hint: 'Being equal in success and failure.',
-                      targetSentence: 'siddhy-asiddhyoḥ samo bhūtvā',
-                      tiles: ['siddhy-asiddhyoḥ', 'samo', 'bhūtvā'],
+                      tiles: ['being', 'equal', 'in', 'success', 'and', 'failure', 'attachment', 'abandoning', 'duties'],
                       explanation: 'Being equal in success and failure.'
                     }
                   ]
@@ -805,61 +796,64 @@ export const gitaData: GitaData = {
                 {
                   partIndex: 4,
                   title: 'Part 4: Definition of Yoga',
-                  sanskrit: 'समत्वं योग उच्यते',
-                  transliteration: 'samatvaṁ yoga ucyate',
-
-                  hindiRoman: 'samatvam yoga uchyate',
+                  hindiTranslationDevanagari: 'समभाव ही योग कहलाता है।',
+                  hindiTranslationRoman: 'samabhav hi yog kehlata hai.',
                   translation: 'Such evenness of mind is called Yoga.',
                   wordBreakdown: [
-                    { word: 'samatvaṁ', devanagari: 'समत्वम्', meaning: 'evenness of mind', partOfSpeech: 'noun' },
-                    { word: 'yoga', devanagari: 'योग', meaning: 'Yoga', partOfSpeech: 'noun' },
-                    { word: 'ucyate', devanagari: 'उच्यते', meaning: 'is called / is said to be', partOfSpeech: 'verb (passive)' }
+                    { word: 'samabhav', devanagari: 'समभाव', meaning: 'evenness of mind', partOfSpeech: 'noun' },
+                    { word: 'yog', devanagari: 'योग', meaning: 'Yoga', partOfSpeech: 'noun' },
+                    { word: 'kehlata', devanagari: 'कहलाता', meaning: 'is called', partOfSpeech: 'verb' }
                   ],
                   questions: [
                     {
-                      id: 'bg248_p4_q1',
+                      id: 'bg248_p4_w',
                       type: 'phrase_matching',
                       warmup: true,
-                      prompt: 'Match each word in Part 4 to its meaning.',
+                      targetWords: ['samabhav', 'yog', 'kehlata'],
+                      prompt: 'Match each Hindi word to its meaning.',
                       pairs: [
-                        { sanskrit: 'samatvaṁ', english: 'evenness of mind' },
-                        { sanskrit: 'yoga', english: 'Yoga' },
-                        { sanskrit: 'ucyate', english: 'is called / is said to be' }
+                        { hindi: { dev: 'समभाव', roman: 'samabhav' }, english: 'evenness of mind' },
+                        { hindi: { dev: 'योग', roman: 'yog' }, english: 'Yoga' },
+                        { hindi: { dev: 'कहलाता', roman: 'kehlata' }, english: 'is called' }
                       ]
                     },
                     {
                       id: 'bg248_p4_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrases to their meanings.',
+                      targetWords: ['samabhav', 'yog', 'kehlata'],
+                      prompt: 'Now match the Hindi phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'yoga ucyate', english: 'is called Yoga' },
-                        { sanskrit: 'samatvaṁ', english: 'evenness of mind' },
-                        { sanskrit: 'siddhy-asiddhyoḥ samo bhūtvā', english: 'being equal in success and failure' }
+                        { hindi: { dev: 'समभाव', roman: 'samabhav' }, english: 'evenness of mind' },
+                        { hindi: { dev: 'योग कहलाता है', roman: 'yog kehlata hai' }, english: 'is called yoga' }
                       ]
+                    },
+                    {
+                      id: 'bg248_p4_c',
+                      type: 'fill_in_the_blank',
+                      targetWords: ['samabhav', 'yog', 'kehlata'],
+                      prompt: 'Complete the English sentence.',
+                      hindi: { dev: 'समभाव ही योग कहलाता है।', roman: 'samabhav hi yog kehlata hai.' },
+                      sentence: 'Evenness of mind is called ____',
+                      options: ['yoga', 'action', 'skill', 'peace'],
+                      answer: 'yoga',
+                      explanation: 'The full phrase: "Evenness of mind is called yoga."'
                     },
                     {
                       id: 'bg248_p4_t',
                       type: 'translate',
+                      targetWords: ['samabhav', 'yog', 'kehlata'],
                       prompt: 'Write this in English',
-                      sanskrit: 'samatvaṁ yoga ucyate',
+                      hindi: { dev: 'समभाव ही योग कहलाता है।', roman: 'samabhav hi yog kehlata hai.' },
                       answer: 'evenness of mind is called yoga',
-                      tiles: ['evenness', 'of', 'mind', 'is', 'called', 'yoga', 'action', 'skill', 'peace']
-                    },
-                    {
-                      id: 'bg248_p4_r',
-                      type: 'sentence_rebuilding',
-                      prompt: 'Arrange the words to form Part 4 of the verse.',
-                      hint: 'Such evenness of mind is called Yoga.',
-                      targetSentence: 'samatvaṁ yoga ucyate',
-                      tiles: ['samatvaṁ', 'yoga', 'ucyate'],
+                      tiles: ['evenness', 'of', 'mind', 'is', 'called', 'yoga', 'action', 'skill', 'peace'],
                       explanation: 'Such evenness of mind is called Yoga.'
                     },
                     {
-                      id: 'bg248_p4_q2',
+                      id: 'bg248_p4_q',
                       type: 'multiple_choice',
                       prompt: 'What does Krishna define as "Yoga" in BG 2.48?',
                       options: [
-                        { text: 'Equanimity of mind in both success and failure ("samatvam yoga uchyate").', isCorrect: true, explanation: 'Correct! Evenness of mind is true Yoga.' },
+                        { text: 'Equanimity of mind in both success and failure.', isCorrect: true, explanation: 'Correct! Evenness of mind is true Yoga.' },
                         { text: 'Only physical postures.', isCorrect: false, explanation: 'Incorrect.' }
                       ]
                     }
@@ -868,12 +862,84 @@ export const gitaData: GitaData = {
               ],
               finalSynthesisQuestions: [
                 {
-                  id: 'bg248_syn_q1',
-                  type: 'sentence_rebuilding',
-                  prompt: 'REBUILD FULL VERSE: Arrange the second half of BG 2.48!',
-                  targetSentence: 'siddhy-asiddhyoḥ samo bhūtvā samatvaṁ yoga ucyate',
-                  tiles: ['siddhy-asiddhyoḥ', 'samo', 'bhūtvā', 'samatvaṁ', 'yoga', 'ucyate'],
-                  explanation: '"siddhy-asiddhyoh samo bhutva samatvam yoga uchyate" — Evenness in success and failure is called Yoga.'
+                  id: 'bg248_syn_m',
+                  type: 'phrase_matching',
+                  targetWords: [
+                    'yog',
+                    'sthit',
+                    'karma',
+                    'kijiye',
+                    'aasakti',
+                    'tyagkar',
+                    'dhananjay',
+                    'safalta',
+                    'asafalta',
+                    'samaan',
+                    'samabhav',
+                    'kehlata'
+                  ],
+                  prompt: 'Match every phrase of the verse to its meaning.',
+                  pairs: [
+                    { hindi: { dev: 'योग में स्थित होकर कर्म कीजिए,', roman: 'yog mein sthit hokar karma kijiye,' }, english: 'established in yoga perform actions' },
+                    { hindi: { dev: 'आसक्ति को त्यागकर, हे धनञ्जय,', roman: 'aasakti ko tyagkar, he dhananjay,' }, english: 'abandoning attachment O Arjuna' },
+                    {
+                      hindi: { dev: 'सफलता और असफलता में समान रहकर,', roman: 'safalta aur asafalta mein samaan rahkar,' },
+                      english: 'being equal in success and failure'
+                    },
+                    { hindi: { dev: 'समभाव ही योग कहलाता है।', roman: 'samabhav hi yog kehlata hai.' }, english: 'evenness of mind is called yoga' }
+                  ]
+                },
+                {
+                  id: 'bg248_syn_t1',
+                  type: 'translate',
+                  targetWords: ['yog', 'sthit', 'karma', 'kijiye', 'aasakti', 'tyagkar', 'dhananjay'],
+                  prompt: 'Write this in English',
+                  hindi: {
+                    dev: 'योग में स्थित होकर कर्म कीजिए, आसक्ति को त्यागकर, हे धनञ्जय,',
+                    roman: 'yog mein sthit hokar karma kijiye, aasakti ko tyagkar, he dhananjay,'
+                  },
+                  answer: 'established in yoga perform actions abandoning attachment O Arjuna',
+                  tiles: [
+                    'established',
+                    'in',
+                    'yoga',
+                    'perform',
+                    'actions',
+                    'abandoning',
+                    'attachment',
+                    'O',
+                    'Arjuna',
+                    'abandon',
+                    'failure',
+                    'wealth'
+                  ],
+                  explanation: 'Established in Yoga, perform your duties. Abandoning all attachment, O Arjuna.'
+                },
+                {
+                  id: 'bg248_syn_t2',
+                  type: 'translate',
+                  targetWords: ['safalta', 'asafalta', 'samaan', 'samabhav', 'yog', 'kehlata'],
+                  prompt: 'Write this in English',
+                  hindi: { dev: 'सफलता और असफलता में समान रहकर, समभाव ही योग कहलाता है।', roman: 'safalta aur asafalta mein samaan rahkar, samabhav hi yog kehlata hai.' },
+                  answer: 'being equal in success and failure evenness of mind is called yoga',
+                  tiles: [
+                    'being',
+                    'equal',
+                    'in',
+                    'success',
+                    'and',
+                    'failure',
+                    'evenness',
+                    'of',
+                    'mind',
+                    'is',
+                    'called',
+                    'yoga',
+                    'attachment',
+                    'abandoning',
+                    'duties'
+                  ],
+                  explanation: 'Being equal in success and failure. Such evenness of mind is called Yoga.'
                 }
               ]
             },
@@ -883,133 +949,140 @@ export const gitaData: GitaData = {
               verseRef: 'BG 2.50',
               essence: 'Wise action frees you from good and bad karma. Yoga is skill in action.',
               verseSanskrit: 'बुद्धियुक्तो जहातीह उभे सुकृतदुष्कृते ।\nतस्माद्योगाय युज्यस्व योगः कर्मसु कौशलम् ॥',
-              verseTransliteration: 'buddhi-yukto jahātīha ubhe sukṛta-duṣkṛte\ntasmād yogāya yujyasva yogaḥ karmasu kauśalam',
-
-              verseHindiRoman: 'buddhi-yukto jahatiha ubhe sukrita-dushkrite\ntasmad yogaya yujyasva yogah karmasu kaushalam',
-              verseWordGuide: [
-                { devanagari: 'बुद्धियुक्तो', roman: 'buddhi-yukto' },
-                { devanagari: 'जहातीह', roman: 'jahātīha' },
-                { devanagari: 'उभे', roman: 'ubhe' },
-                { devanagari: 'सुकृतदुष्कृते', roman: 'sukṛta-duṣkṛte' },
-                { devanagari: 'तस्माद्योगाय', roman: 'tasmād-yogāya' },
-                { devanagari: 'युज्यस्व', roman: 'yujyasva' },
-                { devanagari: 'योगः', roman: 'yogaḥ' },
-                { devanagari: 'कर्मसु', roman: 'karmasu' },
-                { devanagari: 'कौशलम्', roman: 'kauśalam' }
-              ],
+              hindiTranslationDevanagari: 'बुद्धि से युक्त व्यक्ति इसी जीवन में पुण्य और पाप दोनों को छोड़ देता है।\nइसलिए आप योग में लग जाइए। योग ही कर्मों में कुशलता है।',
+              hindiTranslationRoman: 'buddhi se yukt vyakti isi jeevan mein punya aur paap donon ko chhod deta hai.\nisliye aap yog mein lag jaiye. yog hi karmon mein kushalta hai.',
               translation: 'A person engaged in devotional service rids himself of both good and bad actions even in this life. Therefore, strive for Yoga, which is the art of all work.',
               purport: 'Yoga is skill in action ("yogah karmasu kaushalam").',
               storyCaption: 'Wisdom acts without being bound by its results. This skill in action, Krishna said, is the highest art of all.',
               wordBreakdown: [
-                { word: 'kauśalam', devanagari: 'कौशलम्', meaning: 'skill / artfulness', partOfSpeech: 'noun' }
+                { word: 'buddhi', devanagari: 'बुद्धि', meaning: 'wisdom / intellect', partOfSpeech: 'noun' },
+                { word: 'punya', devanagari: 'पुण्य', meaning: 'good deeds / merit', partOfSpeech: 'noun' },
+                { word: 'paap', devanagari: 'पाप', meaning: 'bad deeds / sin', partOfSpeech: 'noun' },
+                { word: 'chhod', devanagari: 'छोड़', meaning: 'give up / leave', partOfSpeech: 'verb' },
+                { word: 'isliye', devanagari: 'इसलिए', meaning: 'therefore', partOfSpeech: 'adverb' },
+                { word: 'yog', devanagari: 'योग', meaning: 'Yoga', partOfSpeech: 'noun' },
+                { word: 'lag', devanagari: 'लग', meaning: 'get engaged / strive', partOfSpeech: 'verb' },
+                { word: 'karmon', devanagari: 'कर्मों', meaning: 'actions / works', partOfSpeech: 'noun (plural)' },
+                { word: 'kushalta', devanagari: 'कुशलता', meaning: 'skill', partOfSpeech: 'noun' }
               ],
-              teachingSlides: [],
               questions: [],
               parts: [
                 {
                   partIndex: 1,
                   title: 'Part 1: Wisdom Overcomes Reaction',
-                  sanskrit: 'बुद्धियुक्तो जहातीह उभे सुकृतदुष्कृते',
-                  transliteration: 'buddhi-yukto jahātīha ubhe sukṛta-duṣkṛte',
-
-                  hindiRoman: 'buddhi-yukto jahatiha ubhe sukrita-dushkrite',
+                  hindiTranslationDevanagari: 'बुद्धि से युक्त व्यक्ति इसी जीवन में पुण्य और पाप दोनों को छोड़ देता है।',
+                  hindiTranslationRoman: 'buddhi se yukt vyakti isi jeevan mein punya aur paap donon ko chhod deta hai.',
                   translation: 'One endowed with wisdom casts off both good and bad karma in this life.',
                   wordBreakdown: [
-                    { word: 'buddhi-yukto', devanagari: 'बुद्धियुक्तो', meaning: 'endowed with wisdom', partOfSpeech: 'adjective' },
-                    { word: 'jahātīha', devanagari: 'जहातीह', meaning: 'casts off in this life', partOfSpeech: 'verb' },
-                    { word: 'ubhe', devanagari: 'उभे', meaning: 'both', partOfSpeech: 'adjective' },
-                    { word: 'sukṛta-duṣkṛte', devanagari: 'सुकृतदुष्कृते', meaning: 'good and bad actions', partOfSpeech: 'compound noun' }
+                    { word: 'buddhi', devanagari: 'बुद्धि', meaning: 'wisdom / intellect', partOfSpeech: 'noun' },
+                    { word: 'punya', devanagari: 'पुण्य', meaning: 'good deeds / merit', partOfSpeech: 'noun' },
+                    { word: 'paap', devanagari: 'पाप', meaning: 'bad deeds / sin', partOfSpeech: 'noun' },
+                    { word: 'chhod', devanagari: 'छोड़', meaning: 'give up / leave', partOfSpeech: 'verb' }
                   ],
                   questions: [
                     {
-                      id: 'bg250_p1_q1',
+                      id: 'bg250_p1_w',
                       type: 'phrase_matching',
                       warmup: true,
-                      prompt: 'Match Part 1 terms.',
+                      targetWords: ['buddhi', 'punya', 'paap', 'chhod'],
+                      prompt: 'Match each Hindi word to its meaning.',
                       pairs: [
-                        { sanskrit: 'buddhi-yukto', english: 'endowed with wisdom' },
-                        { sanskrit: 'jahātīha', english: 'casts off in this life' },
-                        { sanskrit: 'ubhe', english: 'both' },
-                        { sanskrit: 'sukṛta-duṣkṛte', english: 'good and bad actions' }
+                        { hindi: { dev: 'बुद्धि', roman: 'buddhi' }, english: 'wisdom / intellect' },
+                        { hindi: { dev: 'पुण्य', roman: 'punya' }, english: 'good deeds / merit' },
+                        { hindi: { dev: 'पाप', roman: 'paap' }, english: 'bad deeds / sin' },
+                        { hindi: { dev: 'छोड़', roman: 'chhod' }, english: 'give up / leave' }
                       ]
                     },
                     {
-                      id: 'bg250_p1_q2',
+                      id: 'bg250_p1_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrases to their meanings.',
+                      targetWords: ['buddhi', 'punya', 'paap', 'chhod'],
+                      prompt: 'Now match the Hindi phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'buddhi-yukto', english: 'endowed with wisdom' },
-                        { sanskrit: 'jahātīha ubhe sukṛta-duṣkṛte', english: 'casts off both good and bad actions in this life' }
+                        { hindi: { dev: 'बुद्धि से युक्त व्यक्ति', roman: 'buddhi se yukt vyakti' }, english: 'a person endowed with wisdom' },
+                        { hindi: { dev: 'इसी जीवन में', roman: 'isi jeevan mein' }, english: 'in this very life' },
+                        {
+                          hindi: { dev: 'पुण्य और पाप दोनों को छोड़ देता है', roman: 'punya aur paap donon ko chhod deta hai' },
+                          english: 'gives up both good and bad deeds'
+                        }
                       ]
+                    },
+                    {
+                      id: 'bg250_p1_c',
+                      type: 'fill_in_the_blank',
+                      targetWords: ['buddhi', 'punya', 'paap', 'chhod'],
+                      prompt: 'Complete the English sentence.',
+                      hindi: { dev: 'पुण्य और पाप दोनों', roman: 'punya aur paap donon' },
+                      sentence: 'Both good and ____ deeds',
+                      options: ['bad', 'skill', 'wisdom', 'therefore'],
+                      answer: 'bad',
+                      explanation: 'The full phrase: "Both good and bad deeds."'
                     },
                     {
                       id: 'bg250_p1_t',
                       type: 'translate',
+                      targetWords: ['buddhi', 'punya', 'paap', 'chhod'],
                       prompt: 'Write this in English',
-                      sanskrit: 'ubhe sukṛta-duṣkṛte',
-                      answer: 'both good and bad actions',
-                      tiles: ['both', 'good', 'and', 'bad', 'actions', 'skill', 'wisdom', 'therefore']
-                    },
-                    {
-                      id: 'bg250_p1_r',
-                      type: 'sentence_rebuilding',
-                      prompt: 'Arrange the words to form Part 1 of the verse.',
-                      hint: 'One endowed with wisdom casts off both good and bad karma in this life.',
-                      targetSentence: 'buddhi-yukto jahātīha ubhe sukṛta-duṣkṛte',
-                      tiles: ['buddhi-yukto', 'jahātīha', 'ubhe', 'sukṛta-duṣkṛte'],
-                      explanation: 'One endowed with wisdom casts off both good and bad actions in this life.'
+                      hindi: { dev: 'पुण्य और पाप दोनों', roman: 'punya aur paap donon' },
+                      answer: 'both good and bad deeds',
+                      tiles: ['both', 'good', 'and', 'bad', 'deeds', 'skill', 'wisdom', 'therefore'],
+                      explanation: 'One endowed with wisdom casts off both good and bad karma in this life.'
                     }
                   ]
                 },
                 {
                   partIndex: 2,
                   title: 'Part 2: Strive for Yoga',
-                  sanskrit: 'तस्माद्योगाय युज्यस्व',
-                  transliteration: 'tasmād yogāya yujyasva',
-
-                  hindiRoman: 'tasmad yogaya yujyasva',
+                  hindiTranslationDevanagari: 'इसलिए आप योग में लग जाइए।',
+                  hindiTranslationRoman: 'isliye aap yog mein lag jaiye.',
                   translation: 'Therefore, strive for Yoga.',
                   wordBreakdown: [
-                    { word: 'tasmād', devanagari: 'तस्मात्', meaning: 'therefore', partOfSpeech: 'adverb' },
-                    { word: 'yogāya', devanagari: 'योगाय', meaning: 'for Yoga', partOfSpeech: 'noun' },
-                    { word: 'yujyasva', devanagari: 'युज्यस्व', meaning: 'strive / engage yourself', partOfSpeech: 'verb (imperative)' }
+                    { word: 'isliye', devanagari: 'इसलिए', meaning: 'therefore', partOfSpeech: 'adverb' },
+                    { word: 'yog', devanagari: 'योग', meaning: 'Yoga', partOfSpeech: 'noun' },
+                    { word: 'lag', devanagari: 'लग', meaning: 'get engaged / strive', partOfSpeech: 'verb' }
                   ],
                   questions: [
                     {
-                      id: 'bg250_p2_q1',
+                      id: 'bg250_p2_w',
                       type: 'phrase_matching',
                       warmup: true,
-                      prompt: 'Match each word in Part 2 to its meaning.',
+                      targetWords: ['isliye', 'yog', 'lag'],
+                      prompt: 'Match each Hindi word to its meaning.',
                       pairs: [
-                        { sanskrit: 'tasmād', english: 'therefore' },
-                        { sanskrit: 'yogāya', english: 'for Yoga' },
-                        { sanskrit: 'yujyasva', english: 'strive / engage yourself' }
+                        { hindi: { dev: 'इसलिए', roman: 'isliye' }, english: 'therefore' },
+                        { hindi: { dev: 'योग', roman: 'yog' }, english: 'Yoga' },
+                        { hindi: { dev: 'लग', roman: 'lag' }, english: 'get engaged / strive' }
                       ]
                     },
                     {
                       id: 'bg250_p2_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrases to their meanings.',
+                      targetWords: ['isliye', 'yog', 'lag'],
+                      prompt: 'Now match the Hindi phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'tasmād yogāya', english: 'therefore, for Yoga' },
-                        { sanskrit: 'yujyasva', english: 'strive' }
+                        { hindi: { dev: 'इसलिए', roman: 'isliye' }, english: 'therefore' },
+                        { hindi: { dev: 'योग में लग जाइए', roman: 'yog mein lag jaiye' }, english: 'strive for yoga' }
                       ]
+                    },
+                    {
+                      id: 'bg250_p2_c',
+                      type: 'fill_in_the_blank',
+                      targetWords: ['isliye', 'yog', 'lag'],
+                      prompt: 'Complete the English sentence.',
+                      hindi: { dev: 'इसलिए आप योग में लग जाइए।', roman: 'isliye aap yog mein lag jaiye.' },
+                      sentence: 'Therefore strive for ____',
+                      options: ['yoga', 'skill', 'both', 'wisdom'],
+                      answer: 'yoga',
+                      explanation: 'The full phrase: "Therefore strive for yoga."'
                     },
                     {
                       id: 'bg250_p2_t',
                       type: 'translate',
+                      targetWords: ['isliye', 'yog', 'lag'],
                       prompt: 'Write this in English',
-                      sanskrit: 'tasmād yogāya yujyasva',
+                      hindi: { dev: 'इसलिए आप योग में लग जाइए।', roman: 'isliye aap yog mein lag jaiye.' },
                       answer: 'therefore strive for yoga',
-                      tiles: ['therefore', 'strive', 'for', 'yoga', 'skill', 'both', 'wisdom']
-                    },
-                    {
-                      id: 'bg250_p2_r',
-                      type: 'sentence_rebuilding',
-                      prompt: 'Arrange the words to form Part 2 of the verse.',
-                      hint: 'Therefore, strive for Yoga.',
-                      targetSentence: 'tasmād yogāya yujyasva',
-                      tiles: ['tasmād', 'yogāya', 'yujyasva'],
+                      tiles: ['therefore', 'strive', 'for', 'yoga', 'skill', 'both', 'wisdom'],
                       explanation: 'Therefore, strive for Yoga.'
                     }
                   ]
@@ -1017,60 +1090,65 @@ export const gitaData: GitaData = {
                 {
                   partIndex: 3,
                   title: 'Part 3: Yoga is Skill in Action',
-                  sanskrit: 'योगः कर्मसु कौशलम्',
-                  transliteration: 'yogaḥ karmasu kauśalam',
-
-                  hindiRoman: 'yogah karmasu kaushalam',
+                  hindiTranslationDevanagari: 'योग ही कर्मों में कुशलता है।',
+                  hindiTranslationRoman: 'yog hi karmon mein kushalta hai.',
                   translation: 'Yoga is skill in action.',
                   wordBreakdown: [
-                    { word: 'yogaḥ', devanagari: 'योगः', meaning: 'Yoga', partOfSpeech: 'noun' },
-                    { word: 'karmasu', devanagari: 'कर्मसु', meaning: 'in action / works', partOfSpeech: 'noun (locative)' },
-                    { word: 'kauśalam', devanagari: 'कौशलम्', meaning: 'skill / mastery', partOfSpeech: 'noun' }
+                    { word: 'yog', devanagari: 'योग', meaning: 'Yoga', partOfSpeech: 'noun' },
+                    { word: 'karmon', devanagari: 'कर्मों', meaning: 'actions / works', partOfSpeech: 'noun (plural)' },
+                    { word: 'kushalta', devanagari: 'कुशलता', meaning: 'skill', partOfSpeech: 'noun' }
                   ],
                   questions: [
                     {
-                      id: 'bg250_p3_q1',
+                      id: 'bg250_p3_w',
                       type: 'phrase_matching',
                       warmup: true,
-                      prompt: 'Match each word in Part 3 to its meaning.',
+                      targetWords: ['yog', 'karmon', 'kushalta'],
+                      prompt: 'Match each Hindi word to its meaning.',
                       pairs: [
-                        { sanskrit: 'yogaḥ', english: 'Yoga' },
-                        { sanskrit: 'karmasu', english: 'in action / works' },
-                        { sanskrit: 'kauśalam', english: 'skill / mastery' }
+                        { hindi: { dev: 'योग', roman: 'yog' }, english: 'Yoga' },
+                        { hindi: { dev: 'कर्मों', roman: 'karmon' }, english: 'actions / works' },
+                        { hindi: { dev: 'कुशलता', roman: 'kushalta' }, english: 'skill' }
                       ]
                     },
                     {
                       id: 'bg250_p3_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrases to their meanings.',
+                      targetWords: ['yog', 'karmon', 'kushalta'],
+                      prompt: 'Now match the Hindi phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'yogaḥ kauśalam', english: 'Yoga is skill' },
-                        { sanskrit: 'karmasu', english: 'in action / works' }
+                        { hindi: { dev: 'योग ही', roman: 'yog hi' }, english: 'yoga itself' },
+                        { hindi: { dev: 'कर्मों में', roman: 'karmon mein' }, english: 'in actions' },
+                        { hindi: { dev: 'कुशलता है', roman: 'kushalta hai' }, english: 'is skill' }
                       ]
+                    },
+                    {
+                      id: 'bg250_p3_c',
+                      type: 'fill_in_the_blank',
+                      targetWords: ['yog', 'karmon', 'kushalta'],
+                      prompt: 'Complete the English sentence.',
+                      hindi: { dev: 'योग ही कर्मों में कुशलता है।', roman: 'yog hi karmon mein kushalta hai.' },
+                      sentence: 'Yoga is skill in ____',
+                      options: ['action', 'wisdom', 'therefore', 'both'],
+                      answer: 'action',
+                      explanation: 'The full phrase: "Yoga is skill in action."'
                     },
                     {
                       id: 'bg250_p3_t',
                       type: 'translate',
+                      targetWords: ['yog', 'karmon', 'kushalta'],
                       prompt: 'Write this in English',
-                      sanskrit: 'yogaḥ karmasu kauśalam',
+                      hindi: { dev: 'योग ही कर्मों में कुशलता है।', roman: 'yog hi karmon mein kushalta hai.' },
                       answer: 'yoga is skill in action',
-                      tiles: ['yoga', 'is', 'skill', 'in', 'action', 'wisdom', 'therefore', 'both']
-                    },
-                    {
-                      id: 'bg250_p3_r',
-                      type: 'sentence_rebuilding',
-                      prompt: 'Arrange the words to form Part 3 of the verse.',
-                      hint: 'Yoga is skill in action.',
-                      targetSentence: 'yogaḥ karmasu kauśalam',
-                      tiles: ['yogaḥ', 'karmasu', 'kauśalam'],
+                      tiles: ['yoga', 'is', 'skill', 'in', 'action', 'wisdom', 'therefore', 'both'],
                       explanation: 'Yoga is skill in action.'
                     },
                     {
-                      id: 'bg250_p3_q2',
+                      id: 'bg250_p3_q',
                       type: 'multiple_choice',
                       prompt: 'What famous declaration is made in BG 2.50?',
                       options: [
-                        { text: 'Yoga is skill in action ("yogah karmasu kaushalam").', isCorrect: true, explanation: 'Correct!' },
+                        { text: 'Yoga is skill in action.', isCorrect: true, explanation: 'Correct!' },
                         { text: 'Work is to be avoided.', isCorrect: false, explanation: 'Incorrect.' }
                       ]
                     }
@@ -1079,12 +1157,61 @@ export const gitaData: GitaData = {
               ],
               finalSynthesisQuestions: [
                 {
-                  id: 'bg250_syn_q1',
-                  type: 'sentence_rebuilding',
-                  prompt: 'FULL VERSE SYNTHESIS: Arrange the famous second line!',
-                  targetSentence: 'tasmād yogāya yujyasva yogaḥ karmasu kauśalam',
-                  tiles: ['tasmād', 'yogāya', 'yujyasva', 'yogaḥ', 'karmasu', 'kauśalam'],
-                  explanation: '"yogah karmasu kaushalam" — Yoga is skill in action.'
+                  id: 'bg250_syn_m',
+                  type: 'phrase_matching',
+                  targetWords: ['buddhi', 'punya', 'paap', 'chhod', 'isliye', 'yog', 'lag', 'karmon', 'kushalta'],
+                  prompt: 'Match every phrase of the verse to its meaning.',
+                  pairs: [
+                    {
+                      hindi: {
+                        dev: 'बुद्धि से युक्त व्यक्ति इसी जीवन में पुण्य और पाप दोनों को छोड़ देता है।',
+                        roman: 'buddhi se yukt vyakti isi jeevan mein punya aur paap donon ko chhod deta hai.'
+                      },
+                      english: 'a wise person gives up both good and bad deeds in this life'
+                    },
+                    { hindi: { dev: 'इसलिए आप योग में लग जाइए।', roman: 'isliye aap yog mein lag jaiye.' }, english: 'therefore strive for yoga' },
+                    { hindi: { dev: 'योग ही कर्मों में कुशलता है।', roman: 'yog hi karmon mein kushalta hai.' }, english: 'yoga is skill in action' }
+                  ]
+                },
+                {
+                  id: 'bg250_syn_t1',
+                  type: 'translate',
+                  targetWords: ['buddhi', 'punya', 'paap', 'chhod'],
+                  prompt: 'Write this in English',
+                  hindi: {
+                    dev: 'बुद्धि से युक्त व्यक्ति इसी जीवन में पुण्य और पाप दोनों को छोड़ देता है।',
+                    roman: 'buddhi se yukt vyakti isi jeevan mein punya aur paap donon ko chhod deta hai.'
+                  },
+                  answer: 'a wise person gives up both good and bad deeds in this life',
+                  tiles: [
+                    'a',
+                    'wise',
+                    'person',
+                    'gives',
+                    'up',
+                    'both',
+                    'good',
+                    'and',
+                    'bad',
+                    'deeds',
+                    'in',
+                    'this',
+                    'life',
+                    'skill',
+                    'wisdom',
+                    'therefore'
+                  ],
+                  explanation: 'One endowed with wisdom casts off both good and bad karma in this life.'
+                },
+                {
+                  id: 'bg250_syn_t2',
+                  type: 'translate',
+                  targetWords: ['isliye', 'yog', 'lag', 'karmon', 'kushalta'],
+                  prompt: 'Write this in English',
+                  hindi: { dev: 'इसलिए आप योग में लग जाइए। योग ही कर्मों में कुशलता है।', roman: 'isliye aap yog mein lag jaiye. yog hi karmon mein kushalta hai.' },
+                  answer: 'therefore strive for yoga yoga is skill in action',
+                  tiles: ['therefore', 'strive', 'for', 'yoga', 'yoga', 'is', 'skill', 'in', 'action', 'both', 'wisdom'],
+                  explanation: 'Therefore, strive for Yoga. Yoga is skill in action.'
                 }
               ]
             },
@@ -1094,189 +1221,203 @@ export const gitaData: GitaData = {
               verseRef: 'BG 2.71',
               essence: 'Give up craving and ego, and real peace comes.',
               verseSanskrit: 'विहाय कामान्यः सर्वान्पुमांश्चरति निःस्पृहः ।\nनिर्ममो निरहङ्कारः स शान्तिमधिगच्छति ॥',
-              verseTransliteration: 'vihāya kāmān yaḥ sarvān pumāṁś carati niḥspṛhaḥ\nnirmamo nirahaṅkāraḥ sa śāntim adhigacchati',
-
-              verseHindiRoman: 'vihaya kaman yah sarvan pumansh charati nihsprihah\nnirmamo nirahankarah sa shantim adhigachchhati',
-              verseWordGuide: [
-                { devanagari: 'विहाय', roman: 'vihāya' },
-                { devanagari: 'कामान्यः', roman: 'kāmān-yaḥ' },
-                { devanagari: 'सर्वान्पुमांश्चरति', roman: 'sarvān-pumāṁś-carati' },
-                { devanagari: 'निःस्पृहः', roman: 'niḥspṛhaḥ' },
-                { devanagari: 'निर्ममो', roman: 'nirmamo' },
-                { devanagari: 'निरहङ्कारः', roman: 'nirahaṅkāraḥ' },
-                { devanagari: 'स', roman: 'sa' },
-                { devanagari: 'शान्तिमधिगच्छति', roman: 'śāntim-adhigacchati' }
-              ],
+              hindiTranslationDevanagari: 'जो व्यक्ति सभी कामनाओं को छोड़कर इच्छारहित होकर विचरता है,\nजो ममता और अहंकार से मुक्त है, वही शांति को प्राप्त होता है।',
+              hindiTranslationRoman: 'jo vyakti sabhi kamnaon ko chhodkar ichchharahit hokar vicharta hai,\njo mamta aur ahankar se mukt hai, wahi shanti ko prapt hota hai.',
               translation: 'A person who has given up all desires for sense gratification, who lives free from desires, who has given up all sense of proprietorship and is devoid of false ego — he alone attains real peace.',
               purport: 'True peace comes when we drop possessiveness ("nirmamah") and false ego ("nirahankarah").',
               storyCaption: 'Free of craving, free of ego, Arjuna set down his fear — and found the peace that never fades.',
               wordBreakdown: [
-                { word: 'nirmamo', devanagari: 'निर्ममः', meaning: 'without possessiveness', partOfSpeech: 'adjective' },
-                { word: 'nirahaṅkāraḥ', devanagari: 'निरहङ्कारः', meaning: 'without false ego', partOfSpeech: 'adjective' }
+                { word: 'vyakti', devanagari: 'व्यक्ति', meaning: 'person', partOfSpeech: 'noun' },
+                { word: 'kamnaon', devanagari: 'कामनाओं', meaning: 'desires', partOfSpeech: 'noun (plural)' },
+                { word: 'chhodkar', devanagari: 'छोड़कर', meaning: 'giving up / having left', partOfSpeech: 'verb' },
+                { word: 'ichchharahit', devanagari: 'इच्छारहित', meaning: 'free from craving', partOfSpeech: 'adjective' },
+                { word: 'mamta', devanagari: 'ममता', meaning: 'possessiveness', partOfSpeech: 'noun' },
+                { word: 'ahankar', devanagari: 'अहंकार', meaning: 'ego', partOfSpeech: 'noun' },
+                { word: 'mukt', devanagari: 'मुक्त', meaning: 'free', partOfSpeech: 'adjective' },
+                { word: 'wahi', devanagari: 'वही', meaning: 'he alone / that very one', partOfSpeech: 'pronoun' },
+                { word: 'shanti', devanagari: 'शांति', meaning: 'peace', partOfSpeech: 'noun' },
+                { word: 'prapt', devanagari: 'प्राप्त', meaning: 'attained / obtained', partOfSpeech: 'adjective' }
               ],
-              teachingSlides: [],
               questions: [],
               parts: [
                 {
                   partIndex: 1,
                   title: 'Part 1: Giving Up Desires',
-                  sanskrit: 'विहाय कामान्यः सर्वान्पुमांश्चरति निःस्पृहः',
-                  transliteration: 'vihāya kāmān yaḥ sarvān pumāṁś carati niḥspṛhaḥ',
-
-                  hindiRoman: 'vihaya kaman yah sarvan pumansh charati nihsprihah',
+                  hindiTranslationDevanagari: 'जो व्यक्ति सभी कामनाओं को छोड़कर इच्छारहित होकर विचरता है,',
+                  hindiTranslationRoman: 'jo vyakti sabhi kamnaon ko chhodkar ichchharahit hokar vicharta hai,',
                   translation: 'That person who relinquishes all desires and moves about free from longing.',
                   wordBreakdown: [
-                    { word: 'vihāya', devanagari: 'विहाय', meaning: 'giving up / abandoning', partOfSpeech: 'verb' },
-                    { word: 'kāmān', devanagari: 'कामान्', meaning: 'desires', partOfSpeech: 'noun' },
-                    { word: 'niḥspṛhaḥ', devanagari: 'निःस्पृहः', meaning: 'free from craving', partOfSpeech: 'adjective' }
+                    { word: 'vyakti', devanagari: 'व्यक्ति', meaning: 'person', partOfSpeech: 'noun' },
+                    { word: 'kamnaon', devanagari: 'कामनाओं', meaning: 'desires', partOfSpeech: 'noun (plural)' },
+                    { word: 'chhodkar', devanagari: 'छोड़कर', meaning: 'giving up / having left', partOfSpeech: 'verb' },
+                    { word: 'ichchharahit', devanagari: 'इच्छारहित', meaning: 'free from craving', partOfSpeech: 'adjective' }
                   ],
                   questions: [
                     {
-                      id: 'bg271_p1_q1',
+                      id: 'bg271_p1_w',
                       type: 'phrase_matching',
                       warmup: true,
-                      prompt: 'Match each word in Part 1 to its meaning.',
+                      targetWords: ['vyakti', 'kamnaon', 'chhodkar', 'ichchharahit'],
+                      prompt: 'Match each Hindi word to its meaning.',
                       pairs: [
-                        { sanskrit: 'vihāya', english: 'giving up / abandoning' },
-                        { sanskrit: 'kāmān', english: 'desires' },
-                        { sanskrit: 'niḥspṛhaḥ', english: 'free from craving' }
+                        { hindi: { dev: 'व्यक्ति', roman: 'vyakti' }, english: 'person' },
+                        { hindi: { dev: 'कामनाओं', roman: 'kamnaon' }, english: 'desires' },
+                        { hindi: { dev: 'छोड़कर', roman: 'chhodkar' }, english: 'giving up / having left' },
+                        { hindi: { dev: 'इच्छारहित', roman: 'ichchharahit' }, english: 'free from craving' }
                       ]
                     },
                     {
-                      id: 'bg271_p1_q2',
+                      id: 'bg271_p1_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrases to their meanings.',
+                      targetWords: ['vyakti', 'kamnaon', 'chhodkar', 'ichchharahit'],
+                      prompt: 'Now match the Hindi phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'vihāya kāmān', english: 'giving up desires' },
-                        { sanskrit: 'niḥspṛhaḥ', english: 'free from craving' }
+                        { hindi: { dev: 'जो व्यक्ति', roman: 'jo vyakti' }, english: 'the person who' },
+                        { hindi: { dev: 'सभी कामनाओं को छोड़कर', roman: 'sabhi kamnaon ko chhodkar' }, english: 'giving up all desires' },
+                        { hindi: { dev: 'इच्छारहित होकर विचरता है', roman: 'ichchharahit hokar vicharta hai' }, english: 'moves about free from craving' }
                       ]
+                    },
+                    {
+                      id: 'bg271_p1_c',
+                      type: 'fill_in_the_blank',
+                      targetWords: ['vyakti', 'kamnaon', 'chhodkar', 'ichchharahit'],
+                      prompt: 'Complete the English sentence.',
+                      hindi: { dev: 'सभी कामनाओं को छोड़कर', roman: 'sabhi kamnaon ko chhodkar' },
+                      sentence: 'Giving up all ____',
+                      options: ['desires', 'ego', 'peace', 'attains'],
+                      answer: 'desires',
+                      explanation: 'The full phrase: "Giving up all desires."'
                     },
                     {
                       id: 'bg271_p1_t',
                       type: 'translate',
+                      targetWords: ['vyakti', 'kamnaon', 'chhodkar', 'ichchharahit'],
                       prompt: 'Write this in English',
-                      sanskrit: 'vihāya kāmān niḥspṛhaḥ',
-                      answer: 'giving up desires free from craving',
-                      tiles: ['giving', 'up', 'desires', 'free', 'from', 'craving', 'ego', 'peace', 'attains']
-                    },
-                    {
-                      id: 'bg271_p1_r',
-                      type: 'sentence_rebuilding',
-                      prompt: 'Arrange the words to form Part 1 of the verse.',
-                      hint: 'That person who relinquishes all desires and moves about free from longing.',
-                      targetSentence: 'vihāya kāmān niḥspṛhaḥ',
-                      tiles: ['vihāya', 'kāmān', 'niḥspṛhaḥ'],
-                      explanation: 'Giving up desires, free from craving.'
+                      hindi: { dev: 'सभी कामनाओं को छोड़कर', roman: 'sabhi kamnaon ko chhodkar' },
+                      answer: 'giving up all desires',
+                      tiles: ['giving', 'up', 'all', 'desires', 'ego', 'peace', 'attains', 'craving'],
+                      explanation: 'That person who relinquishes all desires and moves about free from longing.'
                     }
                   ]
                 },
                 {
                   partIndex: 2,
                   title: 'Part 2: Without Ego & Possessiveness',
-                  sanskrit: 'निर्ममो निरहङ्कारः',
-                  transliteration: 'nirmamo nirahaṅkāraḥ',
-
-                  hindiRoman: 'nirmamo nirahankarah',
+                  hindiTranslationDevanagari: 'जो ममता और अहंकार से मुक्त है,',
+                  hindiTranslationRoman: 'jo mamta aur ahankar se mukt hai,',
                   translation: 'Free from possessiveness and false ego.',
                   wordBreakdown: [
-                    { word: 'nirmamo', devanagari: 'निर्ममः', meaning: 'without possessiveness', partOfSpeech: 'adjective' },
-                    { word: 'nirahaṅkāraḥ', devanagari: 'निरहङ्कारः', meaning: 'without false ego', partOfSpeech: 'adjective' }
+                    { word: 'mamta', devanagari: 'ममता', meaning: 'possessiveness', partOfSpeech: 'noun' },
+                    { word: 'ahankar', devanagari: 'अहंकार', meaning: 'ego', partOfSpeech: 'noun' },
+                    { word: 'mukt', devanagari: 'मुक्त', meaning: 'free', partOfSpeech: 'adjective' }
                   ],
                   questions: [
                     {
-                      id: 'bg271_p2_q1',
+                      id: 'bg271_p2_w',
                       type: 'phrase_matching',
                       warmup: true,
-                      prompt: 'Match each word in Part 2 to its meaning.',
+                      targetWords: ['mamta', 'ahankar', 'mukt'],
+                      prompt: 'Match each Hindi word to its meaning.',
                       pairs: [
-                        { sanskrit: 'nirmamo', english: 'without possessiveness' },
-                        { sanskrit: 'nirahaṅkāraḥ', english: 'without false ego' }
+                        { hindi: { dev: 'ममता', roman: 'mamta' }, english: 'possessiveness' },
+                        { hindi: { dev: 'अहंकार', roman: 'ahankar' }, english: 'ego' },
+                        { hindi: { dev: 'मुक्त', roman: 'mukt' }, english: 'free' }
                       ]
                     },
                     {
                       id: 'bg271_p2_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrases to their meanings.',
+                      targetWords: ['mamta', 'ahankar', 'mukt'],
+                      prompt: 'Now match the Hindi phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'nirmamo nirahaṅkāraḥ', english: 'free from possessiveness and false ego' },
-                        { sanskrit: 'vihāya kāmān niḥspṛhaḥ', english: 'giving up desires, free from craving' }
+                        { hindi: { dev: 'ममता और अहंकार', roman: 'mamta aur ahankar' }, english: 'possessiveness and ego' },
+                        { hindi: { dev: 'से मुक्त है', roman: 'se mukt hai' }, english: 'is free from' }
                       ]
+                    },
+                    {
+                      id: 'bg271_p2_c',
+                      type: 'fill_in_the_blank',
+                      targetWords: ['mamta', 'ahankar', 'mukt'],
+                      prompt: 'Complete the English sentence.',
+                      hindi: { dev: 'जो ममता और अहंकार से मुक्त है,', roman: 'jo mamta aur ahankar se mukt hai,' },
+                      sentence: 'Free from possessiveness and false ____',
+                      options: ['ego', 'desires', 'peace', 'attains'],
+                      answer: 'ego',
+                      explanation: 'The full phrase: "Free from possessiveness and false ego."'
                     },
                     {
                       id: 'bg271_p2_t',
                       type: 'translate',
+                      targetWords: ['mamta', 'ahankar', 'mukt'],
                       prompt: 'Write this in English',
-                      sanskrit: 'nirmamo nirahaṅkāraḥ',
+                      hindi: { dev: 'जो ममता और अहंकार से मुक्त है,', roman: 'jo mamta aur ahankar se mukt hai,' },
                       answer: 'free from possessiveness and false ego',
-                      tiles: ['free', 'from', 'possessiveness', 'and', 'false', 'ego', 'desires', 'peace', 'attains']
-                    },
-                    {
-                      id: 'bg271_p2_r',
-                      type: 'sentence_rebuilding',
-                      prompt: 'Arrange the words to form Part 2 of the verse.',
-                      targetSentence: 'vihāya kāmān niḥspṛhaḥ nirmamo nirahaṅkāraḥ',
-                      tiles: ['vihāya', 'kāmān', 'niḥspṛhaḥ', 'nirmamo', 'nirahaṅkāraḥ'],
-                      explanation: 'Giving up desires and craving, free from possessiveness and false ego.'
+                      tiles: ['free', 'from', 'possessiveness', 'and', 'false', 'ego', 'desires', 'peace', 'attains'],
+                      explanation: 'Free from possessiveness and false ego.'
                     }
                   ]
                 },
                 {
                   partIndex: 3,
                   title: 'Part 3: Attains Real Peace',
-                  sanskrit: 'स शान्तिमधिगच्छति',
-                  transliteration: 'sa śāntim adhigacchati',
-
-                  hindiRoman: 'sa shantim adhigachchhati',
+                  hindiTranslationDevanagari: 'वही शांति को प्राप्त होता है।',
+                  hindiTranslationRoman: 'wahi shanti ko prapt hota hai.',
                   translation: 'He alone attains real peace.',
                   wordBreakdown: [
-                    { word: 'sa', devanagari: 'सः', meaning: 'he', partOfSpeech: 'pronoun' },
-                    { word: 'śāntim', devanagari: 'शान्तिम्', meaning: 'peace', partOfSpeech: 'noun' },
-                    { word: 'adhigacchati', devanagari: 'अधिगच्छति', meaning: 'attains', partOfSpeech: 'verb' }
+                    { word: 'wahi', devanagari: 'वही', meaning: 'he alone / that very one', partOfSpeech: 'pronoun' },
+                    { word: 'shanti', devanagari: 'शांति', meaning: 'peace', partOfSpeech: 'noun' },
+                    { word: 'prapt', devanagari: 'प्राप्त', meaning: 'attained / obtained', partOfSpeech: 'adjective' }
                   ],
                   questions: [
                     {
-                      id: 'bg271_p3_q1',
+                      id: 'bg271_p3_w',
                       type: 'phrase_matching',
                       warmup: true,
-                      prompt: 'Match each word in Part 3 to its meaning.',
+                      targetWords: ['wahi', 'shanti', 'prapt'],
+                      prompt: 'Match each Hindi word to its meaning.',
                       pairs: [
-                        { sanskrit: 'sa', english: 'he' },
-                        { sanskrit: 'śāntim', english: 'peace' },
-                        { sanskrit: 'adhigacchati', english: 'attains' }
+                        { hindi: { dev: 'वही', roman: 'wahi' }, english: 'he alone / that very one' },
+                        { hindi: { dev: 'शांति', roman: 'shanti' }, english: 'peace' },
+                        { hindi: { dev: 'प्राप्त', roman: 'prapt' }, english: 'attained / obtained' }
                       ]
                     },
                     {
                       id: 'bg271_p3_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrases to their meanings.',
+                      targetWords: ['wahi', 'shanti', 'prapt'],
+                      prompt: 'Now match the Hindi phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'śāntim adhigacchati', english: 'attains peace' },
-                        { sanskrit: 'sa adhigacchati', english: 'he attains' }
+                        { hindi: { dev: 'वही', roman: 'wahi' }, english: 'he alone' },
+                        { hindi: { dev: 'शांति को प्राप्त होता है', roman: 'shanti ko prapt hota hai' }, english: 'attains peace' }
                       ]
+                    },
+                    {
+                      id: 'bg271_p3_c',
+                      type: 'fill_in_the_blank',
+                      targetWords: ['wahi', 'shanti', 'prapt'],
+                      prompt: 'Complete the English sentence.',
+                      hindi: { dev: 'वही शांति को प्राप्त होता है।', roman: 'wahi shanti ko prapt hota hai.' },
+                      sentence: 'He alone attains ____',
+                      options: ['peace', 'desires', 'ego', 'gives'],
+                      answer: 'peace',
+                      explanation: 'The full phrase: "He alone attains peace."'
                     },
                     {
                       id: 'bg271_p3_t',
                       type: 'translate',
+                      targetWords: ['wahi', 'shanti', 'prapt'],
                       prompt: 'Write this in English',
-                      sanskrit: 'sa śāntim adhigacchati',
-                      answer: 'he attains peace',
-                      tiles: ['he', 'attains', 'peace', 'desires', 'ego', 'gives']
-                    },
-                    {
-                      id: 'bg271_p3_r',
-                      type: 'sentence_rebuilding',
-                      prompt: 'Arrange the words to form Part 3 of the verse.',
-                      hint: 'He alone attains real peace.',
-                      targetSentence: 'sa śāntim adhigacchati',
-                      tiles: ['sa', 'śāntim', 'adhigacchati'],
+                      hindi: { dev: 'वही शांति को प्राप्त होता है।', roman: 'wahi shanti ko prapt hota hai.' },
+                      answer: 'he alone attains peace',
+                      tiles: ['he', 'alone', 'attains', 'peace', 'desires', 'ego', 'gives'],
                       explanation: 'He alone attains real peace.'
                     },
                     {
-                      id: 'bg271_p3_q2',
+                      id: 'bg271_p3_q',
                       type: 'multiple_choice',
                       prompt: 'Who attains real peace according to BG 2.71?',
                       options: [
-                        { text: 'One who lives free from false ego ("nirahankarah") and possessiveness ("nirmamah").', isCorrect: true, explanation: 'Correct!' },
+                        { text: 'One who lives free from false ego and possessiveness.', isCorrect: true, explanation: 'Correct!' },
                         { text: 'One who accumulates physical wealth.', isCorrect: false, explanation: 'Incorrect.' }
                       ]
                     }
@@ -1285,12 +1426,78 @@ export const gitaData: GitaData = {
               ],
               finalSynthesisQuestions: [
                 {
-                  id: 'bg271_syn_q1',
-                  type: 'sentence_rebuilding',
-                  prompt: 'FULL VERSE SYNTHESIS: Rebuild the final line of BG 2.71!',
-                  targetSentence: 'nirmamo nirahaṅkāraḥ sa śāntim adhigacchati',
-                  tiles: ['nirmamo', 'nirahaṅkāraḥ', 'sa', 'śāntim', 'adhigacchati'],
-                  explanation: '"nirmamo nirahankarah sa shantim adhigachchhati" — Without possessiveness or false ego, one attains supreme peace.'
+                  id: 'bg271_syn_m',
+                  type: 'phrase_matching',
+                  targetWords: [
+                    'vyakti',
+                    'kamnaon',
+                    'chhodkar',
+                    'ichchharahit',
+                    'mamta',
+                    'ahankar',
+                    'mukt',
+                    'wahi',
+                    'shanti',
+                    'prapt'
+                  ],
+                  prompt: 'Match every phrase of the verse to its meaning.',
+                  pairs: [
+                    {
+                      hindi: { dev: 'जो व्यक्ति सभी कामनाओं को छोड़कर इच्छारहित होकर विचरता है,', roman: 'jo vyakti sabhi kamnaon ko chhodkar ichchharahit hokar vicharta hai,' },
+                      english: 'a person who gives up all desires and lives free from craving'
+                    },
+                    { hindi: { dev: 'जो ममता और अहंकार से मुक्त है,', roman: 'jo mamta aur ahankar se mukt hai,' }, english: 'free from possessiveness and false ego' },
+                    { hindi: { dev: 'वही शांति को प्राप्त होता है।', roman: 'wahi shanti ko prapt hota hai.' }, english: 'he alone attains peace' }
+                  ]
+                },
+                {
+                  id: 'bg271_syn_t1',
+                  type: 'translate',
+                  targetWords: ['vyakti', 'kamnaon', 'chhodkar', 'ichchharahit'],
+                  prompt: 'Write this in English',
+                  hindi: { dev: 'जो व्यक्ति सभी कामनाओं को छोड़कर इच्छारहित होकर विचरता है,', roman: 'jo vyakti sabhi kamnaon ko chhodkar ichchharahit hokar vicharta hai,' },
+                  answer: 'a person who gives up all desires and lives free from craving',
+                  tiles: [
+                    'a',
+                    'person',
+                    'who',
+                    'gives',
+                    'up',
+                    'all',
+                    'desires',
+                    'and',
+                    'lives',
+                    'free',
+                    'from',
+                    'craving',
+                    'ego',
+                    'peace',
+                    'attains'
+                  ],
+                  explanation: 'That person who relinquishes all desires and moves about free from longing.'
+                },
+                {
+                  id: 'bg271_syn_t2',
+                  type: 'translate',
+                  targetWords: ['mamta', 'ahankar', 'mukt', 'wahi', 'shanti', 'prapt'],
+                  prompt: 'Write this in English',
+                  hindi: { dev: 'जो ममता और अहंकार से मुक्त है, वही शांति को प्राप्त होता है।', roman: 'jo mamta aur ahankar se mukt hai, wahi shanti ko prapt hota hai.' },
+                  answer: 'free from possessiveness and false ego he alone attains peace',
+                  tiles: [
+                    'free',
+                    'from',
+                    'possessiveness',
+                    'and',
+                    'false',
+                    'ego',
+                    'he',
+                    'alone',
+                    'attains',
+                    'peace',
+                    'desires',
+                    'gives'
+                  ],
+                  explanation: 'Free from possessiveness and false ego. He alone attains real peace.'
                 }
               ]
             }
@@ -1306,21 +1513,8 @@ export const gitaData: GitaData = {
               verseRef: 'BG 2.13',
               essence: 'The soul passes from childhood to old age to a new body. The wise are not shaken by it.',
               verseSanskrit: 'देहिनोऽस्मिन् यथा देहे कौमारं यौवनं जरा ।\nतथा देहान्तरप्राप्तिर्धीरस्तत्र न मुह्यति ॥',
-              verseTransliteration: 'dehino \'smin yathā dehe kaumāraṁ yauvanaṁ jarā\ntathā dehāntara-prāptir dhīras tatra na muhyati',
-
-              verseHindiRoman: 'dehino \'smin yatha dehe kaumaram yauvanam jara\ntatha dehantara-praptir dhiras tatra na muhyati',
-              verseWordGuide: [
-                { devanagari: 'देहिनोऽस्मिन्', roman: "dehino-'smin" },
-                { devanagari: 'यथा', roman: 'yathā' },
-                { devanagari: 'देहे', roman: 'dehe' },
-                { devanagari: 'कौमारं', roman: 'kaumāraṁ' },
-                { devanagari: 'यौवनं', roman: 'yauvanaṁ' },
-                { devanagari: 'जरा', roman: 'jarā' },
-                { devanagari: 'तथा', roman: 'tathā' },
-                { devanagari: 'देहान्तरप्राप्तिर्धीरस्तत्र', roman: 'dehāntara-prāptir-dhīras-tatra' },
-                { devanagari: 'न', roman: 'na' },
-                { devanagari: 'मुह्यति', roman: 'muhyati' }
-              ],
+              hindiTranslationDevanagari: 'जैसे इस शरीर में देहधारी आत्मा को बचपन, जवानी और बुढ़ापा मिलते हैं,\nवैसे ही दूसरा शरीर भी मिलता है; धैर्यवान व्यक्ति इससे मोहित नहीं होता।',
+              hindiTranslationRoman: 'jaise is sharir mein dehdhari aatma ko bachpan, jawani aur budhapa milte hain,\nwaise hi doosra sharir bhi milta hai; dhairyavan vyakti isse mohit nahi hota.',
               translation: 'As the embodied soul continuously passes, in this body, from childhood to youth to old age, the soul similarly passes into another body at death. The wise are not deluded by this change.',
               purport: 'This verse opens the chapter\'s central teaching: the self within the body is not the body itself. A person already accepts, without distress, that the body of childhood is not the body of old age — Krishna asks Arjuna to extend that same acceptance to the passage from one body to the next.',
               commentary: {
@@ -1331,230 +1525,267 @@ export const gitaData: GitaData = {
               reflectionPrompt: 'Think of an earlier version of yourself — as a child, or years younger. That body and that time are gone, yet something in you carried through. What was it?',
               storyCaption: 'Krishna looked at the warrior who had once been a boy on these same fields. "The body you had then is gone," he said, "yet you remain. Death is only one more such change."',
               wordBreakdown: [
-                { word: 'dehinaḥ', devanagari: 'देहिनः', meaning: 'of the embodied soul', partOfSpeech: 'noun (genitive)' },
-                { word: 'dehāntara-prāptiḥ', devanagari: 'देहान्तरप्राप्तिः', meaning: 'attainment of another body', partOfSpeech: 'compound noun' }
+                { word: 'jaise', devanagari: 'जैसे', meaning: 'just as', partOfSpeech: 'adverb' },
+                { word: 'sharir', devanagari: 'शरीर', meaning: 'body', partOfSpeech: 'noun' },
+                { word: 'dehdhari', devanagari: 'देहधारी', meaning: 'embodied one', partOfSpeech: 'adjective' },
+                { word: 'aatma', devanagari: 'आत्मा', meaning: 'soul', partOfSpeech: 'noun' },
+                { word: 'bachpan', devanagari: 'बचपन', meaning: 'childhood', partOfSpeech: 'noun' },
+                { word: 'jawani', devanagari: 'जवानी', meaning: 'youth', partOfSpeech: 'noun' },
+                { word: 'budhapa', devanagari: 'बुढ़ापा', meaning: 'old age', partOfSpeech: 'noun' },
+                { word: 'waise', devanagari: 'वैसे', meaning: 'similarly / in the same way', partOfSpeech: 'adverb' },
+                { word: 'doosra', devanagari: 'दूसरा', meaning: 'another / other', partOfSpeech: 'adjective' },
+                { word: 'milta', devanagari: 'मिलता', meaning: 'is obtained / received', partOfSpeech: 'verb' },
+                { word: 'dhairyavan', devanagari: 'धैर्यवान', meaning: 'wise / steadfast', partOfSpeech: 'adjective' },
+                { word: 'vyakti', devanagari: 'व्यक्ति', meaning: 'person', partOfSpeech: 'noun' },
+                { word: 'mohit', devanagari: 'मोहित', meaning: 'deluded / bewildered', partOfSpeech: 'adjective' },
+                { word: 'nahi', devanagari: 'नहीं', meaning: 'not', partOfSpeech: 'adverb' }
               ],
-              teachingSlides: [],
               questions: [],
               parts: [
                 {
                   partIndex: 1,
                   title: 'Part 1: The Embodied Soul',
-                  sanskrit: 'देहिनोऽस्मिन् यथा देहे',
-                  transliteration: "dehino 'smin yathā dehe",
+                  hindiTranslationDevanagari: 'जैसे इस शरीर में देहधारी आत्मा को',
+                  hindiTranslationRoman: 'jaise is sharir mein dehdhari aatma ko',
                   translation: 'As, for the embodied soul, in this body...',
                   wordBreakdown: [
-                    { word: 'dehinaḥ', devanagari: 'देहिनः', meaning: 'of the embodied soul', partOfSpeech: 'noun (genitive)' },
-                    { word: 'asmin', devanagari: 'अस्मिन्', meaning: 'in this', partOfSpeech: 'pronoun (locative)' },
-                    { word: 'yathā', devanagari: 'यथा', meaning: 'just as', partOfSpeech: 'adverb' },
-                    { word: 'dehe', devanagari: 'देहे', meaning: 'in the body', partOfSpeech: 'noun (locative)' }
+                    { word: 'jaise', devanagari: 'जैसे', meaning: 'just as', partOfSpeech: 'adverb' },
+                    { word: 'sharir', devanagari: 'शरीर', meaning: 'body', partOfSpeech: 'noun' },
+                    { word: 'dehdhari', devanagari: 'देहधारी', meaning: 'embodied one', partOfSpeech: 'adjective' },
+                    { word: 'aatma', devanagari: 'आत्मा', meaning: 'soul', partOfSpeech: 'noun' }
                   ],
                   questions: [
                     {
-                      id: 'bg213_p1_q1',
+                      id: 'bg213_p1_w',
                       type: 'phrase_matching',
                       warmup: true,
-                      prompt: 'Match each word in Part 1 to its meaning.',
+                      targetWords: ['jaise', 'sharir', 'dehdhari', 'aatma'],
+                      prompt: 'Match each Hindi word to its meaning.',
                       pairs: [
-                        { sanskrit: 'dehinaḥ', english: 'of the embodied soul' },
-                        { sanskrit: 'asmin', english: 'in this' },
-                        { sanskrit: 'yathā', english: 'just as' },
-                        { sanskrit: 'dehe', english: 'in the body' }
+                        { hindi: { dev: 'जैसे', roman: 'jaise' }, english: 'just as' },
+                        { hindi: { dev: 'शरीर', roman: 'sharir' }, english: 'body' },
+                        { hindi: { dev: 'देहधारी', roman: 'dehdhari' }, english: 'embodied one' },
+                        { hindi: { dev: 'आत्मा', roman: 'aatma' }, english: 'soul' }
                       ]
                     },
                     {
-                      id: 'bg213_p1_q2',
+                      id: 'bg213_p1_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrases to their meanings.',
+                      targetWords: ['jaise', 'sharir', 'dehdhari', 'aatma'],
+                      prompt: 'Now match the Hindi phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'asmin dehe', english: 'in this body' },
-                        { sanskrit: 'dehinaḥ', english: 'of the embodied soul' }
+                        { hindi: { dev: 'इस शरीर में', roman: 'is sharir mein' }, english: 'in this body' },
+                        { hindi: { dev: 'देहधारी आत्मा को', roman: 'dehdhari aatma ko' }, english: 'for the embodied soul' }
                       ]
+                    },
+                    {
+                      id: 'bg213_p1_c',
+                      type: 'fill_in_the_blank',
+                      targetWords: ['jaise', 'sharir', 'dehdhari', 'aatma'],
+                      prompt: 'Complete the English sentence.',
+                      hindi: { dev: 'इस शरीर में', roman: 'is sharir mein' },
+                      sentence: 'In this ____',
+                      options: ['body', 'soul', 'old', 'another'],
+                      answer: 'body',
+                      explanation: 'The full phrase: "In this body."'
                     },
                     {
                       id: 'bg213_p1_t',
                       type: 'translate',
+                      targetWords: ['jaise', 'sharir', 'dehdhari', 'aatma'],
                       prompt: 'Write this in English',
-                      sanskrit: 'asmin dehe',
+                      hindi: { dev: 'इस शरीर में', roman: 'is sharir mein' },
                       answer: 'in this body',
-                      tiles: ['in', 'this', 'body', 'soul', 'old', 'another']
-                    },
-                    {
-                      id: 'bg213_p1_q3',
-                      type: 'sentence_rebuilding',
-                      prompt: 'Arrange the words to form Part 1 of the verse.',
-                      hint: 'As, for the embodied soul, in this body...',
-                      targetSentence: 'dehinaḥ asmin yathā dehe',
-                      tiles: ['dehinaḥ', 'asmin', 'yathā', 'dehe'],
-                      explanation: '"dehinaḥ asmin yathā dehe" — As, for the embodied soul, in this body.'
+                      tiles: ['in', 'this', 'body', 'soul', 'old', 'another'],
+                      explanation: 'As, for the embodied soul, in this body...'
                     }
                   ]
                 },
                 {
                   partIndex: 2,
                   title: 'Part 2: The Stages of Life',
-                  sanskrit: 'कौमारं यौवनं जरा',
-                  transliteration: 'kaumāraṁ yauvanaṁ jarā',
-
-                  hindiRoman: 'kaumaram yauvanam jara',
+                  hindiTranslationDevanagari: 'बचपन, जवानी और बुढ़ापा मिलते हैं,',
+                  hindiTranslationRoman: 'bachpan, jawani aur budhapa milte hain,',
                   translation: 'childhood, youth, and old age.',
                   wordBreakdown: [
-                    { word: 'kaumāram', devanagari: 'कौमारम्', meaning: 'childhood', partOfSpeech: 'noun' },
-                    { word: 'yauvanam', devanagari: 'यौवनम्', meaning: 'youth', partOfSpeech: 'noun' },
-                    { word: 'jarā', devanagari: 'जरा', meaning: 'old age', partOfSpeech: 'noun' }
+                    { word: 'bachpan', devanagari: 'बचपन', meaning: 'childhood', partOfSpeech: 'noun' },
+                    { word: 'jawani', devanagari: 'जवानी', meaning: 'youth', partOfSpeech: 'noun' },
+                    { word: 'budhapa', devanagari: 'बुढ़ापा', meaning: 'old age', partOfSpeech: 'noun' }
                   ],
                   questions: [
                     {
-                      id: 'bg213_p2_q1',
+                      id: 'bg213_p2_w',
                       type: 'phrase_matching',
                       warmup: true,
-                      prompt: 'Match each word in Part 2 to its meaning.',
+                      targetWords: ['bachpan', 'jawani', 'budhapa'],
+                      prompt: 'Match each Hindi word to its meaning.',
                       pairs: [
-                        { sanskrit: 'kaumāram', english: 'childhood' },
-                        { sanskrit: 'yauvanam', english: 'youth' },
-                        { sanskrit: 'jarā', english: 'old age' }
+                        { hindi: { dev: 'बचपन', roman: 'bachpan' }, english: 'childhood' },
+                        { hindi: { dev: 'जवानी', roman: 'jawani' }, english: 'youth' },
+                        { hindi: { dev: 'बुढ़ापा', roman: 'budhapa' }, english: 'old age' }
                       ]
                     },
                     {
                       id: 'bg213_p2_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrases to their meanings.',
+                      targetWords: ['bachpan', 'jawani', 'budhapa'],
+                      prompt: 'Now match the Hindi phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'kaumāram yauvanam', english: 'childhood and youth' },
-                        { sanskrit: 'jarā', english: 'old age' },
-                        { sanskrit: 'asmin dehe', english: 'in this body' }
+                        { hindi: { dev: 'बचपन', roman: 'bachpan' }, english: 'childhood' },
+                        { hindi: { dev: 'जवानी और बुढ़ापा', roman: 'jawani aur budhapa' }, english: 'youth and old age' }
                       ]
+                    },
+                    {
+                      id: 'bg213_p2_c',
+                      type: 'fill_in_the_blank',
+                      targetWords: ['bachpan', 'jawani', 'budhapa'],
+                      prompt: 'Complete the English sentence.',
+                      hindi: { dev: 'बचपन, जवानी और बुढ़ापा', roman: 'bachpan, jawani aur budhapa' },
+                      sentence: 'Childhood youth and old ____',
+                      options: ['age', 'body', 'wise', 'death'],
+                      answer: 'age',
+                      explanation: 'The full phrase: "Childhood youth and old age."'
                     },
                     {
                       id: 'bg213_p2_t',
                       type: 'translate',
+                      targetWords: ['bachpan', 'jawani', 'budhapa'],
                       prompt: 'Write this in English',
-                      sanskrit: 'kaumāram yauvanam jarā',
+                      hindi: { dev: 'बचपन, जवानी और बुढ़ापा', roman: 'bachpan, jawani aur budhapa' },
                       answer: 'childhood youth and old age',
-                      tiles: ['childhood', 'youth', 'and', 'old', 'age', 'body', 'wise', 'death']
-                    },
-                    {
-                      id: 'bg213_p2_r',
-                      type: 'sentence_rebuilding',
-                      prompt: 'Arrange the words to form Part 2 of the verse.',
-                      hint: 'childhood, youth, and old age.',
-                      targetSentence: 'kaumāram yauvanam jarā',
-                      tiles: ['kaumāram', 'yauvanam', 'jarā'],
-                      explanation: 'Childhood, youth, and old age.'
+                      tiles: ['childhood', 'youth', 'and', 'old', 'age', 'body', 'wise', 'death'],
+                      explanation: 'childhood, youth, and old age.'
                     }
                   ]
                 },
                 {
                   partIndex: 3,
                   title: 'Part 3: Passing to Another Body',
-                  sanskrit: 'तथा देहान्तरप्राप्तिर्धीरस्तत्र',
-                  transliteration: 'tathā dehāntara-prāptir dhīras tatra',
-
-                  hindiRoman: 'tatha dehantara-praptir dhiras tatra',
+                  hindiTranslationDevanagari: 'वैसे ही दूसरा शरीर भी मिलता है;',
+                  hindiTranslationRoman: 'waise hi doosra sharir bhi milta hai;',
                   translation: 'similarly, the wise are not bewildered by the attainment of another body.',
                   wordBreakdown: [
-                    { word: 'tathā', devanagari: 'तथा', meaning: 'similarly', partOfSpeech: 'adverb' },
-                    { word: 'dehāntara-prāptiḥ', devanagari: 'देहान्तरप्राप्तिः', meaning: 'attainment of another body', partOfSpeech: 'compound noun' },
-                    { word: 'dhīraḥ', devanagari: 'धीरः', meaning: 'the wise / sober person', partOfSpeech: 'noun' },
-                    { word: 'tatra', devanagari: 'तत्र', meaning: 'therein / at that', partOfSpeech: 'adverb' }
+                    { word: 'waise', devanagari: 'वैसे', meaning: 'similarly / in the same way', partOfSpeech: 'adverb' },
+                    { word: 'doosra', devanagari: 'दूसरा', meaning: 'another / other', partOfSpeech: 'adjective' },
+                    { word: 'sharir', devanagari: 'शरीर', meaning: 'body', partOfSpeech: 'noun' },
+                    { word: 'milta', devanagari: 'मिलता', meaning: 'is obtained / received', partOfSpeech: 'verb' }
                   ],
                   questions: [
                     {
-                      id: 'bg213_p3_q1',
+                      id: 'bg213_p3_w',
                       type: 'phrase_matching',
                       warmup: true,
-                      prompt: 'Match each word in Part 3 to its meaning.',
+                      targetWords: ['waise', 'doosra', 'sharir', 'milta'],
+                      prompt: 'Match each Hindi word to its meaning.',
                       pairs: [
-                        { sanskrit: 'tathā', english: 'similarly' },
-                        { sanskrit: 'dehāntara-prāptiḥ', english: 'attainment of another body' },
-                        { sanskrit: 'dhīraḥ', english: 'the wise / sober person' },
-                        { sanskrit: 'tatra', english: 'therein / at that' }
+                        { hindi: { dev: 'वैसे', roman: 'waise' }, english: 'similarly / in the same way' },
+                        { hindi: { dev: 'दूसरा', roman: 'doosra' }, english: 'another / other' },
+                        { hindi: { dev: 'शरीर', roman: 'sharir' }, english: 'body' },
+                        { hindi: { dev: 'मिलता', roman: 'milta' }, english: 'is obtained / received' }
                       ]
                     },
                     {
-                      id: 'bg213_p3_q2',
+                      id: 'bg213_p3_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrases to their meanings.',
+                      targetWords: ['waise', 'doosra', 'sharir', 'milta'],
+                      prompt: 'Now match the Hindi phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'tathā dehāntara-prāptiḥ', english: 'similarly, attaining another body' },
-                        { sanskrit: 'dhīraḥ tatra', english: 'the wise person, in that' }
+                        { hindi: { dev: 'वैसे ही', roman: 'waise hi' }, english: 'in the same way' },
+                        { hindi: { dev: 'दूसरा शरीर', roman: 'doosra sharir' }, english: 'another body' },
+                        { hindi: { dev: 'भी मिलता है', roman: 'bhi milta hai' }, english: 'is also obtained' }
                       ]
+                    },
+                    {
+                      id: 'bg213_p3_c',
+                      type: 'fill_in_the_blank',
+                      targetWords: ['waise', 'doosra', 'sharir', 'milta'],
+                      prompt: 'Complete the English sentence.',
+                      hindi: { dev: 'वैसे ही दूसरा शरीर भी मिलता है;', roman: 'waise hi doosra sharir bhi milta hai;' },
+                      sentence: 'In the same way another body is ____',
+                      options: ['obtained', 'wise', 'youth', 'deluded'],
+                      answer: 'obtained',
+                      explanation: 'The full phrase: "In the same way another body is obtained."'
                     },
                     {
                       id: 'bg213_p3_t',
                       type: 'translate',
+                      targetWords: ['waise', 'doosra', 'sharir', 'milta'],
                       prompt: 'Write this in English',
-                      sanskrit: 'tathā dehāntara-prāptiḥ',
-                      answer: 'similarly attaining another body',
-                      tiles: ['similarly', 'attaining', 'another', 'body', 'wise', 'youth', 'deluded']
-                    },
-                    {
-                      id: 'bg213_p3_r',
-                      type: 'sentence_rebuilding',
-                      prompt: 'Arrange the words to form Part 3 of the verse.',
-                      hint: 'similarly, the wise are not bewildered by the attainment of another body.',
-                      targetSentence: 'tathā dehāntara-prāptiḥ dhīraḥ tatra',
-                      tiles: ['tathā', 'dehāntara-prāptiḥ', 'dhīraḥ', 'tatra'],
-                      explanation: 'Similarly, the wise person is not bewildered by the attainment of another body.'
+                      hindi: { dev: 'वैसे ही दूसरा शरीर भी मिलता है;', roman: 'waise hi doosra sharir bhi milta hai;' },
+                      answer: 'in the same way another body is obtained',
+                      tiles: ['in', 'the', 'same', 'way', 'another', 'body', 'is', 'obtained', 'wise', 'youth', 'deluded'],
+                      explanation: 'similarly, the wise are not bewildered by the attainment of another body.'
                     }
                   ]
                 },
                 {
                   partIndex: 4,
                   title: 'Part 4: Not Bewildered',
-                  sanskrit: 'न मुह्यति',
-                  transliteration: 'na muhyati',
-
-                  hindiRoman: 'na muhyati',
+                  hindiTranslationDevanagari: 'धैर्यवान व्यक्ति इससे मोहित नहीं होता।',
+                  hindiTranslationRoman: 'dhairyavan vyakti isse mohit nahi hota.',
                   translation: 'is not deluded.',
                   wordBreakdown: [
-                    { word: 'na', devanagari: 'न', meaning: 'not', partOfSpeech: 'particle' },
-                    { word: 'muhyati', devanagari: 'मुह्यति', meaning: 'is bewildered / deluded', partOfSpeech: 'verb' }
+                    { word: 'dhairyavan', devanagari: 'धैर्यवान', meaning: 'wise / steadfast', partOfSpeech: 'adjective' },
+                    { word: 'vyakti', devanagari: 'व्यक्ति', meaning: 'person', partOfSpeech: 'noun' },
+                    { word: 'mohit', devanagari: 'मोहित', meaning: 'deluded / bewildered', partOfSpeech: 'adjective' },
+                    { word: 'nahi', devanagari: 'नहीं', meaning: 'not', partOfSpeech: 'adverb' }
                   ],
                   questions: [
                     {
-                      id: 'bg213_p4_q1',
+                      id: 'bg213_p4_w',
                       type: 'phrase_matching',
                       warmup: true,
-                      prompt: 'Match each word in Part 4 to its meaning.',
+                      targetWords: ['dhairyavan', 'vyakti', 'mohit', 'nahi'],
+                      prompt: 'Match each Hindi word to its meaning.',
                       pairs: [
-                        { sanskrit: 'na', english: 'not' },
-                        { sanskrit: 'muhyati', english: 'is bewildered / deluded' }
+                        { hindi: { dev: 'धैर्यवान', roman: 'dhairyavan' }, english: 'wise / steadfast' },
+                        { hindi: { dev: 'व्यक्ति', roman: 'vyakti' }, english: 'person' },
+                        { hindi: { dev: 'मोहित', roman: 'mohit' }, english: 'deluded / bewildered' },
+                        { hindi: { dev: 'नहीं', roman: 'nahi' }, english: 'not' }
                       ]
                     },
                     {
                       id: 'bg213_p4_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrases to their meanings.',
+                      targetWords: ['dhairyavan', 'vyakti', 'mohit', 'nahi'],
+                      prompt: 'Now match the Hindi phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'na muhyati', english: 'is not deluded' },
-                        { sanskrit: 'dhīraḥ tatra', english: 'the wise person, in that' }
+                        { hindi: { dev: 'धैर्यवान व्यक्ति', roman: 'dhairyavan vyakti' }, english: 'the wise person' },
+                        { hindi: { dev: 'मोहित नहीं होता', roman: 'mohit nahi hota' }, english: 'is not deluded' }
                       ]
+                    },
+                    {
+                      id: 'bg213_p4_c',
+                      type: 'fill_in_the_blank',
+                      targetWords: ['dhairyavan', 'vyakti', 'mohit', 'nahi'],
+                      prompt: 'Complete the English sentence.',
+                      hindi: { dev: 'धैर्यवान व्यक्ति इससे मोहित नहीं होता।', roman: 'dhairyavan vyakti isse mohit nahi hota.' },
+                      sentence: 'The wise person is not ____',
+                      options: ['deluded', 'body', 'youth', 'born'],
+                      answer: 'deluded',
+                      explanation: 'The full phrase: "The wise person is not deluded."'
                     },
                     {
                       id: 'bg213_p4_t',
                       type: 'translate',
+                      targetWords: ['dhairyavan', 'vyakti', 'mohit', 'nahi'],
                       prompt: 'Write this in English',
-                      sanskrit: 'dhīraḥ tatra na muhyati',
+                      hindi: { dev: 'धैर्यवान व्यक्ति इससे मोहित नहीं होता।', roman: 'dhairyavan vyakti isse mohit nahi hota.' },
                       answer: 'the wise person is not deluded',
-                      tiles: ['the', 'wise', 'person', 'is', 'not', 'deluded', 'body', 'youth', 'born']
+                      tiles: ['the', 'wise', 'person', 'is', 'not', 'deluded', 'body', 'youth', 'born'],
+                      explanation: 'is not deluded.'
                     },
                     {
-                      id: 'bg213_p4_r',
-                      type: 'sentence_rebuilding',
-                      prompt: 'Arrange the words to form Part 4 of the verse.',
-                      hint: 'is not deluded.',
-                      targetSentence: 'dhīraḥ tatra na muhyati',
-                      tiles: ['dhīraḥ', 'tatra', 'na', 'muhyati'],
-                      explanation: 'The wise person is not deluded by this.'
-                    },
-                    {
-                      id: 'bg213_p4_q2',
+                      id: 'bg213_p4_q',
                       type: 'multiple_choice',
                       prompt: 'According to BG 2.13, how does the wise person respond to the soul passing into a new body?',
                       options: [
-                        { text: 'They are not bewildered by it, just as they were not bewildered by aging from childhood to youth.', isCorrect: true, explanation: 'Correct! Change of body is compared to the changes already accepted within one life.' },
-                        { text: 'They become anxious and afraid.', isCorrect: false, explanation: 'Incorrect. Krishna says the wise are not deluded ("na muhyati") by this.' }
+                        {
+                          text: 'They are not bewildered by it, just as they were not bewildered by aging from childhood to youth.',
+                          isCorrect: true,
+                          explanation: 'Correct! Change of body is compared to the changes already accepted within one life.'
+                        },
+                        { text: 'They become anxious and afraid.', isCorrect: false, explanation: 'Incorrect. Krishna says the wise are not deluded by this.' }
                       ]
                     }
                   ]
@@ -1562,26 +1793,109 @@ export const gitaData: GitaData = {
               ],
               finalSynthesisQuestions: [
                 {
-                  id: 'bg213_syn_q1',
-                  type: 'sentence_rebuilding',
-                  prompt: 'FULL VERSE SYNTHESIS: Arrange the first half of BG 2.13!',
-                  targetSentence: 'dehinaḥ asmin yathā dehe kaumāram yauvanam jarā',
-                  tiles: ['dehinaḥ', 'asmin', 'yathā', 'dehe', 'kaumāram', 'yauvanam', 'jarā'],
-                  explanation: '"dehino \'smin yathā dehe kaumāraṁ yauvanaṁ jarā" — As, for the embodied soul in this body, there is childhood, youth, and old age.'
+                  id: 'bg213_syn_m',
+                  type: 'phrase_matching',
+                  targetWords: [
+                    'jaise',
+                    'sharir',
+                    'dehdhari',
+                    'aatma',
+                    'bachpan',
+                    'jawani',
+                    'budhapa',
+                    'waise',
+                    'doosra',
+                    'milta',
+                    'dhairyavan',
+                    'vyakti',
+                    'mohit',
+                    'nahi'
+                  ],
+                  prompt: 'Match every phrase of the verse to its meaning.',
+                  pairs: [
+                    {
+                      hindi: { dev: 'जैसे इस शरीर में देहधारी आत्मा को', roman: 'jaise is sharir mein dehdhari aatma ko' },
+                      english: 'for the embodied soul in this body'
+                    },
+                    {
+                      hindi: { dev: 'बचपन, जवानी और बुढ़ापा मिलते हैं,', roman: 'bachpan, jawani aur budhapa milte hain,' },
+                      english: 'childhood youth and old age come'
+                    },
+                    {
+                      hindi: { dev: 'वैसे ही दूसरा शरीर भी मिलता है;', roman: 'waise hi doosra sharir bhi milta hai;' },
+                      english: 'in the same way another body is obtained'
+                    },
+                    {
+                      hindi: { dev: 'धैर्यवान व्यक्ति इससे मोहित नहीं होता।', roman: 'dhairyavan vyakti isse mohit nahi hota.' },
+                      english: 'the wise person is not deluded'
+                    }
+                  ]
                 },
                 {
-                  id: 'bg213_syn_q2',
-                  type: 'sentence_rebuilding',
-                  prompt: 'FULL VERSE SYNTHESIS: Arrange the second half of BG 2.13!',
-                  targetSentence: 'tathā dehāntara-prāptiḥ dhīraḥ tatra na muhyati',
-                  tiles: ['tathā', 'dehāntara-prāptiḥ', 'dhīraḥ', 'tatra', 'na', 'muhyati'],
-                  explanation: '"tathā dehāntara-prāptir dhīras tatra na muhyati" — Similarly, the wise are not bewildered by the soul\'s passing into another body.'
+                  id: 'bg213_syn_t1',
+                  type: 'translate',
+                  targetWords: ['jaise', 'sharir', 'dehdhari', 'aatma', 'bachpan', 'jawani', 'budhapa'],
+                  prompt: 'Write this in English',
+                  hindi: {
+                    dev: 'जैसे इस शरीर में देहधारी आत्मा को बचपन, जवानी और बुढ़ापा मिलते हैं,',
+                    roman: 'jaise is sharir mein dehdhari aatma ko bachpan, jawani aur budhapa milte hain,'
+                  },
+                  answer: 'for the embodied soul in this body childhood youth and old age come',
+                  tiles: [
+                    'for',
+                    'the',
+                    'embodied',
+                    'soul',
+                    'in',
+                    'this',
+                    'body',
+                    'childhood',
+                    'youth',
+                    'and',
+                    'old',
+                    'age',
+                    'come',
+                    'another',
+                    'wise',
+                    'death'
+                  ],
+                  explanation: 'As, for the embodied soul, in this body... childhood, youth, and old age.'
+                },
+                {
+                  id: 'bg213_syn_t2',
+                  type: 'translate',
+                  targetWords: ['waise', 'doosra', 'sharir', 'milta', 'dhairyavan', 'vyakti', 'mohit', 'nahi'],
+                  prompt: 'Write this in English',
+                  hindi: {
+                    dev: 'वैसे ही दूसरा शरीर भी मिलता है; धैर्यवान व्यक्ति इससे मोहित नहीं होता।',
+                    roman: 'waise hi doosra sharir bhi milta hai; dhairyavan vyakti isse mohit nahi hota.'
+                  },
+                  answer: 'in the same way another body is obtained the wise person is not deluded',
+                  tiles: [
+                    'in',
+                    'the',
+                    'same',
+                    'way',
+                    'another',
+                    'body',
+                    'is',
+                    'obtained',
+                    'the',
+                    'wise',
+                    'person',
+                    'is',
+                    'not',
+                    'deluded',
+                    'youth',
+                    'born'
+                  ],
+                  explanation: 'similarly, the wise are not bewildered by the attainment of another body. is not deluded.'
                 },
                 {
                   id: 'bg213_syn_q3',
                   type: 'reflection',
                   prompt: 'Personal Reflection on the Eternal Self:',
-                  verseContext: 'BG 2.13: "dehino \'smin yathā dehe kaumāraṁ yauvanaṁ jarā tathā dehāntara-prāptir dhīras tatra na muhyati — As the embodied soul passes through childhood, youth, and old age, it likewise passes into another body; the wise are not bewildered by this."',
+                  verseContext: 'BG 2.13: "As the embodied soul passes through childhood, youth, and old age, it likewise passes into another body; the wise are not bewildered by this."',
                   guidance: 'You have already lived through bodies and identities that no longer exist — the infant, the child, perhaps a much younger adult. What in you stayed constant through all of those changes?'
                 }
               ]
@@ -1592,27 +1906,8 @@ export const gitaData: GitaData = {
               verseRef: 'BG 2.20',
               essence: 'The soul is never born and never dies.',
               verseSanskrit: 'न जायते म्रियते वा कदाचिन्नायं भूत्वा भविता वा न भूयः ।\nअजो नित्यः शाश्वतोऽयं पुराणो न हन्यते हन्यमाने शरीरे ॥',
-              verseTransliteration: "na jāyate mriyate vā kadācin nāyaṁ bhūtvā bhavitā vā na bhūyaḥ\najo nityaḥ śāśvato 'yaṁ purāṇo na hanyate hanyamāne śarīre",
-              verseWordGuide: [
-                { devanagari: 'न', roman: 'na' },
-                { devanagari: 'जायते', roman: 'jāyate' },
-                { devanagari: 'म्रियते', roman: 'mriyate' },
-                { devanagari: 'वा', roman: 'vā' },
-                { devanagari: 'कदाचिन्नायं', roman: "kadācin-nāyaṁ" },
-                { devanagari: 'भूत्वा', roman: 'bhūtvā' },
-                { devanagari: 'भविता', roman: 'bhavitā' },
-                { devanagari: 'वा', roman: 'vā' },
-                { devanagari: 'न', roman: 'na' },
-                { devanagari: 'भूयः', roman: 'bhūyaḥ' },
-                { devanagari: 'अजो', roman: 'ajo' },
-                { devanagari: 'नित्यः', roman: 'nityaḥ' },
-                { devanagari: 'शाश्वतोऽयं', roman: "śāśvato-'yaṁ" },
-                { devanagari: 'पुराणो', roman: 'purāṇo' },
-                { devanagari: 'न', roman: 'na' },
-                { devanagari: 'हन्यते', roman: 'hanyate' },
-                { devanagari: 'हन्यमाने', roman: 'hanyamāne' },
-                { devanagari: 'शरीरे', roman: 'śarīre' }
-              ],
+              hindiTranslationDevanagari: 'यह आत्मा न कभी जन्म लेती है, न कभी मरती है। यह कभी उत्पन्न नहीं हुई, और न आगे फिर कभी उत्पन्न होगी।\nयह अजन्मा, नित्य, शाश्वत और पुरातन है। शरीर के मारे जाने पर भी यह नहीं मारी जाती।',
+              hindiTranslationRoman: 'yah aatma na kabhi janm leti hai, na kabhi marti hai. yah kabhi utpann nahi hui, aur na aage phir kabhi utpann hogi.\nyah ajanma, nitya, shashvat aur puratan hai. sharir ke mare jaane par bhi yah nahi maari jaati.',
               translation: 'For the soul there is neither birth nor death at any time. It has not come into being, does not come into being, and will not come into being. It is unborn, eternal, ever-existing, undying and primeval. It is not slain when the body is slain.',
               purport: 'This is the Gita\'s most direct statement on the nature of the self: it is entirely outside the cycle of birth and death that the body passes through. What is slain, when a body dies, is only the body — never the one who inhabited it.',
               commentary: {
@@ -1623,279 +1918,322 @@ export const gitaData: GitaData = {
               reflectionPrompt: 'This verse says the true self is untouched by birth and death. What would change in how you face a loss or an ending, if you believed this fully?',
               storyCaption: 'Arjuna feared for lives about to end. "It is never born, and it never dies," Krishna said. "What you see slain on this field is only the body — never the one within it."',
               wordBreakdown: [
-                { word: 'ajaḥ', devanagari: 'अजः', meaning: 'unborn', partOfSpeech: 'adjective' },
-                { word: 'nityaḥ', devanagari: 'नित्यः', meaning: 'eternal', partOfSpeech: 'adjective' }
+                { word: 'aatma', devanagari: 'आत्मा', meaning: 'soul', partOfSpeech: 'noun' },
+                { word: 'janm', devanagari: 'जन्म', meaning: 'birth', partOfSpeech: 'noun' },
+                { word: 'marti', devanagari: 'मरती', meaning: 'dies', partOfSpeech: 'verb' },
+                { word: 'kabhi', devanagari: 'कभी', meaning: 'ever / at any time', partOfSpeech: 'adverb' },
+                { word: 'utpann', devanagari: 'उत्पन्न', meaning: 'born / come into being', partOfSpeech: 'adjective' },
+                { word: 'nahi', devanagari: 'नहीं', meaning: 'not', partOfSpeech: 'adverb' },
+                { word: 'aage', devanagari: 'आगे', meaning: 'ahead / in the future', partOfSpeech: 'adverb' },
+                { word: 'phir', devanagari: 'फिर', meaning: 'again', partOfSpeech: 'adverb' },
+                { word: 'ajanma', devanagari: 'अजन्मा', meaning: 'unborn', partOfSpeech: 'adjective' },
+                { word: 'nitya', devanagari: 'नित्य', meaning: 'eternal', partOfSpeech: 'adjective' },
+                { word: 'shashvat', devanagari: 'शाश्वत', meaning: 'everlasting', partOfSpeech: 'adjective' },
+                { word: 'puratan', devanagari: 'पुरातन', meaning: 'ancient / primeval', partOfSpeech: 'adjective' },
+                { word: 'sharir', devanagari: 'शरीर', meaning: 'body', partOfSpeech: 'noun' },
+                { word: 'maari', devanagari: 'मारी', meaning: 'slain / killed', partOfSpeech: 'adjective' }
               ],
-              teachingSlides: [],
               questions: [],
               parts: [
                 {
                   partIndex: 1,
                   title: 'Part 1: Never Born, Never Dies',
-                  sanskrit: 'न जायते म्रियते वा',
-                  transliteration: 'na jāyate mriyate vā',
-
-                  hindiRoman: 'na jayate mriyate va',
+                  hindiTranslationDevanagari: 'यह आत्मा न कभी जन्म लेती है, न कभी मरती है।',
+                  hindiTranslationRoman: 'yah aatma na kabhi janm leti hai, na kabhi marti hai.',
                   translation: 'It is never born, nor does it ever die.',
                   wordBreakdown: [
-                    { word: 'na', devanagari: 'न', meaning: 'not / never', partOfSpeech: 'particle' },
-                    { word: 'jāyate', devanagari: 'जायते', meaning: 'is born', partOfSpeech: 'verb' },
-                    { word: 'mriyate', devanagari: 'म्रियते', meaning: 'dies', partOfSpeech: 'verb' },
-                    { word: 'vā', devanagari: 'वा', meaning: 'or', partOfSpeech: 'particle' }
+                    { word: 'aatma', devanagari: 'आत्मा', meaning: 'soul', partOfSpeech: 'noun' },
+                    { word: 'janm', devanagari: 'जन्म', meaning: 'birth', partOfSpeech: 'noun' },
+                    { word: 'marti', devanagari: 'मरती', meaning: 'dies', partOfSpeech: 'verb' },
+                    { word: 'kabhi', devanagari: 'कभी', meaning: 'ever / at any time', partOfSpeech: 'adverb' }
                   ],
                   questions: [
                     {
-                      id: 'bg220_p1_q1',
+                      id: 'bg220_p1_w',
                       type: 'phrase_matching',
                       warmup: true,
-                      prompt: 'Match each word in Part 1 to its meaning.',
+                      targetWords: ['aatma', 'janm', 'marti', 'kabhi'],
+                      prompt: 'Match each Hindi word to its meaning.',
                       pairs: [
-                        { sanskrit: 'na', english: 'not / never' },
-                        { sanskrit: 'jāyate', english: 'is born' },
-                        { sanskrit: 'mriyate', english: 'dies' },
-                        { sanskrit: 'vā', english: 'or' }
+                        { hindi: { dev: 'आत्मा', roman: 'aatma' }, english: 'soul' },
+                        { hindi: { dev: 'जन्म', roman: 'janm' }, english: 'birth' },
+                        { hindi: { dev: 'मरती', roman: 'marti' }, english: 'dies' },
+                        { hindi: { dev: 'कभी', roman: 'kabhi' }, english: 'ever / at any time' }
                       ]
                     },
                     {
                       id: 'bg220_p1_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrases to their meanings.',
+                      targetWords: ['aatma', 'janm', 'marti', 'kabhi'],
+                      prompt: 'Now match the Hindi phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'na jāyate', english: 'is never born' },
-                        { sanskrit: 'mriyate vā', english: 'or dies' }
+                        { hindi: { dev: 'यह आत्मा', roman: 'yah aatma' }, english: 'this soul' },
+                        { hindi: { dev: 'न कभी जन्म लेती है', roman: 'na kabhi janm leti hai' }, english: 'is never born' },
+                        { hindi: { dev: 'न कभी मरती है', roman: 'na kabhi marti hai' }, english: 'never dies' }
                       ]
+                    },
+                    {
+                      id: 'bg220_p1_c',
+                      type: 'fill_in_the_blank',
+                      targetWords: ['aatma', 'janm', 'marti', 'kabhi'],
+                      prompt: 'Complete the English sentence.',
+                      hindi: { dev: 'यह आत्मा न कभी जन्म लेती है, न कभी मरती है।', roman: 'yah aatma na kabhi janm leti hai, na kabhi marti hai.' },
+                      sentence: 'This soul is never born and never ____',
+                      options: ['dies', 'slain', 'again', 'body'],
+                      answer: 'dies',
+                      explanation: 'The full phrase: "This soul is never born and never dies."'
                     },
                     {
                       id: 'bg220_p1_t',
                       type: 'translate',
+                      targetWords: ['aatma', 'janm', 'marti', 'kabhi'],
                       prompt: 'Write this in English',
-                      sanskrit: 'na jāyate mriyate vā',
-                      answer: 'it is never born nor does it die',
-                      tiles: ['it', 'is', 'never', 'born', 'nor', 'does', 'it', 'die', 'slain', 'again', 'body']
-                    },
-                    {
-                      id: 'bg220_p1_q3',
-                      type: 'sentence_rebuilding',
-                      prompt: 'Arrange the words to form Part 1 of the verse.',
-                      hint: 'It is never born, nor does it ever die.',
-                      targetSentence: 'na jāyate mriyate vā',
-                      tiles: ['na', 'jāyate', 'mriyate', 'vā'],
-                      explanation: '"na jāyate mriyate vā" — It is never born, nor does it ever die.'
+                      hindi: { dev: 'यह आत्मा न कभी जन्म लेती है, न कभी मरती है।', roman: 'yah aatma na kabhi janm leti hai, na kabhi marti hai.' },
+                      answer: 'this soul is never born and never dies',
+                      tiles: ['this', 'soul', 'is', 'never', 'born', 'and', 'never', 'dies', 'slain', 'again', 'body'],
+                      explanation: 'It is never born, nor does it ever die.'
                     }
                   ]
                 },
                 {
                   partIndex: 2,
                   title: 'Part 2: Never Ceases to Be',
-                  sanskrit: 'कदाचिन्नायं भूत्वा',
-                  transliteration: "kadācin nāyaṁ bhūtvā",
+                  hindiTranslationDevanagari: 'यह कभी उत्पन्न नहीं हुई,',
+                  hindiTranslationRoman: 'yah kabhi utpann nahi hui,',
                   translation: 'At no time did it come into being...',
                   wordBreakdown: [
-                    { word: 'kadācit', devanagari: 'कदाचित्', meaning: 'at any time', partOfSpeech: 'adverb' },
-                    { word: 'ayam', devanagari: 'अयम्', meaning: 'this (soul)', partOfSpeech: 'pronoun' },
-                    { word: 'bhūtvā', devanagari: 'भूत्वा', meaning: 'having come into being', partOfSpeech: 'verb (participle)' }
+                    { word: 'kabhi', devanagari: 'कभी', meaning: 'ever / at any time', partOfSpeech: 'adverb' },
+                    { word: 'utpann', devanagari: 'उत्पन्न', meaning: 'born / come into being', partOfSpeech: 'adjective' },
+                    { word: 'nahi', devanagari: 'नहीं', meaning: 'not', partOfSpeech: 'adverb' }
                   ],
                   questions: [
                     {
-                      id: 'bg220_p2_q1',
+                      id: 'bg220_p2_w',
                       type: 'phrase_matching',
                       warmup: true,
-                      prompt: 'Match each word in Part 2 to its meaning.',
+                      targetWords: ['kabhi', 'utpann', 'nahi'],
+                      prompt: 'Match each Hindi word to its meaning.',
                       pairs: [
-                        { sanskrit: 'kadācit', english: 'at any time' },
-                        { sanskrit: 'ayam', english: 'this (soul)' },
-                        { sanskrit: 'bhūtvā', english: 'having come into being' }
+                        { hindi: { dev: 'कभी', roman: 'kabhi' }, english: 'ever / at any time' },
+                        { hindi: { dev: 'उत्पन्न', roman: 'utpann' }, english: 'born / come into being' },
+                        { hindi: { dev: 'नहीं', roman: 'nahi' }, english: 'not' }
                       ]
                     },
                     {
                       id: 'bg220_p2_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrases to their meanings.',
+                      targetWords: ['kabhi', 'utpann', 'nahi'],
+                      prompt: 'Now match the Hindi phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'kadācit na', english: 'at no time' },
-                        { sanskrit: 'ayam bhūtvā', english: 'this soul, having come into being' }
+                        { hindi: { dev: 'यह', roman: 'yah' }, english: 'this soul' },
+                        { hindi: { dev: 'कभी उत्पन्न नहीं हुई', roman: 'kabhi utpann nahi hui' }, english: 'never came into being' }
                       ]
+                    },
+                    {
+                      id: 'bg220_p2_c',
+                      type: 'fill_in_the_blank',
+                      targetWords: ['kabhi', 'utpann', 'nahi'],
+                      prompt: 'Complete the English sentence.',
+                      hindi: { dev: 'यह कभी उत्पन्न नहीं हुई,', roman: 'yah kabhi utpann nahi hui,' },
+                      sentence: 'This soul never came into ____',
+                      options: ['being', 'eternal', 'slain', 'body'],
+                      answer: 'being',
+                      explanation: 'The full phrase: "This soul never came into being."'
                     },
                     {
                       id: 'bg220_p2_t',
                       type: 'translate',
+                      targetWords: ['kabhi', 'utpann', 'nahi'],
                       prompt: 'Write this in English',
-                      sanskrit: 'kadācit na ayam bhūtvā',
+                      hindi: { dev: 'यह कभी उत्पन्न नहीं हुई,', roman: 'yah kabhi utpann nahi hui,' },
                       answer: 'this soul never came into being',
-                      tiles: ['this', 'soul', 'never', 'came', 'into', 'being', 'eternal', 'slain', 'body']
-                    },
-                    {
-                      id: 'bg220_p2_r',
-                      type: 'sentence_rebuilding',
-                      prompt: 'Arrange the words to form Part 2 of the verse.',
-                      hint: 'At no time did it come into being...',
-                      targetSentence: 'kadācit na ayam bhūtvā',
-                      tiles: ['kadācit', 'na', 'ayam', 'bhūtvā'],
-                      explanation: 'At no time did this soul come into being.'
+                      tiles: ['this', 'soul', 'never', 'came', 'into', 'being', 'eternal', 'slain', 'body'],
+                      explanation: 'At no time did it come into being...'
                     }
                   ]
                 },
                 {
                   partIndex: 3,
                   title: 'Part 3: Nor Will It Cease',
-                  sanskrit: 'भविता वा न भूयः',
-                  transliteration: 'bhavitā vā na bhūyaḥ',
-
-                  hindiRoman: 'bhavita va na bhuyah',
+                  hindiTranslationDevanagari: 'और न आगे फिर कभी उत्पन्न होगी।',
+                  hindiTranslationRoman: 'aur na aage phir kabhi utpann hogi.',
                   translation: '...nor will it ever come to be again.',
                   wordBreakdown: [
-                    { word: 'bhavitā', devanagari: 'भविता', meaning: 'will come into being', partOfSpeech: 'verb (future)' },
-                    { word: 'bhūyaḥ', devanagari: 'भूयः', meaning: 'again', partOfSpeech: 'adverb' }
+                    { word: 'aage', devanagari: 'आगे', meaning: 'ahead / in the future', partOfSpeech: 'adverb' },
+                    { word: 'phir', devanagari: 'फिर', meaning: 'again', partOfSpeech: 'adverb' },
+                    { word: 'utpann', devanagari: 'उत्पन्न', meaning: 'born / come into being', partOfSpeech: 'adjective' }
                   ],
                   questions: [
                     {
-                      id: 'bg220_p3_q1',
+                      id: 'bg220_p3_w',
                       type: 'phrase_matching',
                       warmup: true,
-                      prompt: 'Match each word in Part 3 to its meaning.',
+                      targetWords: ['aage', 'phir', 'utpann'],
+                      prompt: 'Match each Hindi word to its meaning.',
                       pairs: [
-                        { sanskrit: 'bhavitā', english: 'will come into being' },
-                        { sanskrit: 'bhūyaḥ', english: 'again' }
+                        { hindi: { dev: 'आगे', roman: 'aage' }, english: 'ahead / in the future' },
+                        { hindi: { dev: 'फिर', roman: 'phir' }, english: 'again' },
+                        { hindi: { dev: 'उत्पन्न', roman: 'utpann' }, english: 'born / come into being' }
                       ]
                     },
                     {
                       id: 'bg220_p3_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrases to their meanings.',
+                      targetWords: ['aage', 'phir', 'utpann'],
+                      prompt: 'Now match the Hindi phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'bhavitā vā', english: 'or will come to be' },
-                        { sanskrit: 'na bhūyaḥ', english: 'never again' }
+                        { hindi: { dev: 'और न', roman: 'aur na' }, english: 'and not' },
+                        { hindi: { dev: 'आगे फिर कभी', roman: 'aage phir kabhi' }, english: 'ever again in the future' },
+                        { hindi: { dev: 'उत्पन्न होगी', roman: 'utpann hogi' }, english: 'will come into being' }
                       ]
+                    },
+                    {
+                      id: 'bg220_p3_c',
+                      type: 'fill_in_the_blank',
+                      targetWords: ['aage', 'phir', 'utpann'],
+                      prompt: 'Complete the English sentence.',
+                      hindi: { dev: 'और न आगे फिर कभी उत्पन्न होगी।', roman: 'aur na aage phir kabhi utpann hogi.' },
+                      sentence: 'Nor will it come to be ____',
+                      options: ['again', 'born', 'body', 'slain'],
+                      answer: 'again',
+                      explanation: 'The full phrase: "Nor will it come to be again."'
                     },
                     {
                       id: 'bg220_p3_t',
                       type: 'translate',
+                      targetWords: ['aage', 'phir', 'utpann'],
                       prompt: 'Write this in English',
-                      sanskrit: 'bhavitā vā na bhūyaḥ',
+                      hindi: { dev: 'और न आगे फिर कभी उत्पन्न होगी।', roman: 'aur na aage phir kabhi utpann hogi.' },
                       answer: 'nor will it come to be again',
-                      tiles: ['nor', 'will', 'it', 'come', 'to', 'be', 'again', 'born', 'body', 'slain']
-                    },
-                    {
-                      id: 'bg220_p3_r',
-                      type: 'sentence_rebuilding',
-                      prompt: 'Arrange the words to form Part 3 of the verse.',
-                      hint: '...nor will it ever come to be again.',
-                      targetSentence: 'bhavitā vā na bhūyaḥ',
-                      tiles: ['bhavitā', 'vā', 'na', 'bhūyaḥ'],
-                      explanation: 'Nor will it ever come to be again.'
+                      tiles: ['nor', 'will', 'it', 'come', 'to', 'be', 'again', 'born', 'body', 'slain'],
+                      explanation: '...nor will it ever come to be again.'
                     }
                   ]
                 },
                 {
                   partIndex: 4,
                   title: 'Part 4: Unborn, Eternal, Primeval',
-                  sanskrit: 'अजो नित्यः शाश्वतोऽयं पुराणो',
-                  transliteration: "ajo nityaḥ śāśvato 'yaṁ purāṇo",
+                  hindiTranslationDevanagari: 'यह अजन्मा, नित्य, शाश्वत और पुरातन है।',
+                  hindiTranslationRoman: 'yah ajanma, nitya, shashvat aur puratan hai.',
                   translation: 'It is unborn, eternal, ever-existing, and primeval.',
                   wordBreakdown: [
-                    { word: 'ajaḥ', devanagari: 'अजः', meaning: 'unborn', partOfSpeech: 'adjective' },
-                    { word: 'nityaḥ', devanagari: 'नित्यः', meaning: 'eternal', partOfSpeech: 'adjective' },
-                    { word: 'śāśvataḥ', devanagari: 'शाश्वतः', meaning: 'permanent / ever-existing', partOfSpeech: 'adjective' },
-                    { word: 'purāṇaḥ', devanagari: 'पुराणः', meaning: 'primeval / most ancient', partOfSpeech: 'adjective' }
+                    { word: 'ajanma', devanagari: 'अजन्मा', meaning: 'unborn', partOfSpeech: 'adjective' },
+                    { word: 'nitya', devanagari: 'नित्य', meaning: 'eternal', partOfSpeech: 'adjective' },
+                    { word: 'shashvat', devanagari: 'शाश्वत', meaning: 'everlasting', partOfSpeech: 'adjective' },
+                    { word: 'puratan', devanagari: 'पुरातन', meaning: 'ancient / primeval', partOfSpeech: 'adjective' }
                   ],
                   questions: [
                     {
-                      id: 'bg220_p4_q1',
+                      id: 'bg220_p4_w',
                       type: 'phrase_matching',
                       warmup: true,
-                      prompt: 'Match each word in Part 4 to its meaning.',
+                      targetWords: ['ajanma', 'nitya', 'shashvat', 'puratan'],
+                      prompt: 'Match each Hindi word to its meaning.',
                       pairs: [
-                        { sanskrit: 'ajaḥ', english: 'unborn' },
-                        { sanskrit: 'nityaḥ', english: 'eternal' },
-                        { sanskrit: 'śāśvataḥ', english: 'permanent / ever-existing' },
-                        { sanskrit: 'purāṇaḥ', english: 'primeval / most ancient' }
+                        { hindi: { dev: 'अजन्मा', roman: 'ajanma' }, english: 'unborn' },
+                        { hindi: { dev: 'नित्य', roman: 'nitya' }, english: 'eternal' },
+                        { hindi: { dev: 'शाश्वत', roman: 'shashvat' }, english: 'everlasting' },
+                        { hindi: { dev: 'पुरातन', roman: 'puratan' }, english: 'ancient / primeval' }
                       ]
                     },
                     {
                       id: 'bg220_p4_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrases to their meanings.',
+                      targetWords: ['ajanma', 'nitya', 'shashvat', 'puratan'],
+                      prompt: 'Now match the Hindi phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'ajaḥ nityaḥ', english: 'unborn and eternal' },
-                        { sanskrit: 'śāśvataḥ purāṇaḥ', english: 'ever-existing and primeval' }
+                        { hindi: { dev: 'अजन्मा नित्य', roman: 'ajanma nitya' }, english: 'unborn and eternal' },
+                        { hindi: { dev: 'शाश्वत और पुरातन', roman: 'shashvat aur puratan' }, english: 'everlasting and ancient' }
                       ]
+                    },
+                    {
+                      id: 'bg220_p4_c',
+                      type: 'fill_in_the_blank',
+                      targetWords: ['ajanma', 'nitya', 'shashvat', 'puratan'],
+                      prompt: 'Complete the English sentence.',
+                      hindi: { dev: 'यह अजन्मा, नित्य, शाश्वत और पुरातन है।', roman: 'yah ajanma, nitya, shashvat aur puratan hai.' },
+                      sentence: 'It is unborn eternal everlasting and ____',
+                      options: ['ancient', 'slain', 'body', 'new'],
+                      answer: 'ancient',
+                      explanation: 'The full phrase: "It is unborn eternal everlasting and ancient."'
                     },
                     {
                       id: 'bg220_p4_t',
                       type: 'translate',
+                      targetWords: ['ajanma', 'nitya', 'shashvat', 'puratan'],
                       prompt: 'Write this in English',
-                      sanskrit: 'ajaḥ nityaḥ',
-                      answer: 'unborn and eternal',
-                      tiles: ['unborn', 'and', 'eternal', 'slain', 'body', 'new']
-                    },
-                    {
-                      id: 'bg220_p4_q2',
-                      type: 'sentence_rebuilding',
-                      prompt: 'Arrange the words to form Part 4 of the verse.',
-                      hint: 'It is unborn, eternal, ever-existing, and primeval.',
-                      targetSentence: 'ajaḥ nityaḥ śāśvataḥ purāṇaḥ',
-                      tiles: ['ajaḥ', 'nityaḥ', 'śāśvataḥ', 'purāṇaḥ'],
-                      explanation: '"ajo nityaḥ śāśvato \'yaṁ purāṇaḥ" — Unborn, eternal, ever-existing, and primeval.'
+                      hindi: { dev: 'यह अजन्मा, नित्य, शाश्वत और पुरातन है।', roman: 'yah ajanma, nitya, shashvat aur puratan hai.' },
+                      answer: 'it is unborn eternal everlasting and ancient',
+                      tiles: ['it', 'is', 'unborn', 'eternal', 'everlasting', 'and', 'ancient', 'slain', 'body', 'new'],
+                      explanation: 'It is unborn, eternal, ever-existing, and primeval.'
                     }
                   ]
                 },
                 {
                   partIndex: 5,
                   title: 'Part 5: Not Slain With the Body',
-                  sanskrit: 'न हन्यते हन्यमाने शरीरे',
-                  transliteration: 'na hanyate hanyamāne śarīre',
-
-                  hindiRoman: 'na hanyate hanyamane sharire',
+                  hindiTranslationDevanagari: 'शरीर के मारे जाने पर भी यह नहीं मारी जाती।',
+                  hindiTranslationRoman: 'sharir ke mare jaane par bhi yah nahi maari jaati.',
                   translation: 'it is not slain when the body is slain.',
                   wordBreakdown: [
-                    { word: 'hanyate', devanagari: 'हन्यते', meaning: 'is slain', partOfSpeech: 'verb (passive)' },
-                    { word: 'hanyamāne', devanagari: 'हन्यमाने', meaning: 'when being slain', partOfSpeech: 'verb (participle, locative)' },
-                    { word: 'śarīre', devanagari: 'शरीरे', meaning: 'in the body', partOfSpeech: 'noun (locative)' }
+                    { word: 'sharir', devanagari: 'शरीर', meaning: 'body', partOfSpeech: 'noun' },
+                    { word: 'maari', devanagari: 'मारी', meaning: 'slain / killed', partOfSpeech: 'adjective' },
+                    { word: 'nahi', devanagari: 'नहीं', meaning: 'not', partOfSpeech: 'adverb' }
                   ],
                   questions: [
                     {
-                      id: 'bg220_p5_q1',
+                      id: 'bg220_p5_w',
                       type: 'phrase_matching',
                       warmup: true,
-                      prompt: 'Match each word in Part 5 to its meaning.',
+                      targetWords: ['sharir', 'maari', 'nahi'],
+                      prompt: 'Match each Hindi word to its meaning.',
                       pairs: [
-                        { sanskrit: 'hanyate', english: 'is slain' },
-                        { sanskrit: 'hanyamāne', english: 'when being slain' },
-                        { sanskrit: 'śarīre', english: 'in the body' }
+                        { hindi: { dev: 'शरीर', roman: 'sharir' }, english: 'body' },
+                        { hindi: { dev: 'मारी', roman: 'maari' }, english: 'slain / killed' },
+                        { hindi: { dev: 'नहीं', roman: 'nahi' }, english: 'not' }
                       ]
                     },
                     {
                       id: 'bg220_p5_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrases to their meanings.',
+                      targetWords: ['sharir', 'maari', 'nahi'],
+                      prompt: 'Now match the Hindi phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'na hanyate', english: 'is not slain' },
-                        { sanskrit: 'hanyamāne śarīre', english: 'when the body is slain' }
+                        { hindi: { dev: 'शरीर के मारे जाने पर', roman: 'sharir ke mare jaane par' }, english: 'when the body is slain' },
+                        { hindi: { dev: 'यह नहीं मारी जाती', roman: 'yah nahi maari jaati' }, english: 'it is not slain' }
                       ]
+                    },
+                    {
+                      id: 'bg220_p5_c',
+                      type: 'fill_in_the_blank',
+                      targetWords: ['sharir', 'maari', 'nahi'],
+                      prompt: 'Complete the English sentence.',
+                      hindi: { dev: 'शरीर के मारे जाने पर भी यह नहीं मारी जाती।', roman: 'sharir ke mare jaane par bhi yah nahi maari jaati.' },
+                      sentence: 'It is not ____ when the body is slain',
+                      options: ['slain', 'born', 'soul', 'eternal'],
+                      answer: 'slain',
+                      explanation: 'The full phrase: "It is not slain when the body is slain."'
                     },
                     {
                       id: 'bg220_p5_t',
                       type: 'translate',
+                      targetWords: ['sharir', 'maari', 'nahi'],
                       prompt: 'Write this in English',
-                      sanskrit: 'na hanyate hanyamāne śarīre',
-                      answer: 'not slain when the body is slain',
-                      tiles: ['not', 'slain', 'when', 'the', 'body', 'is', 'slain', 'born', 'soul', 'eternal']
+                      hindi: { dev: 'शरीर के मारे जाने पर भी यह नहीं मारी जाती।', roman: 'sharir ke mare jaane par bhi yah nahi maari jaati.' },
+                      answer: 'it is not slain when the body is slain',
+                      tiles: ['it', 'is', 'not', 'slain', 'when', 'the', 'body', 'is', 'slain', 'born', 'soul', 'eternal'],
+                      explanation: 'it is not slain when the body is slain.'
                     },
                     {
-                      id: 'bg220_p5_r',
-                      type: 'sentence_rebuilding',
-                      prompt: 'Arrange the words to form Part 5 of the verse.',
-                      hint: 'it is not slain when the body is slain.',
-                      targetSentence: 'na hanyate hanyamāne śarīre',
-                      tiles: ['na', 'hanyate', 'hanyamāne', 'śarīre'],
-                      explanation: 'It is not slain when the body is slain.'
-                    },
-                    {
-                      id: 'bg220_p5_q2',
+                      id: 'bg220_p5_q',
                       type: 'multiple_choice',
                       prompt: 'What does BG 2.20 say happens to the soul when the body dies?',
                       options: [
-                        { text: 'Nothing — the soul is not slain when the body is slain ("na hanyate hanyamāne śarīre").', isCorrect: true, explanation: 'Correct! The soul is entirely untouched by the body\'s death.' },
+                        {
+                          text: 'Nothing — the soul is not slain when the body is slain.',
+                          isCorrect: true,
+                          explanation: 'Correct! The soul is entirely untouched by the body\'s death.'
+                        },
                         { text: 'The soul dies along with the body.', isCorrect: false, explanation: 'Incorrect. This verse says exactly the opposite.' }
                       ]
                     }
@@ -1904,20 +2242,102 @@ export const gitaData: GitaData = {
               ],
               finalSynthesisQuestions: [
                 {
-                  id: 'bg220_syn_q1',
-                  type: 'sentence_rebuilding',
-                  prompt: 'FULL VERSE SYNTHESIS: Rebuild the soul\'s four eternal qualities!',
-                  targetSentence: 'ajaḥ nityaḥ śāśvataḥ purāṇaḥ',
-                  tiles: ['ajaḥ', 'nityaḥ', 'śāśvataḥ', 'purāṇaḥ'],
-                  explanation: '"ajo nityaḥ śāśvato \'yaṁ purāṇaḥ" — Unborn, eternal, ever-existing, and primeval.'
+                  id: 'bg220_syn_m',
+                  type: 'phrase_matching',
+                  targetWords: [
+                    'aatma',
+                    'janm',
+                    'marti',
+                    'kabhi',
+                    'utpann',
+                    'nahi',
+                    'aage',
+                    'phir',
+                    'ajanma',
+                    'nitya',
+                    'shashvat',
+                    'puratan',
+                    'sharir',
+                    'maari'
+                  ],
+                  prompt: 'Match every phrase of the verse to its meaning.',
+                  pairs: [
+                    {
+                      hindi: { dev: 'यह आत्मा न कभी जन्म लेती है, न कभी मरती है।', roman: 'yah aatma na kabhi janm leti hai, na kabhi marti hai.' },
+                      english: 'this soul is never born and never dies'
+                    },
+                    { hindi: { dev: 'यह कभी उत्पन्न नहीं हुई,', roman: 'yah kabhi utpann nahi hui,' }, english: 'this soul never came into being' },
+                    { hindi: { dev: 'और न आगे फिर कभी उत्पन्न होगी।', roman: 'aur na aage phir kabhi utpann hogi.' }, english: 'nor will it come to be again' },
+                    {
+                      hindi: { dev: 'यह अजन्मा, नित्य, शाश्वत और पुरातन है।', roman: 'yah ajanma, nitya, shashvat aur puratan hai.' },
+                      english: 'it is unborn eternal everlasting and ancient'
+                    },
+                    {
+                      hindi: { dev: 'शरीर के मारे जाने पर भी यह नहीं मारी जाती।', roman: 'sharir ke mare jaane par bhi yah nahi maari jaati.' },
+                      english: 'it is not slain when the body is slain'
+                    }
+                  ]
                 },
                 {
-                  id: 'bg220_syn_q2',
-                  type: 'sentence_rebuilding',
-                  prompt: 'FULL VERSE SYNTHESIS: Rebuild the verse\'s famous closing line!',
-                  targetSentence: 'na hanyate hanyamāne śarīre',
-                  tiles: ['na', 'hanyate', 'hanyamāne', 'śarīre'],
-                  explanation: '"na hanyate hanyamāne śarīre" — It is not slain when the body is slain.'
+                  id: 'bg220_syn_t1',
+                  type: 'translate',
+                  targetWords: ['aatma', 'janm', 'marti', 'kabhi', 'utpann', 'nahi'],
+                  prompt: 'Write this in English',
+                  hindi: {
+                    dev: 'यह आत्मा न कभी जन्म लेती है, न कभी मरती है। यह कभी उत्पन्न नहीं हुई,',
+                    roman: 'yah aatma na kabhi janm leti hai, na kabhi marti hai. yah kabhi utpann nahi hui,'
+                  },
+                  answer: 'this soul is never born and never dies this soul never came into being',
+                  tiles: [
+                    'this',
+                    'soul',
+                    'is',
+                    'never',
+                    'born',
+                    'and',
+                    'never',
+                    'dies',
+                    'this',
+                    'soul',
+                    'never',
+                    'came',
+                    'into',
+                    'being',
+                    'slain',
+                    'again',
+                    'body'
+                  ],
+                  explanation: 'It is never born, nor does it ever die. At no time did it come into being...'
+                },
+                {
+                  id: 'bg220_syn_t2',
+                  type: 'translate',
+                  targetWords: ['aage', 'phir', 'utpann'],
+                  prompt: 'Write this in English',
+                  hindi: { dev: 'और न आगे फिर कभी उत्पन्न होगी।', roman: 'aur na aage phir kabhi utpann hogi.' },
+                  answer: 'nor will it come to be again',
+                  tiles: ['nor', 'will', 'it', 'come', 'to', 'be', 'again', 'born', 'body', 'slain'],
+                  explanation: '...nor will it ever come to be again.'
+                },
+                {
+                  id: 'bg220_syn_t3',
+                  type: 'translate',
+                  targetWords: ['ajanma', 'nitya', 'shashvat', 'puratan'],
+                  prompt: 'Write this in English',
+                  hindi: { dev: 'यह अजन्मा, नित्य, शाश्वत और पुरातन है।', roman: 'yah ajanma, nitya, shashvat aur puratan hai.' },
+                  answer: 'it is unborn eternal everlasting and ancient',
+                  tiles: ['it', 'is', 'unborn', 'eternal', 'everlasting', 'and', 'ancient', 'slain', 'body', 'new'],
+                  explanation: 'It is unborn, eternal, ever-existing, and primeval.'
+                },
+                {
+                  id: 'bg220_syn_t4',
+                  type: 'translate',
+                  targetWords: ['sharir', 'maari', 'nahi'],
+                  prompt: 'Write this in English',
+                  hindi: { dev: 'शरीर के मारे जाने पर भी यह नहीं मारी जाती।', roman: 'sharir ke mare jaane par bhi yah nahi maari jaati.' },
+                  answer: 'it is not slain when the body is slain',
+                  tiles: ['it', 'is', 'not', 'slain', 'when', 'the', 'body', 'is', 'slain', 'born', 'soul', 'eternal'],
+                  explanation: 'it is not slain when the body is slain.'
                 },
                 {
                   id: 'bg220_syn_q3',
@@ -1944,23 +2364,8 @@ export const gitaData: GitaData = {
               verseRef: 'BG 2.22',
               essence: 'Like changing worn-out clothes, the soul changes worn-out bodies.',
               verseSanskrit: 'वासांसि जीर्णानि यथा विहाय नवानि गृह्णाति नरोऽपराणि ।\nतथा शरीराणि विहाय जीर्णान्यन्यानि संयाति नवानि देही ॥',
-              verseTransliteration: "vāsāṁsi jīrṇāni yathā vihāya navāni gṛhṇāti naro 'parāṇi\ntathā śarīrāṇi vihāya jīrṇāny anyāni saṁyāti navāni dehī",
-              verseWordGuide: [
-                { devanagari: 'वासांसि', roman: 'vāsāṁsi' },
-                { devanagari: 'जीर्णानि', roman: 'jīrṇāni' },
-                { devanagari: 'यथा', roman: 'yathā' },
-                { devanagari: 'विहाय', roman: 'vihāya' },
-                { devanagari: 'नवानि', roman: 'navāni' },
-                { devanagari: 'गृह्णाति', roman: 'gṛhṇāti' },
-                { devanagari: 'नरोऽपराणि', roman: "naro-'parāṇi" },
-                { devanagari: 'तथा', roman: 'tathā' },
-                { devanagari: 'शरीराणि', roman: 'śarīrāṇi' },
-                { devanagari: 'विहाय', roman: 'vihāya' },
-                { devanagari: 'जीर्णान्यन्यानि', roman: 'jīrṇāny-anyāni' },
-                { devanagari: 'संयाति', roman: 'saṁyāti' },
-                { devanagari: 'नवानि', roman: 'navāni' },
-                { devanagari: 'देही', roman: 'dehī' }
-              ],
+              hindiTranslationDevanagari: 'जैसे मनुष्य पुराने वस्त्रों को त्यागकर दूसरे नए वस्त्र धारण करता है;\nवैसे ही जीवात्मा पुराने शरीरों को त्यागकर दूसरे नए शरीरों को प्राप्त होती है।',
+              hindiTranslationRoman: 'jaise manushya purane vastron ko tyagkar doosre naye vastra dharan karta hai;\nwaise hi jeevatma purane shariron ko tyagkar doosre naye shariron ko prapt hoti hai.',
               translation: 'As a person casts off worn-out garments and puts on new ones, the embodied soul likewise casts off worn-out bodies and enters into others that are new.',
               purport: 'One of the Gita\'s best-loved images. A worn-out garment is discarded without grief, because we know we are not the garment. The verse asks us to see the body the same way — as something the self wears, not something the self is.',
               commentary: {
@@ -1971,230 +2376,272 @@ export const gitaData: GitaData = {
               reflectionPrompt: 'The verse compares the body to a garment the soul wears and eventually changes. Does thinking of your body this way change how you feel about aging, illness, or death?',
               storyCaption: 'Krishna gestured to Arjuna\'s own worn and mended garments. "You do not weep for the cloth you replace," he said. "The soul, too, only changes what it wears."',
               wordBreakdown: [
-                { word: 'vihāya', devanagari: 'विहाय', meaning: 'having given up', partOfSpeech: 'verb (participle)' },
-                { word: 'dehī', devanagari: 'देही', meaning: 'the embodied soul', partOfSpeech: 'noun' }
+                { word: 'manushya', devanagari: 'मनुष्य', meaning: 'person / human being', partOfSpeech: 'noun' },
+                { word: 'purane', devanagari: 'पुराने', meaning: 'old / worn-out', partOfSpeech: 'adjective' },
+                { word: 'vastron', devanagari: 'वस्त्रों', meaning: 'garments', partOfSpeech: 'noun (plural)' },
+                { word: 'tyagkar', devanagari: 'त्यागकर', meaning: 'giving up / having abandoned', partOfSpeech: 'verb' },
+                { word: 'doosre', devanagari: 'दूसरे', meaning: 'another / other', partOfSpeech: 'adjective' },
+                { word: 'naye', devanagari: 'नए', meaning: 'new', partOfSpeech: 'adjective' },
+                { word: 'vastra', devanagari: 'वस्त्र', meaning: 'garments', partOfSpeech: 'noun' },
+                { word: 'dharan', devanagari: 'धारण', meaning: 'wearing / putting on', partOfSpeech: 'noun' },
+                { word: 'waise', devanagari: 'वैसे', meaning: 'similarly / in the same way', partOfSpeech: 'adverb' },
+                { word: 'jeevatma', devanagari: 'जीवात्मा', meaning: 'embodied soul', partOfSpeech: 'noun' },
+                { word: 'shariron', devanagari: 'शरीरों', meaning: 'bodies', partOfSpeech: 'noun (plural)' },
+                { word: 'prapt', devanagari: 'प्राप्त', meaning: 'attained / obtained', partOfSpeech: 'adjective' }
               ],
-              teachingSlides: [],
               questions: [],
               parts: [
                 {
                   partIndex: 1,
                   title: 'Part 1: Worn-Out Garments',
-                  sanskrit: 'वासांसि जीर्णानि यथा विहाय',
-                  transliteration: 'vāsāṁsi jīrṇāni yathā vihāya',
-
-                  hindiRoman: 'vasansi jirnani yatha vihaya',
+                  hindiTranslationDevanagari: 'जैसे मनुष्य पुराने वस्त्रों को त्यागकर',
+                  hindiTranslationRoman: 'jaise manushya purane vastron ko tyagkar',
                   translation: 'As, giving up garments that are worn out...',
                   wordBreakdown: [
-                    { word: 'vāsāṁsi', devanagari: 'वासांसि', meaning: 'garments', partOfSpeech: 'noun (plural)' },
-                    { word: 'jīrṇāni', devanagari: 'जीर्णानि', meaning: 'worn out', partOfSpeech: 'adjective (plural)' },
-                    { word: 'yathā', devanagari: 'यथा', meaning: 'as / just as', partOfSpeech: 'adverb' },
-                    { word: 'vihāya', devanagari: 'विहाय', meaning: 'having given up', partOfSpeech: 'verb (participle)' }
+                    { word: 'manushya', devanagari: 'मनुष्य', meaning: 'person / human being', partOfSpeech: 'noun' },
+                    { word: 'purane', devanagari: 'पुराने', meaning: 'old / worn-out', partOfSpeech: 'adjective' },
+                    { word: 'vastron', devanagari: 'वस्त्रों', meaning: 'garments', partOfSpeech: 'noun (plural)' },
+                    { word: 'tyagkar', devanagari: 'त्यागकर', meaning: 'giving up / having abandoned', partOfSpeech: 'verb' }
                   ],
                   questions: [
                     {
-                      id: 'bg222_p1_q1',
+                      id: 'bg222_p1_w',
                       type: 'phrase_matching',
                       warmup: true,
-                      prompt: 'Match each word in Part 1 to its meaning.',
+                      targetWords: ['manushya', 'purane', 'vastron', 'tyagkar'],
+                      prompt: 'Match each Hindi word to its meaning.',
                       pairs: [
-                        { sanskrit: 'vāsāṁsi', english: 'garments' },
-                        { sanskrit: 'jīrṇāni', english: 'worn out' },
-                        { sanskrit: 'yathā', english: 'as / just as' },
-                        { sanskrit: 'vihāya', english: 'having given up' }
+                        { hindi: { dev: 'मनुष्य', roman: 'manushya' }, english: 'person / human being' },
+                        { hindi: { dev: 'पुराने', roman: 'purane' }, english: 'old / worn-out' },
+                        { hindi: { dev: 'वस्त्रों', roman: 'vastron' }, english: 'garments' },
+                        { hindi: { dev: 'त्यागकर', roman: 'tyagkar' }, english: 'giving up / having abandoned' }
                       ]
                     },
                     {
                       id: 'bg222_p1_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrases to their meanings.',
+                      targetWords: ['manushya', 'purane', 'vastron', 'tyagkar'],
+                      prompt: 'Now match the Hindi phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'vāsāṁsi jīrṇāni', english: 'garments that are worn out' },
-                        { sanskrit: 'yathā vihāya', english: 'just as, having given up' }
+                        { hindi: { dev: 'जैसे मनुष्य', roman: 'jaise manushya' }, english: 'just as a person' },
+                        { hindi: { dev: 'पुराने वस्त्रों को', roman: 'purane vastron ko' }, english: 'the old garments' },
+                        { hindi: { dev: 'त्यागकर', roman: 'tyagkar' }, english: 'giving up' }
                       ]
+                    },
+                    {
+                      id: 'bg222_p1_c',
+                      type: 'fill_in_the_blank',
+                      targetWords: ['manushya', 'purane', 'vastron', 'tyagkar'],
+                      prompt: 'Complete the English sentence.',
+                      hindi: { dev: 'जैसे मनुष्य पुराने वस्त्रों को त्यागकर', roman: 'jaise manushya purane vastron ko tyagkar' },
+                      sentence: 'As a person gives up old ____',
+                      options: ['garments', 'new', 'bodies', 'takes'],
+                      answer: 'garments',
+                      explanation: 'The full phrase: "As a person gives up old garments."'
                     },
                     {
                       id: 'bg222_p1_t',
                       type: 'translate',
+                      targetWords: ['manushya', 'purane', 'vastron', 'tyagkar'],
                       prompt: 'Write this in English',
-                      sanskrit: 'vāsāṁsi jīrṇāni yathā vihāya',
-                      answer: 'just as giving up worn-out garments',
-                      tiles: ['just', 'as', 'giving', 'up', 'worn-out', 'garments', 'new', 'bodies', 'takes']
-                    },
-                    {
-                      id: 'bg222_p1_q3',
-                      type: 'sentence_rebuilding',
-                      prompt: 'Arrange the words to form Part 1 of the verse.',
-                      hint: 'As, giving up garments that are worn out...',
-                      targetSentence: 'vāsāṁsi jīrṇāni yathā vihāya',
-                      tiles: ['vāsāṁsi', 'jīrṇāni', 'yathā', 'vihāya'],
-                      explanation: '"vāsāṁsi jīrṇāni yathā vihāya" — As, giving up garments that are worn out.'
+                      hindi: { dev: 'जैसे मनुष्य पुराने वस्त्रों को त्यागकर', roman: 'jaise manushya purane vastron ko tyagkar' },
+                      answer: 'as a person gives up old garments',
+                      tiles: ['as', 'a', 'person', 'gives', 'up', 'old', 'garments', 'new', 'bodies', 'takes'],
+                      explanation: 'As, giving up garments that are worn out...'
                     }
                   ]
                 },
                 {
                   partIndex: 2,
                   title: 'Part 2: Taking Up New Ones',
-                  sanskrit: 'नवानि गृह्णाति नरोऽपराणि',
-                  transliteration: "navāni gṛhṇāti naro 'parāṇi",
+                  hindiTranslationDevanagari: 'दूसरे नए वस्त्र धारण करता है;',
+                  hindiTranslationRoman: 'doosre naye vastra dharan karta hai;',
                   translation: 'a person takes up other, new ones.',
                   wordBreakdown: [
-                    { word: 'navāni', devanagari: 'नवानि', meaning: 'new', partOfSpeech: 'adjective (plural)' },
-                    { word: 'gṛhṇāti', devanagari: 'गृह्णाति', meaning: 'takes / accepts', partOfSpeech: 'verb' },
-                    { word: 'naraḥ', devanagari: 'नरः', meaning: 'a person', partOfSpeech: 'noun' },
-                    { word: 'aparāṇi', devanagari: 'अपराणि', meaning: 'other', partOfSpeech: 'adjective (plural)' }
+                    { word: 'doosre', devanagari: 'दूसरे', meaning: 'another / other', partOfSpeech: 'adjective' },
+                    { word: 'naye', devanagari: 'नए', meaning: 'new', partOfSpeech: 'adjective' },
+                    { word: 'vastra', devanagari: 'वस्त्र', meaning: 'garments', partOfSpeech: 'noun' },
+                    { word: 'dharan', devanagari: 'धारण', meaning: 'wearing / putting on', partOfSpeech: 'noun' }
                   ],
                   questions: [
                     {
-                      id: 'bg222_p2_q1',
+                      id: 'bg222_p2_w',
                       type: 'phrase_matching',
                       warmup: true,
-                      prompt: 'Match each word in Part 2 to its meaning.',
+                      targetWords: ['doosre', 'naye', 'vastra', 'dharan'],
+                      prompt: 'Match each Hindi word to its meaning.',
                       pairs: [
-                        { sanskrit: 'navāni', english: 'new' },
-                        { sanskrit: 'gṛhṇāti', english: 'takes / accepts' },
-                        { sanskrit: 'naraḥ', english: 'a person' },
-                        { sanskrit: 'aparāṇi', english: 'other' }
+                        { hindi: { dev: 'दूसरे', roman: 'doosre' }, english: 'another / other' },
+                        { hindi: { dev: 'नए', roman: 'naye' }, english: 'new' },
+                        { hindi: { dev: 'वस्त्र', roman: 'vastra' }, english: 'garments' },
+                        { hindi: { dev: 'धारण', roman: 'dharan' }, english: 'wearing / putting on' }
                       ]
                     },
                     {
                       id: 'bg222_p2_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrases to their meanings.',
+                      targetWords: ['doosre', 'naye', 'vastra', 'dharan'],
+                      prompt: 'Now match the Hindi phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'navāni aparāṇi', english: 'other, new ones' },
-                        { sanskrit: 'naraḥ gṛhṇāti', english: 'a person takes' }
+                        { hindi: { dev: 'दूसरे नए वस्त्र', roman: 'doosre naye vastra' }, english: 'other new garments' },
+                        { hindi: { dev: 'धारण करता है', roman: 'dharan karta hai' }, english: 'puts on' }
                       ]
+                    },
+                    {
+                      id: 'bg222_p2_c',
+                      type: 'fill_in_the_blank',
+                      targetWords: ['doosre', 'naye', 'vastra', 'dharan'],
+                      prompt: 'Complete the English sentence.',
+                      hindi: { dev: 'दूसरे नए वस्त्र धारण करता है;', roman: 'doosre naye vastra dharan karta hai;' },
+                      sentence: 'Puts on other new ____',
+                      options: ['garments', 'bodies', 'old', 'soul'],
+                      answer: 'garments',
+                      explanation: 'The full phrase: "Puts on other new garments."'
                     },
                     {
                       id: 'bg222_p2_t',
                       type: 'translate',
+                      targetWords: ['doosre', 'naye', 'vastra', 'dharan'],
                       prompt: 'Write this in English',
-                      sanskrit: 'navāni gṛhṇāti naraḥ aparāṇi',
-                      answer: 'a person takes other new ones',
-                      tiles: ['a', 'person', 'takes', 'other', 'new', 'ones', 'bodies', 'worn-out', 'soul']
-                    },
-                    {
-                      id: 'bg222_p2_r',
-                      type: 'sentence_rebuilding',
-                      prompt: 'Arrange the words to form Part 2 of the verse.',
-                      hint: 'a person takes up other, new ones.',
-                      targetSentence: 'navāni gṛhṇāti naraḥ aparāṇi',
-                      tiles: ['navāni', 'gṛhṇāti', 'naraḥ', 'aparāṇi'],
-                      explanation: 'A person takes up other, new ones.'
+                      hindi: { dev: 'दूसरे नए वस्त्र धारण करता है;', roman: 'doosre naye vastra dharan karta hai;' },
+                      answer: 'puts on other new garments',
+                      tiles: ['puts', 'on', 'other', 'new', 'garments', 'bodies', 'old', 'soul', 'person'],
+                      explanation: 'a person takes up other, new ones.'
                     }
                   ]
                 },
                 {
                   partIndex: 3,
                   title: 'Part 3: Giving Up Worn-Out Bodies',
-                  sanskrit: 'तथा शरीराणि विहाय जीर्णान्यन्यानि',
-                  transliteration: 'tathā śarīrāṇi vihāya jīrṇāny anyāni',
-
-                  hindiRoman: 'tatha sharirani vihaya jirnany anyani',
+                  hindiTranslationDevanagari: 'वैसे ही जीवात्मा पुराने शरीरों को त्यागकर',
+                  hindiTranslationRoman: 'waise hi jeevatma purane shariron ko tyagkar',
                   translation: 'so too, giving up worn-out bodies, for other ones...',
                   wordBreakdown: [
-                    { word: 'tathā', devanagari: 'तथा', meaning: 'so too / similarly', partOfSpeech: 'adverb' },
-                    { word: 'śarīrāṇi', devanagari: 'शरीराणि', meaning: 'bodies', partOfSpeech: 'noun (plural)' },
-                    { word: 'anyāni', devanagari: 'अन्यानि', meaning: 'other / different', partOfSpeech: 'adjective (plural)' }
+                    { word: 'waise', devanagari: 'वैसे', meaning: 'similarly / in the same way', partOfSpeech: 'adverb' },
+                    { word: 'jeevatma', devanagari: 'जीवात्मा', meaning: 'embodied soul', partOfSpeech: 'noun' },
+                    { word: 'purane', devanagari: 'पुराने', meaning: 'old / worn-out', partOfSpeech: 'adjective' },
+                    { word: 'shariron', devanagari: 'शरीरों', meaning: 'bodies', partOfSpeech: 'noun (plural)' }
                   ],
                   questions: [
                     {
-                      id: 'bg222_p3_q1',
+                      id: 'bg222_p3_w',
                       type: 'phrase_matching',
                       warmup: true,
-                      prompt: 'Match each word in Part 3 to its meaning.',
+                      targetWords: ['waise', 'jeevatma', 'purane', 'shariron'],
+                      prompt: 'Match each Hindi word to its meaning.',
                       pairs: [
-                        { sanskrit: 'tathā', english: 'so too / similarly' },
-                        { sanskrit: 'śarīrāṇi', english: 'bodies' },
-                        { sanskrit: 'anyāni', english: 'other / different' }
+                        { hindi: { dev: 'वैसे', roman: 'waise' }, english: 'similarly / in the same way' },
+                        { hindi: { dev: 'जीवात्मा', roman: 'jeevatma' }, english: 'embodied soul' },
+                        { hindi: { dev: 'पुराने', roman: 'purane' }, english: 'old / worn-out' },
+                        { hindi: { dev: 'शरीरों', roman: 'shariron' }, english: 'bodies' }
                       ]
                     },
                     {
                       id: 'bg222_p3_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrases to their meanings.',
+                      targetWords: ['waise', 'jeevatma', 'purane', 'shariron'],
+                      prompt: 'Now match the Hindi phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'tathā śarīrāṇi', english: 'so too, the bodies' },
-                        { sanskrit: 'vihāya jīrṇāni', english: 'giving up the worn-out ones' },
-                        { sanskrit: 'anyāni', english: 'other ones' }
+                        { hindi: { dev: 'वैसे ही जीवात्मा', roman: 'waise hi jeevatma' }, english: 'in the same way the soul' },
+                        { hindi: { dev: 'पुराने शरीरों को', roman: 'purane shariron ko' }, english: 'the old bodies' },
+                        { hindi: { dev: 'त्यागकर', roman: 'tyagkar' }, english: 'giving up' }
                       ]
+                    },
+                    {
+                      id: 'bg222_p3_c',
+                      type: 'fill_in_the_blank',
+                      targetWords: ['waise', 'jeevatma', 'purane', 'shariron'],
+                      prompt: 'Complete the English sentence.',
+                      hindi: { dev: 'वैसे ही जीवात्मा पुराने शरीरों को त्यागकर', roman: 'waise hi jeevatma purane shariron ko tyagkar' },
+                      sentence: 'In the same way the soul gives up old ____',
+                      options: ['bodies', 'garments', 'new', 'person'],
+                      answer: 'bodies',
+                      explanation: 'The full phrase: "In the same way the soul gives up old bodies."'
                     },
                     {
                       id: 'bg222_p3_t',
                       type: 'translate',
+                      targetWords: ['waise', 'jeevatma', 'purane', 'shariron'],
                       prompt: 'Write this in English',
-                      sanskrit: 'tathā śarīrāṇi vihāya jīrṇāni',
-                      answer: 'so too giving up worn-out bodies',
-                      tiles: ['so', 'too', 'giving', 'up', 'worn-out', 'bodies', 'garments', 'new', 'person']
-                    },
-                    {
-                      id: 'bg222_p3_r',
-                      type: 'sentence_rebuilding',
-                      prompt: 'Arrange the words to form Part 3 of the verse.',
-                      hint: 'so too, giving up worn-out bodies, for other ones...',
-                      targetSentence: 'tathā śarīrāṇi vihāya jīrṇāni anyāni',
-                      tiles: ['tathā', 'śarīrāṇi', 'vihāya', 'jīrṇāni', 'anyāni'],
-                      explanation: 'So too, giving up worn-out bodies, for other ones.'
+                      hindi: { dev: 'वैसे ही जीवात्मा पुराने शरीरों को त्यागकर', roman: 'waise hi jeevatma purane shariron ko tyagkar' },
+                      answer: 'in the same way the soul gives up old bodies',
+                      tiles: ['in', 'the', 'same', 'way', 'the', 'soul', 'gives', 'up', 'old', 'bodies', 'garments', 'new', 'person'],
+                      explanation: 'so too, giving up worn-out bodies, for other ones...'
                     }
                   ]
                 },
                 {
                   partIndex: 4,
                   title: 'Part 4: The Soul Moves On',
-                  sanskrit: 'संयाति नवानि देही',
-                  transliteration: 'saṁyāti navāni dehī',
-
-                  hindiRoman: 'sanyati navani dehi',
+                  hindiTranslationDevanagari: 'दूसरे नए शरीरों को प्राप्त होती है।',
+                  hindiTranslationRoman: 'doosre naye shariron ko prapt hoti hai.',
                   translation: 'the embodied soul enters into new ones.',
                   wordBreakdown: [
-                    { word: 'saṁyāti', devanagari: 'संयाति', meaning: 'enters into / goes to', partOfSpeech: 'verb' },
-                    { word: 'dehī', devanagari: 'देही', meaning: 'the embodied soul', partOfSpeech: 'noun' }
+                    { word: 'doosre', devanagari: 'दूसरे', meaning: 'another / other', partOfSpeech: 'adjective' },
+                    { word: 'naye', devanagari: 'नए', meaning: 'new', partOfSpeech: 'adjective' },
+                    { word: 'shariron', devanagari: 'शरीरों', meaning: 'bodies', partOfSpeech: 'noun (plural)' },
+                    { word: 'prapt', devanagari: 'प्राप्त', meaning: 'attained / obtained', partOfSpeech: 'adjective' }
                   ],
                   questions: [
                     {
-                      id: 'bg222_p4_q1',
+                      id: 'bg222_p4_w',
                       type: 'phrase_matching',
                       warmup: true,
-                      prompt: 'Match each word in Part 4 to its meaning.',
+                      targetWords: ['doosre', 'naye', 'shariron', 'prapt'],
+                      prompt: 'Match each Hindi word to its meaning.',
                       pairs: [
-                        { sanskrit: 'saṁyāti', english: 'enters into / goes to' },
-                        { sanskrit: 'dehī', english: 'the embodied soul' }
+                        { hindi: { dev: 'दूसरे', roman: 'doosre' }, english: 'another / other' },
+                        { hindi: { dev: 'नए', roman: 'naye' }, english: 'new' },
+                        { hindi: { dev: 'शरीरों', roman: 'shariron' }, english: 'bodies' },
+                        { hindi: { dev: 'प्राप्त', roman: 'prapt' }, english: 'attained / obtained' }
                       ]
                     },
                     {
                       id: 'bg222_p4_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrases to their meanings.',
+                      targetWords: ['doosre', 'naye', 'shariron', 'prapt'],
+                      prompt: 'Now match the Hindi phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'saṁyāti navāni', english: 'enters into new ones' },
-                        { sanskrit: 'dehī', english: 'the embodied soul' }
+                        { hindi: { dev: 'दूसरे नए शरीरों को', roman: 'doosre naye shariron ko' }, english: 'other new bodies' },
+                        { hindi: { dev: 'प्राप्त होती है', roman: 'prapt hoti hai' }, english: 'attains' }
                       ]
+                    },
+                    {
+                      id: 'bg222_p4_c',
+                      type: 'fill_in_the_blank',
+                      targetWords: ['doosre', 'naye', 'shariron', 'prapt'],
+                      prompt: 'Complete the English sentence.',
+                      hindi: { dev: 'दूसरे नए शरीरों को प्राप्त होती है।', roman: 'doosre naye shariron ko prapt hoti hai.' },
+                      sentence: 'Attains other new ____',
+                      options: ['bodies', 'garments', 'person', 'old'],
+                      answer: 'bodies',
+                      explanation: 'The full phrase: "Attains other new bodies."'
                     },
                     {
                       id: 'bg222_p4_t',
                       type: 'translate',
+                      targetWords: ['doosre', 'naye', 'shariron', 'prapt'],
                       prompt: 'Write this in English',
-                      sanskrit: 'saṁyāti navāni dehī',
-                      answer: 'the embodied soul enters new ones',
-                      tiles: ['the', 'embodied', 'soul', 'enters', 'new', 'ones', 'garments', 'person', 'worn-out']
+                      hindi: { dev: 'दूसरे नए शरीरों को प्राप्त होती है।', roman: 'doosre naye shariron ko prapt hoti hai.' },
+                      answer: 'attains other new bodies',
+                      tiles: ['attains', 'other', 'new', 'bodies', 'garments', 'person', 'old', 'soul'],
+                      explanation: 'the embodied soul enters into new ones.'
                     },
                     {
-                      id: 'bg222_p4_r',
-                      type: 'sentence_rebuilding',
-                      prompt: 'Arrange the words to form Part 4 of the verse.',
-                      hint: 'the embodied soul enters into new ones.',
-                      targetSentence: 'saṁyāti navāni dehī',
-                      tiles: ['saṁyāti', 'navāni', 'dehī'],
-                      explanation: 'The embodied soul enters into new ones.'
-                    },
-                    {
-                      id: 'bg222_p4_q2',
+                      id: 'bg222_p4_q',
                       type: 'multiple_choice',
                       prompt: 'What does the garment simile in BG 2.22 teach?',
                       options: [
-                        { text: 'Just as we replace old clothes with new ones, the soul takes on a new body when the old one wears out.', isCorrect: true, explanation: 'Correct! The body is what the soul wears, not what the soul is.' },
-                        { text: 'The soul is destroyed along with the body, like a garment thrown away for good.', isCorrect: false, explanation: 'Incorrect. The garment is discarded, but the wearer — the soul — continues.' }
+                        {
+                          text: 'Just as we replace old clothes with new ones, the soul takes on a new body when the old one wears out.',
+                          isCorrect: true,
+                          explanation: 'Correct! The body is what the soul wears, not what the soul is.'
+                        },
+                        {
+                          text: 'The soul is destroyed along with the body, like a garment thrown away for good.',
+                          isCorrect: false,
+                          explanation: 'Incorrect. The garment is discarded, but the wearer — the soul — continues.'
+                        }
                       ]
                     }
                   ]
@@ -2202,20 +2649,94 @@ export const gitaData: GitaData = {
               ],
               finalSynthesisQuestions: [
                 {
-                  id: 'bg222_syn_q1',
-                  type: 'sentence_rebuilding',
-                  prompt: 'FULL VERSE SYNTHESIS: Arrange the first half of BG 2.22!',
-                  targetSentence: 'vāsāṁsi jīrṇāni yathā vihāya navāni gṛhṇāti naraḥ aparāṇi',
-                  tiles: ['vāsāṁsi', 'jīrṇāni', 'yathā', 'vihāya', 'navāni', 'gṛhṇāti', 'naraḥ', 'aparāṇi'],
-                  explanation: '"vāsāṁsi jīrṇāni yathā vihāya navāni gṛhṇāti naro \'parāṇi" — As a person casts off worn-out garments and takes up other, new ones.'
+                  id: 'bg222_syn_m',
+                  type: 'phrase_matching',
+                  targetWords: [
+                    'manushya',
+                    'purane',
+                    'vastron',
+                    'tyagkar',
+                    'doosre',
+                    'naye',
+                    'vastra',
+                    'dharan',
+                    'waise',
+                    'jeevatma',
+                    'shariron',
+                    'prapt'
+                  ],
+                  prompt: 'Match every phrase of the verse to its meaning.',
+                  pairs: [
+                    {
+                      hindi: { dev: 'जैसे मनुष्य पुराने वस्त्रों को त्यागकर', roman: 'jaise manushya purane vastron ko tyagkar' },
+                      english: 'as a person gives up old garments'
+                    },
+                    { hindi: { dev: 'दूसरे नए वस्त्र धारण करता है;', roman: 'doosre naye vastra dharan karta hai;' }, english: 'puts on other new garments' },
+                    {
+                      hindi: { dev: 'वैसे ही जीवात्मा पुराने शरीरों को त्यागकर', roman: 'waise hi jeevatma purane shariron ko tyagkar' },
+                      english: 'in the same way the soul gives up old bodies'
+                    },
+                    { hindi: { dev: 'दूसरे नए शरीरों को प्राप्त होती है।', roman: 'doosre naye shariron ko prapt hoti hai.' }, english: 'attains other new bodies' }
+                  ]
                 },
                 {
-                  id: 'bg222_syn_q2',
-                  type: 'sentence_rebuilding',
-                  prompt: 'FULL VERSE SYNTHESIS: Arrange the second half of BG 2.22!',
-                  targetSentence: 'tathā śarīrāṇi vihāya jīrṇāni anyāni saṁyāti navāni dehī',
-                  tiles: ['tathā', 'śarīrāṇi', 'vihāya', 'jīrṇāni', 'anyāni', 'saṁyāti', 'navāni', 'dehī'],
-                  explanation: '"tathā śarīrāṇi vihāya jīrṇāny anyāni saṁyāti navāni dehī" — Likewise, giving up worn-out bodies, the embodied soul enters others that are new.'
+                  id: 'bg222_syn_t1',
+                  type: 'translate',
+                  targetWords: ['manushya', 'purane', 'vastron', 'tyagkar', 'doosre', 'naye', 'vastra', 'dharan'],
+                  prompt: 'Write this in English',
+                  hindi: {
+                    dev: 'जैसे मनुष्य पुराने वस्त्रों को त्यागकर दूसरे नए वस्त्र धारण करता है;',
+                    roman: 'jaise manushya purane vastron ko tyagkar doosre naye vastra dharan karta hai;'
+                  },
+                  answer: 'as a person gives up old garments puts on other new garments',
+                  tiles: [
+                    'as',
+                    'a',
+                    'person',
+                    'gives',
+                    'up',
+                    'old',
+                    'garments',
+                    'puts',
+                    'on',
+                    'other',
+                    'new',
+                    'garments',
+                    'bodies',
+                    'takes',
+                    'soul'
+                  ],
+                  explanation: 'As, giving up garments that are worn out... a person takes up other, new ones.'
+                },
+                {
+                  id: 'bg222_syn_t2',
+                  type: 'translate',
+                  targetWords: ['waise', 'jeevatma', 'purane', 'shariron', 'doosre', 'naye', 'prapt'],
+                  prompt: 'Write this in English',
+                  hindi: {
+                    dev: 'वैसे ही जीवात्मा पुराने शरीरों को त्यागकर दूसरे नए शरीरों को प्राप्त होती है।',
+                    roman: 'waise hi jeevatma purane shariron ko tyagkar doosre naye shariron ko prapt hoti hai.'
+                  },
+                  answer: 'in the same way the soul gives up old bodies attains other new bodies',
+                  tiles: [
+                    'in',
+                    'the',
+                    'same',
+                    'way',
+                    'the',
+                    'soul',
+                    'gives',
+                    'up',
+                    'old',
+                    'bodies',
+                    'attains',
+                    'other',
+                    'new',
+                    'bodies',
+                    'garments',
+                    'person'
+                  ],
+                  explanation: 'so too, giving up worn-out bodies, for other ones... the embodied soul enters into new ones.'
                 }
               ]
             },
@@ -2225,23 +2746,8 @@ export const gitaData: GitaData = {
               verseRef: 'BG 2.23',
               essence: 'Weapons, fire, water and wind cannot harm the soul.',
               verseSanskrit: 'नैनं छिन्दन्ति शस्त्राणि नैनं दहति पावकः ।\nन चैनं क्लेदयन्त्यापो न शोषयति मारुतः ॥',
-              verseTransliteration: 'nainaṁ chindanti śastrāṇi nainaṁ dahati pāvakaḥ\nna cainaṁ kledayanty āpo na śoṣayati mārutaḥ',
-
-              verseHindiRoman: 'nainam chhindanti shastrani nainam dahati pavakah\nna chainam kledayanty apo na shoshayati marutah',
-              verseWordGuide: [
-                { devanagari: 'नैनं', roman: 'nainaṁ' },
-                { devanagari: 'छिन्दन्ति', roman: 'chindanti' },
-                { devanagari: 'शस्त्राणि', roman: 'śastrāṇi' },
-                { devanagari: 'नैनं', roman: 'nainaṁ' },
-                { devanagari: 'दहति', roman: 'dahati' },
-                { devanagari: 'पावकः', roman: 'pāvakaḥ' },
-                { devanagari: 'न', roman: 'na' },
-                { devanagari: 'चैनं', roman: 'cainaṁ' },
-                { devanagari: 'क्लेदयन्त्यापो', roman: 'kledayanty-āpo' },
-                { devanagari: 'न', roman: 'na' },
-                { devanagari: 'शोषयति', roman: 'śoṣayati' },
-                { devanagari: 'मारुतः', roman: 'mārutaḥ' }
-              ],
+              hindiTranslationDevanagari: 'इसे शस्त्र काट नहीं सकते, आग इसे जला नहीं सकती,\nजल इसे गीला नहीं कर सकता, और वायु इसे सुखा नहीं सकती।',
+              hindiTranslationRoman: 'ise shastra kaat nahi sakte, aag ise jala nahi sakti,\njal ise geela nahi kar sakta, aur vayu ise sukha nahi sakti.',
               translation: 'Weapons cannot cut the soul, nor can fire burn it. Water cannot wet it, nor can wind dry it.',
               purport: 'Having said the soul is unborn and undying, Krishna makes the point as concrete as possible: nothing in the physical world — blade, flame, water, or wind — can reach it at all. Arjuna\'s fear is of what weapons can do; this verse says weapons simply cannot touch what he truly is.',
               commentary: {
@@ -2252,115 +2758,134 @@ export const gitaData: GitaData = {
               reflectionPrompt: 'This verse insists that the true self cannot be harmed by any physical force. What fears in your own life are really fears about the body or circumstances, rather than about you?',
               storyCaption: 'Arjuna\'s hands trembled on his bow, afraid of the harm his weapons could do. "No blade can cut it," Krishna said, "no fire burn it, no water wet it, no wind dry it."',
               wordBreakdown: [
-                { word: 'enam', devanagari: 'एनम्', meaning: 'it / this (the soul)', partOfSpeech: 'pronoun' },
-                { word: 'chindanti', devanagari: 'छिन्दन्ति', meaning: 'they cut', partOfSpeech: 'verb' }
+                { word: 'shastra', devanagari: 'शस्त्र', meaning: 'weapons', partOfSpeech: 'noun' },
+                { word: 'kaat', devanagari: 'काट', meaning: 'cut', partOfSpeech: 'verb' },
+                { word: 'ise', devanagari: 'इसे', meaning: 'it / this soul', partOfSpeech: 'pronoun' },
+                { word: 'nahi', devanagari: 'नहीं', meaning: 'not', partOfSpeech: 'adverb' },
+                { word: 'aag', devanagari: 'आग', meaning: 'fire', partOfSpeech: 'noun' },
+                { word: 'jala', devanagari: 'जला', meaning: 'burn', partOfSpeech: 'verb' },
+                { word: 'jal', devanagari: 'जल', meaning: 'water', partOfSpeech: 'noun' },
+                { word: 'geela', devanagari: 'गीला', meaning: 'wet', partOfSpeech: 'adjective' },
+                { word: 'vayu', devanagari: 'वायु', meaning: 'wind', partOfSpeech: 'noun' },
+                { word: 'sukha', devanagari: 'सुखा', meaning: 'dry', partOfSpeech: 'verb' },
+                { word: 'aur', devanagari: 'और', meaning: 'and', partOfSpeech: 'conjunction' }
               ],
-              teachingSlides: [],
               questions: [],
               parts: [
                 {
                   partIndex: 1,
                   title: 'Part 1: Weapons Cannot Cut It',
-                  sanskrit: 'नैनं छिन्दन्ति शस्त्राणि',
-                  transliteration: 'nainaṁ chindanti śastrāṇi',
-
-                  hindiRoman: 'nainam chhindanti shastrani',
+                  hindiTranslationDevanagari: 'इसे शस्त्र काट नहीं सकते,',
+                  hindiTranslationRoman: 'ise shastra kaat nahi sakte,',
                   translation: 'Weapons cannot cut it.',
                   wordBreakdown: [
-                    { word: 'na', devanagari: 'न', meaning: 'not', partOfSpeech: 'particle' },
-                    { word: 'enam', devanagari: 'एनम्', meaning: 'it / this (the soul)', partOfSpeech: 'pronoun' },
-                    { word: 'chindanti', devanagari: 'छिन्दन्ति', meaning: 'they cut', partOfSpeech: 'verb' },
-                    { word: 'śastrāṇi', devanagari: 'शस्त्राणि', meaning: 'weapons', partOfSpeech: 'noun (plural)' }
+                    { word: 'shastra', devanagari: 'शस्त्र', meaning: 'weapons', partOfSpeech: 'noun' },
+                    { word: 'kaat', devanagari: 'काट', meaning: 'cut', partOfSpeech: 'verb' },
+                    { word: 'ise', devanagari: 'इसे', meaning: 'it / this soul', partOfSpeech: 'pronoun' },
+                    { word: 'nahi', devanagari: 'नहीं', meaning: 'not', partOfSpeech: 'adverb' }
                   ],
                   questions: [
                     {
-                      id: 'bg223_p1_q1',
+                      id: 'bg223_p1_w',
                       type: 'phrase_matching',
                       warmup: true,
-                      prompt: 'Match each word in Part 1 to its meaning.',
+                      targetWords: ['shastra', 'kaat', 'ise', 'nahi'],
+                      prompt: 'Match each Hindi word to its meaning.',
                       pairs: [
-                        { sanskrit: 'na', english: 'not' },
-                        { sanskrit: 'enam', english: 'it / this (the soul)' },
-                        { sanskrit: 'chindanti', english: 'they cut' },
-                        { sanskrit: 'śastrāṇi', english: 'weapons' }
+                        { hindi: { dev: 'शस्त्र', roman: 'shastra' }, english: 'weapons' },
+                        { hindi: { dev: 'काट', roman: 'kaat' }, english: 'cut' },
+                        { hindi: { dev: 'इसे', roman: 'ise' }, english: 'it / this soul' },
+                        { hindi: { dev: 'नहीं', roman: 'nahi' }, english: 'not' }
                       ]
                     },
                     {
                       id: 'bg223_p1_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrases to their meanings.',
+                      targetWords: ['shastra', 'kaat', 'ise', 'nahi'],
+                      prompt: 'Now match the Hindi phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'na enam', english: 'not it (the soul)' },
-                        { sanskrit: 'chindanti śastrāṇi', english: 'weapons cut' }
+                        { hindi: { dev: 'इसे', roman: 'ise' }, english: 'it' },
+                        { hindi: { dev: 'शस्त्र', roman: 'shastra' }, english: 'weapons' },
+                        { hindi: { dev: 'काट नहीं सकते', roman: 'kaat nahi sakte' }, english: 'cannot cut' }
                       ]
+                    },
+                    {
+                      id: 'bg223_p1_c',
+                      type: 'fill_in_the_blank',
+                      targetWords: ['shastra', 'kaat', 'ise', 'nahi'],
+                      prompt: 'Complete the English sentence.',
+                      hindi: { dev: 'इसे शस्त्र काट नहीं सकते,', roman: 'ise shastra kaat nahi sakte,' },
+                      sentence: 'Weapons cannot ____ it',
+                      options: ['cut', 'fire', 'burn', 'water'],
+                      answer: 'cut',
+                      explanation: 'The full phrase: "Weapons cannot cut it."'
                     },
                     {
                       id: 'bg223_p1_t',
                       type: 'translate',
+                      targetWords: ['shastra', 'kaat', 'ise', 'nahi'],
                       prompt: 'Write this in English',
-                      sanskrit: 'na enam chindanti śastrāṇi',
-                      answer: 'weapons do not cut it',
-                      tiles: ['weapons', 'do', 'not', 'cut', 'it', 'fire', 'burn', 'water']
-                    },
-                    {
-                      id: 'bg223_p1_q3',
-                      type: 'sentence_rebuilding',
-                      prompt: 'Arrange the words to form Part 1 of the verse.',
-                      hint: 'Weapons cannot cut it.',
-                      targetSentence: 'na enam chindanti śastrāṇi',
-                      tiles: ['na', 'enam', 'chindanti', 'śastrāṇi'],
-                      explanation: '"nainaṁ chindanti śastrāṇi" — Weapons cannot cut it.'
+                      hindi: { dev: 'इसे शस्त्र काट नहीं सकते,', roman: 'ise shastra kaat nahi sakte,' },
+                      answer: 'weapons cannot cut it',
+                      tiles: ['weapons', 'cannot', 'cut', 'it', 'fire', 'burn', 'water'],
+                      explanation: 'Weapons cannot cut it.'
                     }
                   ]
                 },
                 {
                   partIndex: 2,
                   title: 'Part 2: Fire Cannot Burn It',
-                  sanskrit: 'नैनं दहति पावकः',
-                  transliteration: 'nainaṁ dahati pāvakaḥ',
-
-                  hindiRoman: 'nainam dahati pavakah',
+                  hindiTranslationDevanagari: 'आग इसे जला नहीं सकती,',
+                  hindiTranslationRoman: 'aag ise jala nahi sakti,',
                   translation: 'Fire cannot burn it.',
                   wordBreakdown: [
-                    { word: 'dahati', devanagari: 'दहति', meaning: 'burns', partOfSpeech: 'verb' },
-                    { word: 'pāvakaḥ', devanagari: 'पावकः', meaning: 'fire', partOfSpeech: 'noun' }
+                    { word: 'aag', devanagari: 'आग', meaning: 'fire', partOfSpeech: 'noun' },
+                    { word: 'jala', devanagari: 'जला', meaning: 'burn', partOfSpeech: 'verb' },
+                    { word: 'ise', devanagari: 'इसे', meaning: 'it / this soul', partOfSpeech: 'pronoun' }
                   ],
                   questions: [
                     {
-                      id: 'bg223_p2_q1',
+                      id: 'bg223_p2_w',
                       type: 'phrase_matching',
                       warmup: true,
-                      prompt: 'Match each word in Part 2 to its meaning.',
+                      targetWords: ['aag', 'jala', 'ise'],
+                      prompt: 'Match each Hindi word to its meaning.',
                       pairs: [
-                        { sanskrit: 'dahati', english: 'burns' },
-                        { sanskrit: 'pāvakaḥ', english: 'fire' }
+                        { hindi: { dev: 'आग', roman: 'aag' }, english: 'fire' },
+                        { hindi: { dev: 'जला', roman: 'jala' }, english: 'burn' },
+                        { hindi: { dev: 'इसे', roman: 'ise' }, english: 'it / this soul' }
                       ]
                     },
                     {
                       id: 'bg223_p2_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrases to their meanings.',
+                      targetWords: ['aag', 'jala', 'ise'],
+                      prompt: 'Now match the Hindi phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'na enam dahati', english: 'does not burn it' },
-                        { sanskrit: 'pāvakaḥ', english: 'fire' },
-                        { sanskrit: 'na enam chindanti', english: 'do not cut it' }
+                        { hindi: { dev: 'आग', roman: 'aag' }, english: 'fire' },
+                        { hindi: { dev: 'इसे', roman: 'ise' }, english: 'it' },
+                        { hindi: { dev: 'जला नहीं सकती', roman: 'jala nahi sakti' }, english: 'cannot burn' }
                       ]
+                    },
+                    {
+                      id: 'bg223_p2_c',
+                      type: 'fill_in_the_blank',
+                      targetWords: ['aag', 'jala', 'ise'],
+                      prompt: 'Complete the English sentence.',
+                      hindi: { dev: 'आग इसे जला नहीं सकती,', roman: 'aag ise jala nahi sakti,' },
+                      sentence: 'Fire cannot ____ it',
+                      options: ['burn', 'weapons', 'cut', 'wind'],
+                      answer: 'burn',
+                      explanation: 'The full phrase: "Fire cannot burn it."'
                     },
                     {
                       id: 'bg223_p2_t',
                       type: 'translate',
+                      targetWords: ['aag', 'jala', 'ise'],
                       prompt: 'Write this in English',
-                      sanskrit: 'na enam dahati pāvakaḥ',
-                      answer: 'fire does not burn it',
-                      tiles: ['fire', 'does', 'not', 'burn', 'it', 'weapons', 'cut', 'wind']
-                    },
-                    {
-                      id: 'bg223_p2_r',
-                      type: 'sentence_rebuilding',
-                      prompt: 'Arrange the words to form Part 2 of the verse.',
-                      hint: 'Fire cannot burn it.',
-                      targetSentence: 'na enam dahati pāvakaḥ',
-                      tiles: ['na', 'enam', 'dahati', 'pāvakaḥ'],
+                      hindi: { dev: 'आग इसे जला नहीं सकती,', roman: 'aag ise jala nahi sakti,' },
+                      answer: 'fire cannot burn it',
+                      tiles: ['fire', 'cannot', 'burn', 'it', 'weapons', 'cut', 'wind'],
                       explanation: 'Fire cannot burn it.'
                     }
                   ]
@@ -2368,111 +2893,132 @@ export const gitaData: GitaData = {
                 {
                   partIndex: 3,
                   title: 'Part 3: Water Cannot Wet It',
-                  sanskrit: 'न चैनं क्लेदयन्त्यापो',
-                  transliteration: "na cainaṁ kledayanty āpo",
+                  hindiTranslationDevanagari: 'जल इसे गीला नहीं कर सकता,',
+                  hindiTranslationRoman: 'jal ise geela nahi kar sakta,',
                   translation: 'nor can water wet it.',
                   wordBreakdown: [
-                    { word: 'ca', devanagari: 'च', meaning: 'and', partOfSpeech: 'particle' },
-                    { word: 'kledayanti', devanagari: 'क्लेदयन्ति', meaning: 'wet / moisten', partOfSpeech: 'verb' },
-                    { word: 'āpaḥ', devanagari: 'आपः', meaning: 'waters', partOfSpeech: 'noun (plural)' }
+                    { word: 'jal', devanagari: 'जल', meaning: 'water', partOfSpeech: 'noun' },
+                    { word: 'geela', devanagari: 'गीला', meaning: 'wet', partOfSpeech: 'adjective' },
+                    { word: 'ise', devanagari: 'इसे', meaning: 'it / this soul', partOfSpeech: 'pronoun' }
                   ],
                   questions: [
                     {
-                      id: 'bg223_p3_q1',
+                      id: 'bg223_p3_w',
                       type: 'phrase_matching',
                       warmup: true,
-                      prompt: 'Match each word in Part 3 to its meaning.',
+                      targetWords: ['jal', 'geela', 'ise'],
+                      prompt: 'Match each Hindi word to its meaning.',
                       pairs: [
-                        { sanskrit: 'ca', english: 'and' },
-                        { sanskrit: 'kledayanti', english: 'wet / moisten' },
-                        { sanskrit: 'āpaḥ', english: 'waters' }
+                        { hindi: { dev: 'जल', roman: 'jal' }, english: 'water' },
+                        { hindi: { dev: 'गीला', roman: 'geela' }, english: 'wet' },
+                        { hindi: { dev: 'इसे', roman: 'ise' }, english: 'it / this soul' }
                       ]
                     },
                     {
                       id: 'bg223_p3_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrases to their meanings.',
+                      targetWords: ['jal', 'geela', 'ise'],
+                      prompt: 'Now match the Hindi phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'na ca enam', english: 'nor... it' },
-                        { sanskrit: 'kledayanti āpaḥ', english: 'waters wet' }
+                        { hindi: { dev: 'जल', roman: 'jal' }, english: 'water' },
+                        { hindi: { dev: 'इसे', roman: 'ise' }, english: 'it' },
+                        { hindi: { dev: 'गीला नहीं कर सकता', roman: 'geela nahi kar sakta' }, english: 'cannot wet' }
                       ]
+                    },
+                    {
+                      id: 'bg223_p3_c',
+                      type: 'fill_in_the_blank',
+                      targetWords: ['jal', 'geela', 'ise'],
+                      prompt: 'Complete the English sentence.',
+                      hindi: { dev: 'जल इसे गीला नहीं कर सकता,', roman: 'jal ise geela nahi kar sakta,' },
+                      sentence: 'Water cannot ____ it',
+                      options: ['wet', 'fire', 'dry', 'weapons'],
+                      answer: 'wet',
+                      explanation: 'The full phrase: "Water cannot wet it."'
                     },
                     {
                       id: 'bg223_p3_t',
                       type: 'translate',
+                      targetWords: ['jal', 'geela', 'ise'],
                       prompt: 'Write this in English',
-                      sanskrit: 'na ca enam kledayanti āpaḥ',
-                      answer: 'nor does water wet it',
-                      tiles: ['nor', 'does', 'water', 'wet', 'it', 'fire', 'dry', 'weapons']
-                    },
-                    {
-                      id: 'bg223_p3_r',
-                      type: 'sentence_rebuilding',
-                      prompt: 'Arrange the words to form Part 3 of the verse.',
-                      hint: 'nor can water wet it.',
-                      targetSentence: 'na ca enam kledayanti āpaḥ',
-                      tiles: ['na', 'ca', 'enam', 'kledayanti', 'āpaḥ'],
-                      explanation: 'Nor can water wet it.'
+                      hindi: { dev: 'जल इसे गीला नहीं कर सकता,', roman: 'jal ise geela nahi kar sakta,' },
+                      answer: 'water cannot wet it',
+                      tiles: ['water', 'cannot', 'wet', 'it', 'fire', 'dry', 'weapons'],
+                      explanation: 'nor can water wet it.'
                     }
                   ]
                 },
                 {
                   partIndex: 4,
                   title: 'Part 4: Wind Cannot Dry It',
-                  sanskrit: 'न शोषयति मारुतः',
-                  transliteration: 'na śoṣayati mārutaḥ',
-
-                  hindiRoman: 'na shoshayati marutah',
+                  hindiTranslationDevanagari: 'और वायु इसे सुखा नहीं सकती।',
+                  hindiTranslationRoman: 'aur vayu ise sukha nahi sakti.',
                   translation: 'nor can wind dry it.',
                   wordBreakdown: [
-                    { word: 'śoṣayati', devanagari: 'शोषयति', meaning: 'dries', partOfSpeech: 'verb' },
-                    { word: 'mārutaḥ', devanagari: 'मारुतः', meaning: 'wind', partOfSpeech: 'noun' }
+                    { word: 'vayu', devanagari: 'वायु', meaning: 'wind', partOfSpeech: 'noun' },
+                    { word: 'sukha', devanagari: 'सुखा', meaning: 'dry', partOfSpeech: 'verb' },
+                    { word: 'aur', devanagari: 'और', meaning: 'and', partOfSpeech: 'conjunction' }
                   ],
                   questions: [
                     {
-                      id: 'bg223_p4_q1',
+                      id: 'bg223_p4_w',
                       type: 'phrase_matching',
                       warmup: true,
-                      prompt: 'Match each word in Part 4 to its meaning.',
+                      targetWords: ['vayu', 'sukha', 'aur'],
+                      prompt: 'Match each Hindi word to its meaning.',
                       pairs: [
-                        { sanskrit: 'śoṣayati', english: 'dries' },
-                        { sanskrit: 'mārutaḥ', english: 'wind' }
+                        { hindi: { dev: 'वायु', roman: 'vayu' }, english: 'wind' },
+                        { hindi: { dev: 'सुखा', roman: 'sukha' }, english: 'dry' },
+                        { hindi: { dev: 'और', roman: 'aur' }, english: 'and' }
                       ]
                     },
                     {
                       id: 'bg223_p4_m',
                       type: 'phrase_matching',
-                      prompt: 'Now match the joined phrases to their meanings.',
+                      targetWords: ['vayu', 'sukha', 'aur'],
+                      prompt: 'Now match the Hindi phrases to their meanings.',
                       pairs: [
-                        { sanskrit: 'na śoṣayati', english: 'does not dry' },
-                        { sanskrit: 'mārutaḥ', english: 'wind' },
-                        { sanskrit: 'kledayanti āpaḥ', english: 'waters wet' }
+                        { hindi: { dev: 'वायु', roman: 'vayu' }, english: 'wind' },
+                        { hindi: { dev: 'इसे', roman: 'ise' }, english: 'it' },
+                        { hindi: { dev: 'सुखा नहीं सकती', roman: 'sukha nahi sakti' }, english: 'cannot dry' }
                       ]
+                    },
+                    {
+                      id: 'bg223_p4_c',
+                      type: 'fill_in_the_blank',
+                      targetWords: ['vayu', 'sukha', 'aur'],
+                      prompt: 'Complete the English sentence.',
+                      hindi: { dev: 'और वायु इसे सुखा नहीं सकती।', roman: 'aur vayu ise sukha nahi sakti.' },
+                      sentence: 'And wind cannot ____ it',
+                      options: ['dry', 'water', 'wet', 'burn'],
+                      answer: 'dry',
+                      explanation: 'The full phrase: "And wind cannot dry it."'
                     },
                     {
                       id: 'bg223_p4_t',
                       type: 'translate',
+                      targetWords: ['vayu', 'sukha', 'aur'],
                       prompt: 'Write this in English',
-                      sanskrit: 'na śoṣayati mārutaḥ',
-                      answer: 'wind does not dry it',
-                      tiles: ['wind', 'does', 'not', 'dry', 'it', 'water', 'wet', 'burn']
+                      hindi: { dev: 'और वायु इसे सुखा नहीं सकती।', roman: 'aur vayu ise sukha nahi sakti.' },
+                      answer: 'and wind cannot dry it',
+                      tiles: ['and', 'wind', 'cannot', 'dry', 'it', 'water', 'wet', 'burn'],
+                      explanation: 'nor can wind dry it.'
                     },
                     {
-                      id: 'bg223_p4_r',
-                      type: 'sentence_rebuilding',
-                      prompt: 'Arrange the words to form Part 4 of the verse.',
-                      hint: 'nor can wind dry it.',
-                      targetSentence: 'na śoṣayati mārutaḥ',
-                      tiles: ['na', 'śoṣayati', 'mārutaḥ'],
-                      explanation: 'Nor can wind dry it.'
-                    },
-                    {
-                      id: 'bg223_p4_q2',
+                      id: 'bg223_p4_q',
                       type: 'multiple_choice',
                       prompt: 'According to BG 2.23, what can harm the soul?',
                       options: [
-                        { text: 'Nothing physical — weapons, fire, water, and wind are all named, and all are unable to touch it.', isCorrect: true, explanation: 'Correct! The soul is beyond the reach of every physical force.' },
-                        { text: 'Only fire, which can burn away anything.', isCorrect: false, explanation: 'Incorrect. The verse explicitly says fire cannot burn it either.' }
+                        {
+                          text: 'Nothing physical — weapons, fire, water, and wind are all named, and all are unable to touch it.',
+                          isCorrect: true,
+                          explanation: 'Correct! The soul is beyond the reach of every physical force.'
+                        },
+                        {
+                          text: 'Only fire, which can burn away anything.',
+                          isCorrect: false,
+                          explanation: 'Incorrect. The verse explicitly says fire cannot burn it either.'
+                        }
                       ]
                     }
                   ]
@@ -2480,26 +3026,42 @@ export const gitaData: GitaData = {
               ],
               finalSynthesisQuestions: [
                 {
-                  id: 'bg223_syn_q1',
-                  type: 'sentence_rebuilding',
-                  prompt: 'FULL VERSE SYNTHESIS: Rebuild the first line of BG 2.23!',
-                  targetSentence: 'na enam chindanti śastrāṇi na enam dahati pāvakaḥ',
-                  tiles: ['na', 'enam', 'chindanti', 'śastrāṇi', 'na', 'enam', 'dahati', 'pāvakaḥ'],
-                  explanation: '"nainaṁ chindanti śastrāṇi nainaṁ dahati pāvakaḥ" — Weapons cannot cut it, nor can fire burn it.'
+                  id: 'bg223_syn_m',
+                  type: 'phrase_matching',
+                  targetWords: ['shastra', 'kaat', 'ise', 'nahi', 'aag', 'jala', 'jal', 'geela', 'vayu', 'sukha', 'aur'],
+                  prompt: 'Match every phrase of the verse to its meaning.',
+                  pairs: [
+                    { hindi: { dev: 'इसे शस्त्र काट नहीं सकते,', roman: 'ise shastra kaat nahi sakte,' }, english: 'weapons cannot cut it' },
+                    { hindi: { dev: 'आग इसे जला नहीं सकती,', roman: 'aag ise jala nahi sakti,' }, english: 'fire cannot burn it' },
+                    { hindi: { dev: 'जल इसे गीला नहीं कर सकता,', roman: 'jal ise geela nahi kar sakta,' }, english: 'water cannot wet it' },
+                    { hindi: { dev: 'और वायु इसे सुखा नहीं सकती।', roman: 'aur vayu ise sukha nahi sakti.' }, english: 'and wind cannot dry it' }
+                  ]
                 },
                 {
-                  id: 'bg223_syn_q2',
-                  type: 'sentence_rebuilding',
-                  prompt: 'FULL VERSE SYNTHESIS: Rebuild the second line of BG 2.23!',
-                  targetSentence: 'na ca enam kledayanti āpaḥ na śoṣayati mārutaḥ',
-                  tiles: ['na', 'ca', 'enam', 'kledayanti', 'āpaḥ', 'na', 'śoṣayati', 'mārutaḥ'],
-                  explanation: '"na cainaṁ kledayanty āpo na śoṣayati mārutaḥ" — Nor can water wet it, nor can wind dry it.'
+                  id: 'bg223_syn_t1',
+                  type: 'translate',
+                  targetWords: ['shastra', 'kaat', 'ise', 'nahi', 'aag', 'jala'],
+                  prompt: 'Write this in English',
+                  hindi: { dev: 'इसे शस्त्र काट नहीं सकते, आग इसे जला नहीं सकती,', roman: 'ise shastra kaat nahi sakte, aag ise jala nahi sakti,' },
+                  answer: 'weapons cannot cut it fire cannot burn it',
+                  tiles: ['weapons', 'cannot', 'cut', 'it', 'fire', 'cannot', 'burn', 'it', 'water', 'wind'],
+                  explanation: 'Weapons cannot cut it. Fire cannot burn it.'
+                },
+                {
+                  id: 'bg223_syn_t2',
+                  type: 'translate',
+                  targetWords: ['jal', 'geela', 'ise', 'vayu', 'sukha', 'aur'],
+                  prompt: 'Write this in English',
+                  hindi: { dev: 'जल इसे गीला नहीं कर सकता, और वायु इसे सुखा नहीं सकती।', roman: 'jal ise geela nahi kar sakta, aur vayu ise sukha nahi sakti.' },
+                  answer: 'water cannot wet it and wind cannot dry it',
+                  tiles: ['water', 'cannot', 'wet', 'it', 'and', 'wind', 'cannot', 'dry', 'it', 'fire', 'weapons', 'burn'],
+                  explanation: 'nor can water wet it. nor can wind dry it.'
                 },
                 {
                   id: 'bg223_syn_q3',
                   type: 'reflection',
                   prompt: 'Personal Reflection on the Indestructible Self:',
-                  verseContext: 'BG 2.23: "nainaṁ chindanti śastrāṇi nainaṁ dahati pāvakaḥ na cainaṁ kledayanty āpo na śoṣayati mārutaḥ — Weapons cannot cut it, fire cannot burn it, water cannot wet it, nor wind dry it."',
+                  verseContext: 'BG 2.23: "Weapons cannot cut it, fire cannot burn it, water cannot wet it, nor can wind dry it."',
                   guidance: 'Across these four lessons, the Gita has called the self unborn, undying, ever-changing in body but never in essence, and untouchable by any physical force. Which of these ideas do you find hardest to believe — and which feels most true to your own experience?'
                 }
               ]

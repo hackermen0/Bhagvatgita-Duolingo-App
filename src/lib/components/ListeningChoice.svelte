@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import type { ListeningOption } from '../data/gitaData';
   import { playPopSound } from '../utils/soundEffects';
-  import SanskritWord from './SanskritWord.svelte';
+  import HindiWord from './HindiWord.svelte';
   import Icon from './Icon.svelte';
 
   let { audioText, options, onSelect, disabled = false } = $props<{
@@ -92,7 +92,7 @@
         onclick={() => choose(option.word)}
         class="tile flex flex-col items-center justify-center gap-1 p-4 min-h-24 {selected === option.word ? 'tile-selected' : ''}"
       >
-        <SanskritWord text={option.word} size="lg" />
+        <HindiWord hindi={{ dev: option.devanagari, roman: option.word }} size="lg" />
       </button>
     {/each}
   </div>

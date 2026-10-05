@@ -1,8 +1,6 @@
 // Section 3 ("What the Learner Chooses") and Section 4 ("Onboarding") of the product design.
 
 export type Goal = 'recitation' | 'meaning' | 'pronunciation' | 'both';
-export type DevanagariAbility = 'none' | 'little' | 'comfortable';
-export type SanskritFamiliarity = 'beginner' | 'some' | 'studied' | 'advanced';
 export type GitaKnowledge = 'none' | 'few' | 'many' | 'chapters';
 export type TimeBudget = '5-7' | '10-12' | '15-20' | 'variable';
 export type PracticePreference = 'listening' | 'reading' | 'balanced';
@@ -10,10 +8,8 @@ export type PlanId = 'quick' | 'regular' | 'deep' | 'custom';
 export type DifficultyTier = 'beginner' | 'medium' | 'hard';
 
 export interface OnboardingProfile {
-  difficultyTier?: DifficultyTier;
+  difficultyTier: DifficultyTier;
   goal: Goal;
-  devanagariAbility: DevanagariAbility;
-  sanskritFamiliarity: SanskritFamiliarity;
   gitaKnowledge: GitaKnowledge;
   timeBudget: TimeBudget;
   practicePreference: PracticePreference;
@@ -21,6 +17,51 @@ export interface OnboardingProfile {
   /** Only set when plan === 'custom' */
   customMinutes?: number;
 }
+
+// ─── Difficulty tiers ───────────────────────────────────────────────────────
+// Every tier presents the verse as Hindi and asks the learner to answer in English; the tier only
+// changes the script (see `scriptModeForTier` in gameState) and how much vocabulary work comes with it.
+export interface DifficultyTierInfo {
+  tier: DifficultyTier;
+  title: string;
+  badge: string;
+  /** One line on how the Hindi is written */
+  subtitle: string;
+  /** Short label for compact pickers */
+  short: string;
+  sample: string;
+  description: string;
+}
+
+export const DIFFICULTY_TIERS: DifficultyTierInfo[] = [
+  {
+    tier: 'beginner',
+    title: 'Beginner',
+    badge: 'Easy',
+    subtitle: 'Hindi in Roman letters (Hinglish)',
+    short: 'Roman Hindi',
+    sample: 'Aapka adhikar keval karma karne par hai, uske phalon par kabhi nahi...',
+    description: 'Read each verse in Hindi written in English letters, then solve it in English. No new script to learn.'
+  },
+  {
+    tier: 'medium',
+    title: 'Medium',
+    badge: 'Balanced',
+    subtitle: 'Hindi in Devanagari script',
+    short: 'Devanagari',
+    sample: 'आपका अधिकार केवल कर्म करने पर है, उसके फलों पर कभी नहीं...',
+    description: 'Read each verse in Hindi script, with word warm-ups before each phrase, then solve it in English.'
+  },
+  {
+    tier: 'hard',
+    title: 'Hard',
+    badge: 'Challenge',
+    subtitle: 'Devanagari + vocabulary drills',
+    short: 'Devanagari + drills',
+    sample: 'आपका अधिकार केवल कर्म करने पर है, उसके फलों पर कभी नहीं...',
+    description: 'Devanagari Hindi with extra vocabulary and word-matching rounds at the end of every verse.'
+  }
+];
 
 // ─── Section 3: Plan definitions ────────────────────────────────────────────
 export interface PlanDefinition {
@@ -92,7 +133,7 @@ export interface OnboardingOption {
 }
 
 export interface OnboardingQuestion {
-  key: 'goal' | 'devanagariAbility' | 'sanskritFamiliarity' | 'gitaKnowledge' | 'timeBudget' | 'practicePreference';
+  key: 'goal' | 'gitaKnowledge' | 'timeBudget' | 'practicePreference';
   question: string;
   helper?: string;
   options: OnboardingOption[];
@@ -108,25 +149,6 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
       { value: 'meaning', label: 'Understanding the meaning' },
       { value: 'pronunciation', label: 'Correct pronunciation' },
       { value: 'both', label: 'A bit of everything' }
-    ]
-  },
-  {
-    key: 'devanagariAbility',
-    question: 'Can you read Devanagari script?',
-    options: [
-      { value: 'none', label: "No, I can't read it yet" },
-      { value: 'little', label: 'A little' },
-      { value: 'comfortable', label: "Yes, I'm comfortable with it" }
-    ]
-  },
-  {
-    key: 'sanskritFamiliarity',
-    question: 'How familiar are you with Sanskrit?',
-    options: [
-      { value: 'beginner', label: 'Beginner' },
-      { value: 'some', label: 'Some exposure' },
-      { value: 'studied', label: "I've studied it before" },
-      { value: 'advanced', label: 'Advanced' }
     ]
   },
   {
