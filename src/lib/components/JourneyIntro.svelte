@@ -1,13 +1,12 @@
 <script lang="ts">
   import { gameState } from '../state/gameState.svelte';
-  import { hindiTokens } from '../data/hindi';
   import type { Lesson } from '../data/gitaData';
   import type { JourneyContent } from '../data/journey';
-  import { speak } from '../utils/speech';
-  import SpeakButton from './SpeakButton.svelte';
+  import SpokenText, { englishLines, hindiLines } from './SpokenText.svelte';
   import Mascot from './Mascot.svelte';
 
-  // Page 1: the verse in Hindi and English, and its deeper meaning — every piece can be heard.
+  // Page 1: the verse in Hindi and English, and its deeper meaning. Each is read aloud with every word lit up
+  // as it is spoken; tapping a Hindi word speaks just that word.
   let { lesson, content, onComplete } = $props<{
     lesson: Lesson;
     content: JourneyContent;
@@ -16,13 +15,9 @@
 
   const isDeva = $derived(gameState.tierScriptMode === 'devanagari');
 
-  const lines = $derived.by(() => {
-    const dev = content.verseHindi.dev.split('\n');
-    const roman = content.verseHindi.roman.split('\n');
-    return dev.map((d: string, i: number) => ({ dev: d, roman: roman[i] ?? d }));
-  });
-  const spokenHindi = $derived(lines.map((l: { dev: string }) => l.dev).join(' '));
-  const spokenMeaning = $derived(content.deeperMeaning.join(' '));
+  const hindi = $derived(hindiLines(content.verseHindi, isDeva));
+  const english = $derived(englishLines(content.verseEnglish));
+  const meaning = $derived(englishLines(content.deeperMeaning.join('\n')));
 </script>
 
 <div class="flex-1 overflow-y-auto scrollbar-none px-5 pt-4 pb-6 flex flex-col gap-4 select-none">
@@ -40,44 +35,20 @@
     </div>
   {/if}
 
-  <!-- Hindi: tap any word to hear it, or hear the whole verse -->
   <div class="card p-4 flex flex-col gap-3">
-    <div class="flex items-center justify-between gap-2">
-      <p class="text-xs font-black uppercase tracking-wider text-primary">In Hindi</p>
-      <SpeakButton text={spokenHindi} lang="hi" label="Hear Hindi" />
-    </div>
-    {#each lines as line}
-      <div class="flex flex-wrap gap-x-2 gap-y-2">
-        {#each hindiTokens(line) as token}
-          <button
-            type="button"
-            onclick={() => speak(token.dev, 'hi')}
-            aria-label="Hear {token.roman}"
-            class="rounded-lg px-1.5 py-0.5 -mx-0.5 hover:bg-primary-soft active:bg-primary-soft text-xl leading-tight
-              {isDeva ? 'font-deva' : 'font-black'} text-text-primary"
-          >{isDeva ? token.dev : token.roman}</button>
-        {/each}
-      </div>
-    {/each}
+    <p class="text-xs font-black uppercase tracking-wider text-primary">In Hindi</p>
+    <SpokenText lines={hindi} lang="hi" label="Hear Hindi" tappable textClass="text-xl leading-tight {isDeva ? 'font-deva' : 'font-black'}" />
     <p class="text-xs font-bold text-text-muted">Tap any word to hear it.</p>
   </div>
 
   <div class="card p-4 flex flex-col gap-3">
-    <div class="flex items-center justify-between gap-2">
-      <p class="text-xs font-black uppercase tracking-wider text-primary">In English</p>
-      <SpeakButton text={content.verseEnglish} lang="en" label="Hear English" />
-    </div>
-    <p class="text-[17px] font-bold leading-relaxed">{content.verseEnglish}</p>
+    <p class="text-xs font-black uppercase tracking-wider text-primary">In English</p>
+    <SpokenText lines={english} lang="en" label="Hear English" textClass="text-[17px] font-bold leading-relaxed" />
   </div>
 
   <div class="card p-4 flex flex-col gap-3">
-    <div class="flex items-center justify-between gap-2">
-      <p class="text-xs font-black uppercase tracking-wider text-accent">Deeper meaning</p>
-      <SpeakButton text={spokenMeaning} lang="en" label="Listen" />
-    </div>
-    {#each content.deeperMeaning as paragraph}
-      <p class="text-[15px] font-semibold leading-relaxed">{paragraph}</p>
-    {/each}
+    <p class="text-xs font-black uppercase tracking-wider text-accent">Deeper meaning</p>
+    <SpokenText lines={meaning} lang="en" label="Listen" textClass="text-[15px] font-semibold leading-relaxed" />
   </div>
 </div>
 

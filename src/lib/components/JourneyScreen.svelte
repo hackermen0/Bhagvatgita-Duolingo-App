@@ -7,6 +7,7 @@
     JOURNEY_PAGE_COUNT,
     clueFor,
     getJourneyContent,
+    inVerseOrder,
     journeyPool,
     keysFromAnswer,
     keysFromRoman,
@@ -29,7 +30,8 @@
   import ReciteScreen from './ReciteScreen.svelte';
   import BlankFill from './BlankFill.svelte';
   import SpeakButton from './SpeakButton.svelte';
-  import WordCard from './WordCard.svelte';
+  import SpokenText, { hindiLines } from './SpokenText.svelte';
+  import WordFlashcard from './WordFlashcard.svelte';
   import HindiWord from './HindiWord.svelte';
   import CompleteFlow from './CompleteFlow.svelte';
   import Mascot, { preloadMascots, type MascotMood } from './Mascot.svelte';
@@ -86,9 +88,8 @@
 
   // Per-page state, cleared whenever a page changes
   let matchComplete = $state(false);
-  // Flashcards: what each card shows now, and which have been revealed at least once
-  let flips = $state<boolean[]>([]);
-  let revealed = $state<boolean[]>([]);
+  // Flashcards: which word's screen is showing
+  let cardIndex = $state(0);
   let filled = $state<(string | null)[]>([]);
   let isChecked = $state(false);
   let isCorrect = $state(false);
@@ -98,8 +99,7 @@
 
   function resetPageState() {
     matchComplete = false;
-    flips = [];
-    revealed = [];
+    cardIndex = 0;
     filled = [];
     isChecked = false;
     isCorrect = false;
@@ -174,24 +174,26 @@
     nonce += 1;
   }
 
-  // ─── Flashcards: the words the next word-matching page will ask about ──────
-  const cardWords = $derived(spec.kind === 'flashcards' ? batches[spec.half ?? 0] : []);
-  const allRevealed = $derived(cardWords.length > 0 && cardWords.every((_, i) => revealed[i]));
+  // ─── Flashcards: one word per screen — the words the next word-matching page will ask about ──
+  const cardWords = $derived(
+    spec.kind === 'flashcards' ? inVerseOrder(batches[spec.half ?? 0], content.halves[spec.half ?? 0].hindi.roman) : []
+  );
+  const lastCard = $derived(cardIndex >= cardWords.length - 1);
 
-  function flipCard(i: number) {
-    flips[i] = !flips[i];
-    if (flips[i]) revealed[i] = true;
-  }
-
-  // The footer button reveals everything first, then moves on
-  function flashcardsPrimary() {
-    if (!allRevealed) {
-      flips = cardWords.map(() => true);
-      revealed = cardWords.map(() => true);
+  function nextCard() {
+    if (!lastCard) {
+      stopSpeaking();
+      cardIndex += 1;
       return;
     }
     cardWords.forEach((w) => seen.add(w.key));
     advance();
+  }
+
+  function previousCard() {
+    if (cardIndex === 0) return;
+    stopSpeaking();
+    cardIndex -= 1;
   }
 
   // ─── Matching pages (words, then phrases) ───────────────────────────────────
@@ -352,7 +354,7 @@
     if (e.key !== 'Enter' || showQuit || isGameOver || completed) return;
     if ((e.target as HTMLElement | null)?.closest?.('button, textarea, input')) return;
     if (showFeedback) return onFeedbackContinue();
-    if (spec.kind === 'flashcards') flashcardsPrimary();
+    if (spec.kind === 'flashcards') nextCard();
     else if (spec.kind === 'word_match' || spec.kind === 'phrase_match') finishMatching();
     else if (spec.kind === 'blanks') checkBlanks();
     else if (spec.kind === 'reexam') checkReexam();
@@ -377,9 +379,8 @@
 
 <!-- The Hindi being worked on, in the tier's script, with a voice -->
 {#snippet hindiCard(h: HindiText)}
-  <div class="card px-4 py-3 flex items-center gap-3">
-    <p class="flex-1 min-w-0 text-lg leading-snug whitespace-pre-line {isDeva ? 'font-deva font-bold' : 'font-black'}">{scriptOf(h)}</p>
-    <SpeakButton text={h.dev} lang="hi" label="Hindi" size="sm" />
+  <div class="card px-4 py-3">
+    <SpokenText lines={hindiLines(h, isDeva)} lang="hi" label="Hindi" textClass="text-lg leading-snug {isDeva ? 'font-deva font-bold' : 'font-black'}" />
   </div>
 {/snippet}
 
@@ -418,30 +419,26 @@
         <JourneyIntro {lesson} {content} onComplete={advance} />
 
       {:else if spec.kind === 'flashcards'}
-        {@const half = content.halves[spec.half ?? 0]}
         <div class="flex-1 overflow-y-auto scrollbar-none px-5 pt-4 pb-6 flex flex-col gap-4">
-          {@render header(
-            spec.title,
-            allRevealed ? 'Tap a card to flip it back.' : 'Tap each card to reveal its meaning. Next, you will match these words.'
-          )}
-          {@render hindiCard(half.hindi)}
-          {#if half.note}
-            <p class="text-sm font-bold text-text-muted leading-snug bg-bg-surface-alt rounded-xl px-3 py-2">{half.note}</p>
-          {/if}
-          <div class="flex items-center justify-center gap-2" aria-label="{revealed.filter(Boolean).length} of {cardWords.length} revealed">
+          {@render header(spec.title, `Word ${cardIndex + 1} of ${cardWords.length} · picture it, then say it`)}
+          <div class="flex items-center justify-center gap-2" aria-label="Word {cardIndex + 1} of {cardWords.length}">
             {#each cardWords as _, i}
-              <span class="h-2 rounded-full transition-all duration-300 {revealed[i] ? 'w-6 bg-primary' : 'w-2 bg-border-warm'}"></span>
+              <span class="h-2 rounded-full transition-all duration-300 {i === cardIndex ? 'w-6 bg-primary' : i < cardIndex ? 'w-2 bg-primary' : 'w-2 bg-border-warm'}"></span>
             {/each}
           </div>
-          <div class="grid grid-cols-2 gap-3 pb-2">
-            {#each cardWords as word, i (word.key)}
-              <WordCard {word} flipped={!!flips[i]} onFlip={() => flipCard(i)} delay={i * 90} />
-            {/each}
-          </div>
+          <!-- Re-keyed per word so each one pops in on its own screen -->
+          {#key cardWords[cardIndex]?.key}
+            {#if cardWords[cardIndex]}
+              <WordFlashcard word={cardWords[cardIndex]} />
+            {/if}
+          {/key}
         </div>
-        <div class="lesson-footer">
-          <button type="button" onclick={flashcardsPrimary} class="btn w-full {allRevealed ? 'btn-primary' : 'btn-secondary'}">
-            {allRevealed ? "Let's practice" : 'Reveal all'}
+        <div class="lesson-footer flex gap-3">
+          {#if cardIndex > 0}
+            <button type="button" onclick={previousCard} class="btn btn-secondary flex-1">Back</button>
+          {/if}
+          <button type="button" onclick={nextCard} class="btn btn-primary {cardIndex > 0 ? 'flex-[2]' : 'w-full'}">
+            {lastCard ? "Let's practice" : 'Next word'}
           </button>
         </div>
 

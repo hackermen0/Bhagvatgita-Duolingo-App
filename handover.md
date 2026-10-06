@@ -24,7 +24,9 @@ Each verse is **one node** on the path (no rings) that plays a fixed **19-page j
 - **Checkpoints:** `gameState.journeyCheckpoint[lessonId]` = `{page, seed, batches, missedWords, seenWords, correct, wrong, elapsedMs}`, saved after every finished page, with the journey's page count (a checkpoint from a different layout is discarded on load). The seed fixes the word batches and decoys, so resuming rebuilds the same pages. The path node shows `N/19` and its popover offers Continue / Start over. Running out of hearts refills them and replays the current page; earlier pages stay saved.
 - **Completion:** `gameState.completeVerse` (50 XP first time, 15 on replay) marks the verse done and clears the checkpoint. The old `levelProgress` / `completeLevel` / 3-level design is gone; saves that had `levelProgress` simply lose any half-finished level.
 - **Tiers:** all tiers play the same pages; the tier only picks the Hindi script (`scriptText`, Roman on Beginner).
+- **Word highlighting:** `SpokenText.svelte` shows a verse/phrase as words and lights each one as it is spoken (Hindi or English); used on the intro, the recital pages (plays itself when its text is visible) and the Hindi card on the matching/blank pages. It runs on `speakTokens` in `speech.ts`: one utterance with `onboundary` on desktop, one utterance per word on phones whose voices never report boundaries (detected once and cached in `localStorage`, key `gita_tts_word_boundaries_v2[_en]`). Verified against a stubbed speech engine in both modes, not with a real voice.
 - **Voice:** `src/lib/utils/speech.ts` (`speak(text, 'hi' | 'en')`, `listen`, `hasRecognition`) and `SpeakButton`. Recital uses `SpeechRecognition` where the browser has it (Chromium) and a typing box otherwise; grading (`scoreRecital`) is lenient (60% of words) and never costs hearts.
+- **Dev menu:** Settings → "Developer menu · for testing" (collapsed; visible in all builds for now — gate it on `import.meta.env.DEV` before release). Complete / Reset any single verse, complete or reset all, refill hearts, forget learned words. Backed by `gameState.devSetLessonsComplete` and `devClearWordMemory`; no XP/streak changes.
 - `QuizScreen.svelte` is now only the engine for **practice** and **jump tests** (one flat queue; `mode` is required).
 
 ## 2. Content (src/lib/data/gitaData.ts)
@@ -43,14 +45,21 @@ Graded by **meaning words, not order**: correct if the selection contains exactl
 Placed tiles can be **dragged to reorder** (pointer events, FLIP animation; tap still removes; arrow keys move a focused tile). `plain` prop renders English tiles. Tested with mouse, touch and keyboard on a throwaway page only.
 
 ## 3. Other changes this session (all committed)
-- (Superseded by the journey: `VerseHookScreen`, `PhraseIntroScreen`, `WordDiscoveryScreen` and `WordCard` were removed. The old verse-intro word highlighting during recitation was not carried over to `JourneyIntro`.)
+- (Superseded by the journey: `VerseHookScreen`, `PhraseIntroScreen`, `WordDiscoveryScreen` and `WordCard` were removed. Their word-by-word recitation highlighting lives on in `SpokenText` / `speakTokens`, below.)
 - Streak UI uses dedicated orange tokens (`--color-streak*` in `app.css`), independent of the blue brand colour.
 - Path: more top padding so the floating "Start" bubble clears the unit banner.
 - Theme is blue (`#3BB5F8` family); mascot is Krishna (15 WebP mood images in `static/mascot/`, `Mascot.svelte` with `MascotMood`).
 
-## 4. Mascot animation (in progress — not in the app yet)
+## 4. Mascot animation (wired into the app)
 
-Goal: Duolingo-style animated Krishna that reacts to right/wrong answers. Decision: **animate the layered SVG directly with the Web Animations API** (no Lottie/Rive — no extra dependency, instant to trigger from lesson code).
+**Now live in the app.** `Mascot.svelte` (used in ~20 places) renders the layered SVG and plays a reaction when its `mood` prop changes. The animation code is `src/lib/mascot/krishna.ts` (ported from `preview.template.html`, per-instance, with cleanup); the SVG it animates is `src/lib/mascot/krishna-animated.svg`, **generated** by `node design/mascot-svg/build-preview.cjs` alongside `preview.html` — re-run it after re-exporting any expression SVG. The SVG is a separate lazy chunk (`loadKrishnaSvg`, also started by `preloadMascots`).
+
+- Mood → reaction: `default` idle/rest · `cheerful`, `proud` → correct (laughing + sparkles) · `excited`, `amazed` → combo · `celebrating` → celebrate (confetti) · `affectionate` → love · `thinking` → think · `disappointed` → wrong · `crying` → heartbreak. The `angry` reaction exists but no mood uses it.
+- A reaction **holds its face** after the motion (the learner reads feedback with the mascot still smiling/sad); moving to another mood or `default` returns to the resting face.
+- Moods with no animation (`shocked`, `worried`, `determined`, `mischievous`, `puppy`) show their static WebP over the (still mounted) SVG, then the animated mascot comes back. `prefers-reduced-motion` uses the WebPs only. Shocked/worried change the whole pose, so they are the next candidates for animation.
+- Verified in headless Chrome (idle loops, laughing/disappointed/crying faces, confetti, shocked fallback, reduced motion, no console errors); not checked on a real phone for performance.
+
+Original goal: Duolingo-style animated Krishna that reacts to right/wrong answers. Decision: **animate the layered SVG directly with the Web Animations API** (no Lottie/Rive — no extra dependency, instant to trigger from lesson code).
 
 Files in `design/mascot-svg/`:
 - `krishna-mascot.svg` — user-made layered export (Illustrator, traced from the PNG). Group IDs are the API: `head`, `hair-back`, `hair-front`, `hair-bun`, `left-ear`, `right-ear`, `left-eye`/`right-eye` (+ `left-pupil`/`right-pupil`), `eye-brow-left/right`, `mouth`, `tilak`, `headband`, `peacock-feather`, `earring-left/right`, `body`, `necklace`, `sash`, `Lungi`, `left-arm`, `right-arm` (contains the flute + `hand-right-fingers`), `leg-left/right`, `shadow`.
@@ -66,7 +75,7 @@ Preview limits: expressions are faked (mouth flipped for a frown, eyes squashed 
    Suggested first three: `disappointed` (wrong), `cheerful` (correct), `shocked` (wrong match). Full mapping idea: wrong→disappointed, last heart→worried, wrong pair→shocked_1, correct→cheerful, streak 3/5→too_exited/amazed, out of hearts→crying, complete→celebrating.
    Emotion PNGs use the same body pose except celebrating, thinking, proud, unimpressed, too_exited, fire_angry, super_angry (those change arms/body — later). Detailed eyes in most emotion PNGs differ from the default's plain eyes; consider redrawing the default face to match.
 2. Write the face-swap logic in the preview first, then verify the Wrong reaction with the real disappointed face.
-3. **Wire into the app:** replace the image in `Mascot.svelte` with the inline SVG + animation module; keep the WebP images as fallback for moods without an animation; respect `prefers-reduced-motion`; call reactions from `QuizScreen` where `exerciseMood` is computed. Lazy-load the SVG (~74 KB).
+3. ~~Wire into the app~~ — done, see above (reactions come from the `mood` prop, so `QuizScreen`/`JourneyScreen` needed no changes).
 
 ## 5. Not done / open items
 - **Capacitor (Android/iOS) packaging**: planned only, nothing implemented. Plan file: `C:\Users\KIIT\.claude\plans\ok-now-plan-out-proud-lighthouse.md` (adapter-static SPA via `BUILD_TARGET=capacitor`, `ssr = false`, self-host fonts, back-button + status-bar plugins, store checklists).

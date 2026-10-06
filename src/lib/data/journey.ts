@@ -5,6 +5,7 @@
 import { gitaData, type HindiText, type Lesson, type PhrasePair, type VersePart, type WordMeaning } from './gitaData';
 import { hindiOf, wordKey } from './hindi';
 import { JOURNEY_OVERRIDES } from './journeyContent';
+import { WORD_IMAGES } from './wordImages';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -17,6 +18,8 @@ export interface JourneyWord {
   hindi: HindiText;
   english: string;
   kind: WordKind;
+  /** A short aside shown with the word's flashcard */
+  note?: string;
 }
 
 export interface JourneyHalf {
@@ -26,8 +29,6 @@ export interface JourneyHalf {
   phrases: PhrasePair[];
   /** Every word of the half (about twelve) — only some are shown at a time, see pickWordBatch */
   words: JourneyWord[];
-  /** A short aside shown above the word matching */
-  note?: string;
 }
 
 /** A sentence with `___` gaps and a bank of options (the answers plus decoys). */
@@ -185,8 +186,8 @@ type Memory = Record<string, { strength: number; lastPracticed: number }>;
 export const WORD_BATCH_SIZE = 4;
 
 /**
- * The words a half's flashcards and word-matching page work on: the weakest content words first (words
- * never seen count as weakest), nouns before verbs and adjectives when equally weak. Grammar words only pad
+ * The words a half's flashcards and word-matching page work on: words that have a flashcard picture first, then
+ * the weakest content words (words never seen count as weakest), nouns before verbs and adjectives when equally weak. Grammar words only pad
  * a page up to the batch size when the half has too few content words; they are tested in the re-exam and
  * in practice. The seed fixes the pick for a checkpoint; a replay gets a new seed, and since the words just
  * learned are no longer the weakest, the ones the learner hasn't met rotate in.
@@ -197,8 +198,12 @@ export function pickWordBatch(pool: JourneyWord[], memory: Memory, seed: number,
   const lastPracticed = (w: JourneyWord) => memory[w.key]?.lastPracticed ?? 0;
   const nounFirst = (w: JourneyWord) => (w.kind === 'noun' ? 0 : 1);
   // The shuffle above breaks ties, because the sort is stable
+  const pictured = (w: JourneyWord) => (WORD_IMAGES[w.key] ? 0 : 1);
   const weakestFirst = (ws: JourneyWord[]) =>
-    [...ws].sort((a, b) => strength(a) - strength(b) || nounFirst(a) - nounFirst(b) || lastPracticed(a) - lastPracticed(b));
+    [...ws].sort(
+      (a, b) =>
+        pictured(a) - pictured(b) || strength(a) - strength(b) || nounFirst(a) - nounFirst(b) || lastPracticed(a) - lastPracticed(b)
+    );
 
   const picked: JourneyWord[] = [];
   const keys = new Set<string>();
@@ -217,6 +222,16 @@ export function pickWordBatch(pool: JourneyWord[], memory: Memory, seed: number,
   take(shuffled.filter((w) => w.kind !== 'grammar'));
   if (picked.length < size) take(shuffled.filter((w) => w.kind === 'grammar'));
   return seededShuffle(picked, seed + 1);
+}
+
+/** Words in the order they are said in the Hindi, so flashcards walk through the verse. */
+export function inVerseOrder(words: JourneyWord[], hindiRoman: string): JourneyWord[] {
+  const text = ` ${plain(hindiRoman)} `;
+  const at = (w: JourneyWord) => {
+    const i = text.indexOf(` ${plain(w.hindi.roman)} `);
+    return i < 0 ? Infinity : i;
+  };
+  return [...words].sort((a, b) => at(a) - at(b));
 }
 
 /**

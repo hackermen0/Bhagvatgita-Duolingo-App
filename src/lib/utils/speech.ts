@@ -67,6 +67,133 @@ export function speak(text: string, lang: SpeechLang, opts: SpeakOptions = {}): 
   window.speechSynthesis.speak(utterance);
 }
 
+const defaultRate = (lang: SpeechLang) => (lang === 'hi' ? 0.75 : 0.95);
+
+// Word highlighting needs to know when each word starts. Desktop voices report that via `onboundary`, so the
+// phrase plays as one smooth utterance. Many mobile voices (Android Chrome's Hindi voice especially) never fire
+// `onboundary`; there the phrase is queued as one utterance per word instead, and each word's `onstart` — reliable
+// everywhere — drives the highlight in exact sync. Phones start in word-by-word mode; elsewhere a full playback that
+// finishes without a single boundary switches that device over. (No mid-playback timeout: network voices can start
+// reporting boundaries well after `onstart`, which once misclassified desktops — hence the versioned key.)
+const BOUNDARY_KEY = 'gita_tts_word_boundaries_v2';
+const boundaryKey = (lang: SpeechLang) => (lang === 'hi' ? BOUNDARY_KEY : `${BOUNDARY_KEY}_${lang}`);
+
+const isMobileDevice = () =>
+  !!(navigator as Navigator & { userAgentData?: { mobile: boolean } }).userAgentData?.mobile ||
+  /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+
+function readBoundarySupport(lang: SpeechLang): boolean | null {
+  try {
+    const v = localStorage.getItem(boundaryKey(lang));
+    return v === null ? null : v === '1';
+  } catch {
+    return null;
+  }
+}
+
+function saveBoundarySupport(lang: SpeechLang, supported: boolean) {
+  try {
+    localStorage.setItem(boundaryKey(lang), supported ? '1' : '0');
+  } catch {
+    // Private mode: the next playback just re-detects
+  }
+}
+
+export interface TokenPlayback {
+  stop: () => void;
+}
+
+export interface SpeakTokensOptions {
+  rate?: number;
+  /** The word about to be spoken, as an index into `tokens` */
+  onWord: (index: number) => void;
+  /** Playback finished, was stopped, or was cut off by other speech */
+  onEnd: () => void;
+}
+
+/**
+ * Speaks `tokens` as one phrase and reports each word as it is spoken, so the screen can highlight it.
+ * Tokens are joined with single spaces, so a boundary event's character offset maps back to a word unambiguously.
+ */
+export function speakTokens(tokens: string[], lang: SpeechLang, opts: SpeakTokensOptions): TokenPlayback {
+  if (!hasTTS() || tokens.length === 0) {
+    opts.onEnd();
+    return { stop: () => {} };
+  }
+  window.speechSynthesis.cancel();
+
+  // Each playback gets a fresh token. Cancelling speech fires the OLD utterances' onend/onerror asynchronously,
+  // after the new playback has started — comparing against the token lets those stale callbacks no-op.
+  const session = {};
+  let active: object | null = session;
+  const finish = () => {
+    if (active !== session) return;
+    active = null;
+    opts.onEnd();
+  };
+
+  const rate = opts.rate ?? defaultRate(lang);
+  const { voice, tag } = pickVoice(lang);
+  const utter = (text: string) => {
+    const u = new SpeechSynthesisUtterance(text);
+    if (voice) u.voice = voice;
+    u.lang = tag;
+    u.rate = rate;
+    return u;
+  };
+
+  const supported = readBoundarySupport(lang);
+  if (supported === false || (supported === null && isMobileDevice())) {
+    tokens.forEach((token, i) => {
+      const u = utter(token);
+      u.onstart = () => {
+        if (active === session) opts.onWord(i);
+      };
+      u.onerror = finish;
+      if (i === tokens.length - 1) u.onend = finish;
+      window.speechSynthesis.speak(u);
+    });
+  } else {
+    let offset = 0;
+    const offsets = tokens.map((t) => {
+      const start = offset;
+      offset += t.length + 1; // +1 for the joining space
+      return start;
+    });
+    let boundaryFired = false;
+    const u = utter(tokens.join(' '));
+    u.onboundary = (event) => {
+      if (active !== session) return;
+      if (event.name === 'word' || event.name === undefined) {
+        if (!boundaryFired) saveBoundarySupport(lang, true);
+        boundaryFired = true;
+        let found = 0;
+        for (let i = 0; i < offsets.length; i++) {
+          if (offsets[i] <= event.charIndex) found = i;
+          else break;
+        }
+        opts.onWord(found);
+      }
+    };
+    u.onend = () => {
+      // Only a playback that ran to the end counts; stop/restart null the session first
+      if (active === session && !boundaryFired) saveBoundarySupport(lang, false);
+      finish();
+    };
+    u.onerror = finish;
+    window.speechSynthesis.speak(u);
+  }
+
+  return {
+    stop() {
+      if (active !== session) return;
+      active = null;
+      window.speechSynthesis.cancel();
+      opts.onEnd();
+    }
+  };
+}
+
 export function stopSpeaking(): void {
   if (hasTTS()) window.speechSynthesis.cancel();
 }

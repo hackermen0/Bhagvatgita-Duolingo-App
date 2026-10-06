@@ -2,6 +2,8 @@
   import { goto } from '$app/navigation';
   import { gameState, DAILY_GOAL_OPTIONS } from '$lib/state/gameState.svelte';
   import { planById, DIFFICULTY_TIERS, type PracticePreference } from '$lib/data/onboarding';
+  import { gitaData } from '$lib/data/gitaData';
+  import { JOURNEY_PAGE_COUNT } from '$lib/data/journey';
   import Icon from '$lib/components/Icon.svelte';
 
   const PRACTICE_STYLES: { value: PracticePreference; label: string }[] = [
@@ -15,6 +17,24 @@
   function redoOnboarding() {
     if (confirm('Retake the onboarding questions? Your lesson progress will not be affected.')) {
       gameState.resetOnboarding();
+    }
+  }
+
+  // ─── Developer menu (testing) ──────────────────────────────────────────────
+  let devOpen = $state(false);
+  const units = gitaData.chapters.flatMap((c) => c.sections.map((s) => ({ chapter: c, section: s })));
+  const allIds = units.flatMap((u) => u.section.lessons.map((l) => l.id));
+
+  function devStatus(id: string): { label: string; tone: 'done' | 'progress' | 'idle' } {
+    if (gameState.completedLessons.includes(id)) return { label: 'Completed', tone: 'done' };
+    const cp = gameState.checkpointFor(id);
+    if (cp) return { label: `Page ${cp.page + 1} of ${JOURNEY_PAGE_COUNT}`, tone: 'progress' };
+    return { label: 'Not started', tone: 'idle' };
+  }
+
+  function devResetAllVerses() {
+    if (confirm('Put every verse back to "not started"? XP, streak and hearts are kept.')) {
+      gameState.devSetLessonsComplete(allIds, false);
     }
   }
 
@@ -126,6 +146,61 @@
         <Icon name="chevron-right" class="w-5 h-5 text-text-muted" />
       </button>
     </div>
+  </section>
+
+  <section>
+    <button
+      type="button"
+      onclick={() => (devOpen = !devOpen)}
+      aria-expanded={devOpen}
+      class="w-full flex items-center justify-between text-sm font-extrabold uppercase tracking-wider text-text-muted mb-2"
+    >
+      <span>Developer menu · for testing</span>
+      <Icon name="chevron-right" class="w-4 h-4 transition-transform {devOpen ? 'rotate-90' : ''}" />
+    </button>
+
+    {#if devOpen}
+      <div class="flex flex-col gap-4 animate-[fade-in_0.2s_ease-out]">
+        <div class="card p-3 grid grid-cols-2 gap-2">
+          <button type="button" onclick={() => gameState.devSetLessonsComplete(allIds, true)} class="tile py-2.5 px-2 text-sm font-black">Complete all verses</button>
+          <button type="button" onclick={devResetAllVerses} class="tile py-2.5 px-2 text-sm font-black">Reset all verses</button>
+          <button type="button" onclick={() => gameState.refillHearts()} class="tile py-2.5 px-2 text-sm font-black">Refill hearts ({gameState.hearts}/5)</button>
+          <button type="button" onclick={() => gameState.devClearWordMemory()} class="tile py-2.5 px-2 text-sm font-black">Forget learned words</button>
+        </div>
+
+        {#each units as { chapter, section }}
+          <div>
+            <p class="text-xs font-extrabold uppercase tracking-wider text-text-muted mb-1.5">Chapter {chapter.number} · {section.title}</p>
+            <div class="card divide-y-2 divide-border-warm">
+              {#each section.lessons as lesson}
+                {@const status = devStatus(lesson.id)}
+                <div class="px-4 py-3 flex items-center gap-3">
+                  <div class="flex-1 min-w-0">
+                    <p class="text-base font-black leading-tight">{lesson.verseRef} · {lesson.title}</p>
+                    <p class="text-xs font-extrabold {status.tone === 'done' ? 'text-success' : status.tone === 'progress' ? 'text-primary' : 'text-text-muted'}">{status.label}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onclick={() => gameState.devSetLessonsComplete([lesson.id], true)}
+                    disabled={status.tone === 'done'}
+                    class="tile px-3 py-1.5 text-xs font-black disabled:opacity-40"
+                  >Complete</button>
+                  <button
+                    type="button"
+                    onclick={() => gameState.devSetLessonsComplete([lesson.id], false)}
+                    disabled={status.tone === 'idle'}
+                    class="tile px-3 py-1.5 text-xs font-black disabled:opacity-40"
+                  >Reset</button>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/each}
+        <p class="text-xs font-bold text-text-muted leading-relaxed">
+          Complete marks a verse done without playing it (no XP). Reset puts it back to not started, drops any saved page and lets the unit story play again. Neither touches XP or streak.
+        </p>
+      </div>
+    {/if}
   </section>
 
   <section class="pb-6">

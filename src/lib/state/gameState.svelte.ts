@@ -1,6 +1,7 @@
 import { browser } from '$app/environment';
 import { planById, type OnboardingProfile, type PracticePreference, type DifficultyTier } from '../data/onboarding';
 import { JOURNEY_PAGE_COUNT } from '../data/journey';
+import { gitaData, sectionForLesson } from '../data/gitaData';
 
 export type { DifficultyTier };
 /** How Hindi is written on screen: Roman letters (Hinglish) or Devanagari. */
@@ -399,6 +400,30 @@ class GameState {
     const streakExtended = this.recordActivity();
     const goalJustMet = this.addXP(JUMP_XP);
     return { xpEarned: JUMP_XP, streakExtended, goalJustMet };
+  }
+
+  /**
+   * Testing only (Settings → Developer). Marks verses complete without playing them, or puts them back to
+   * unplayed. Either way any half-finished journey is dropped. Resetting also lets the unit story play again.
+   * No XP, streak or word memory is touched.
+   */
+  devSetLessonsComplete(lessonIds: string[], complete: boolean) {
+    const ids = new Set(lessonIds);
+    if (complete) {
+      for (const id of lessonIds) if (!this.completedLessons.includes(id)) this.completedLessons.push(id);
+    } else {
+      this.completedLessons = this.completedLessons.filter((id) => !ids.has(id));
+      const sections = new Set(lessonIds.map((id) => sectionForLesson(gitaData, id)?.section.id));
+      this.storiesSeen = this.storiesSeen.filter((s) => !sections.has(s));
+    }
+    for (const id of lessonIds) delete this.journeyCheckpoint[id];
+    this.saveState();
+  }
+
+  /** Testing only: forget which words the learner has met, so word rotation starts fresh. */
+  devClearWordMemory() {
+    this.wordMemory = {};
+    this.saveState();
   }
 
   resetState() {

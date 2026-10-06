@@ -55,3 +55,9 @@ svg = svg.replace(/<\/svg>\s*$/, `<g id="love-hearts" display="none">${hearts}</
 const tpl = fs.readFileSync(__dirname + '/preview.template.html', 'utf8');
 fs.writeFileSync(__dirname + '/preview.html', tpl.replace('<!--SVG-->', svg));
 console.log(`wrote preview.html (${(svg.length / 1024).toFixed(0)} KB of SVG)`);
+
+// The app loads the same combined SVG (src/lib/mascot/krishna.ts animates it), so it never drifts from the preview
+const appDir = __dirname + '/../../src/lib/mascot/';
+fs.mkdirSync(appDir, { recursive: true });
+fs.writeFileSync(appDir + 'krishna-animated.svg', svg);
+console.log('wrote src/lib/mascot/krishna-animated.svg');

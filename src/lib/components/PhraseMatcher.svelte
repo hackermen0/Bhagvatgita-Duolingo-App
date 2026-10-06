@@ -105,7 +105,9 @@
   }
 </script>
 
-<div class="grid grid-cols-2 gap-3 w-full select-none">
+<div class="relative grid grid-cols-2 gap-3 w-full select-none">
+  <!-- A dotted line down the middle of the gap, so the two columns read as two different groups: Hindi | English -->
+  <div class="absolute inset-y-0 left-1/2 -translate-x-1/2 border-l-[3px] border-dotted border-text-muted/50 pointer-events-none" aria-hidden="true"></div>
   <div class="flex flex-col gap-3">
     {#each hindiList as term, i (term.id)}
       {@const done = matched.includes(term.id)}

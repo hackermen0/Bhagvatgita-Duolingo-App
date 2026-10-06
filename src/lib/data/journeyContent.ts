@@ -21,7 +21,6 @@ const bg248: JourneyContent = {
         roman: 'He Dhananjaya! Tum aasakti ko tyag kar tatha yog mein sthit hokar apne kartavya ka palan karo,'
       },
       english: 'O Dhananjaya, abandon all attachment and perform your duty while being established in yoga,',
-      note: 'Dhananjaya is another name of Arjuna, and it means “winner of wealth”. Here, yog means equanimity.',
       phrases: [
         { hindi: { dev: 'हे धनञ्जय!', roman: 'He Dhananjaya!' }, english: 'O Dhananjaya!' },
         { hindi: { dev: 'तुम आसक्ति को त्याग कर', roman: 'Tum aasakti ko tyag kar' }, english: 'abandon all attachment' },
@@ -30,12 +29,12 @@ const bg248: JourneyContent = {
       ],
       words: [
         { key: 'he', hindi: { dev: 'हे', roman: 'He' }, english: 'O / Hey', kind: 'grammar' },
-        { key: 'dhananjaya', hindi: { dev: 'धनञ्जय', roman: 'Dhananjaya' }, english: 'Dhananjaya (Arjuna)', kind: 'noun' },
+        { key: 'dhananjaya', hindi: { dev: 'धनञ्जय', roman: 'Dhananjaya' }, english: 'Dhananjaya (Arjuna)', kind: 'noun', note: 'Another name of Arjuna. It means “winner of wealth”.' },
         { key: 'tum', hindi: { dev: 'तुम', roman: 'Tum' }, english: 'you', kind: 'grammar' },
         { key: 'aasakti', hindi: { dev: 'आसक्ति', roman: 'aasakti' }, english: 'attachment', kind: 'noun' },
         { key: 'tyagkar', hindi: { dev: 'त्याग कर', roman: 'tyag kar' }, english: 'abandoning / leaving', kind: 'other' },
         { key: 'tatha', hindi: { dev: 'तथा', roman: 'tatha' }, english: 'as well as', kind: 'grammar' },
-        { key: 'yog', hindi: { dev: 'योग', roman: 'yog' }, english: 'yoga', kind: 'noun' },
+        { key: 'yog', hindi: { dev: 'योग', roman: 'yog' }, english: 'yoga', kind: 'noun', note: 'In this verse, yog means equanimity.' },
         { key: 'mein', hindi: { dev: 'में', roman: 'mein' }, english: 'in', kind: 'grammar' },
         { key: 'sthithokar', hindi: { dev: 'स्थित होकर', roman: 'sthit hokar' }, english: 'established / steady', kind: 'other' },
         { key: 'apne', hindi: { dev: 'अपने', roman: 'apne' }, english: 'your own', kind: 'grammar' },

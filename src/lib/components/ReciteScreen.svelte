@@ -1,11 +1,11 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { gameState } from '../state/gameState.svelte';
-  import { scriptText } from '../data/hindi';
   import { scoreRecital, type JourneyWord, type RecitalScore } from '../data/journey';
   import type { HindiText } from '../data/gitaData';
   import { hasRecognition, listen, speak, stopSpeaking, type Listener } from '../utils/speech';
   import SpeakButton from './SpeakButton.svelte';
+  import SpokenText, { englishLines, hindiLines } from './SpokenText.svelte';
   import Mascot from './Mascot.svelte';
 
   // An audio recital: the learner chooses Hindi or English, then says the text aloud (speech recognition)
@@ -28,6 +28,9 @@
   // Captured once: the page remounts this component, so the starting state never needs to follow the prop
   // svelte-ignore state_referenced_locally
   let showText = $state(!hideText);
+  // Only text that was visible from the start plays itself; a revealed hint stays quiet until asked
+  // svelte-ignore state_referenced_locally
+  const autoplayText = !hideText;
   let voiceSupported = $state(false);
   let typing = $state(false);
   let listening = $state(false);
@@ -46,7 +49,8 @@
     };
   });
 
-  const target = $derived(lang === 'hi' ? scriptText(hindi, gameState.tierScriptMode) : english);
+  const isDeva = $derived(gameState.tierScriptMode === 'devanagari');
+  const lines = $derived(lang === 'hi' ? hindiLines(hindi, isDeva) : englishLines(english));
   const spoken = $derived(lang === 'hi' ? hindi.dev : english);
 
   function choose(l: Lang) {
@@ -55,8 +59,8 @@
     message = '';
     transcript = '';
     typed = '';
-    // The clue: hear it once, straight away
-    speak(l === 'hi' ? hindi.dev : english, l);
+    // The clue: hear it once, straight away. With the text on screen, the highlighted player does it instead.
+    if (!showText) speak(l === 'hi' ? hindi.dev : english, l);
   }
 
   function evaluate(text: string) {
@@ -135,7 +139,8 @@
       <div class="flex items-center justify-between gap-2">
         <p class="text-xs font-black uppercase tracking-wider text-primary">{lang === 'hi' ? 'In Hindi' : 'In English'}</p>
         <div class="flex items-center gap-2">
-          <SpeakButton text={spoken} {lang} label="Hear it" />
+          <!-- Once the text is showing, its own player (below) highlights each word as it is spoken -->
+          {#if !showText}<SpeakButton text={spoken} {lang} label="Hear it" />{/if}
           <button
             type="button"
             onclick={() => { lang = null; result = null; transcript = ''; message = ''; }}
@@ -144,7 +149,15 @@
         </div>
       </div>
       {#if showText}
-        <p class="text-xl leading-relaxed whitespace-pre-line {lang === 'hi' && gameState.tierScriptMode === 'devanagari' ? 'font-deva font-bold' : 'font-black'}">{target}</p>
+        {#key lang}
+          <SpokenText
+            {lines}
+            {lang}
+            label="Hear it"
+            autoplay={autoplayText}
+            textClass="text-xl leading-relaxed {lang === 'hi' && isDeva ? 'font-deva font-bold' : 'font-black'}"
+          />
+        {/key}
       {:else}
         <p class="text-[15px] font-bold text-text-muted leading-relaxed">
           Listen to the clue, then say it from memory.
