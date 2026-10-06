@@ -39,6 +39,8 @@ export interface MCQOption {
  */
 export interface WordMeaning {
   word: string;
+  /** How the word is spelled on screen when that differs from the key, e.g. key `tyagkar` shown as "tyag kar" */
+  roman?: string;
   devanagari: string;
   meaning: string;
   partOfSpeech: string;

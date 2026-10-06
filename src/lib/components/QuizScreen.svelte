@@ -1,11 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { gameState, LESSON_LEVELS, type SessionResult } from '../state/gameState.svelte';
-  import { gitaData, sectionForLesson, type Lesson, type VersePart, type Question } from '../data/gitaData';
-  import { lessonWords, wordsTestedBy } from '../data/practice';
-  import { learningConfig, goalNudge } from '../data/learningConfig';
-  import { hindiOf, romanWords, scriptText } from '../data/hindi';
-  import { storyForSection, type UnitStory } from '../data/stories';
+  import { gameState, type SessionResult } from '../state/gameState.svelte';
+  import type { Lesson, Question } from '../data/gitaData';
+  import { lessonWords, lookupMeaning, wordsTestedBy } from '../data/practice';
+  import { learningConfig } from '../data/learningConfig';
+  import { romanWords, scriptText, wordKey } from '../data/hindi';
   import LessonProgress from './LessonProgress.svelte';
   import FeedbackModal from './FeedbackModal.svelte';
   import PhraseMatcher from './PhraseMatcher.svelte';
@@ -14,24 +13,16 @@
   import ListeningChoice from './ListeningChoice.svelte';
   import TranslateExercise from './TranslateExercise.svelte';
   import ReflectionPrompt from './ReflectionPrompt.svelte';
+  import CompleteFlow from './CompleteFlow.svelte';
   import Mascot, { preloadMascots, type MascotMood } from './Mascot.svelte';
-  import VerseHookScreen from './VerseHookScreen.svelte';
-  import WordDiscoveryScreen from './WordDiscoveryScreen.svelte';
-  import PhraseIntroScreen from './PhraseIntroScreen.svelte';
-  import StreakCelebration from './StreakCelebration.svelte';
-  import StoryReward from './StoryReward.svelte';
-  import VerseText from './VerseText.svelte';
-  import Icon, { type IconName } from './Icon.svelte';
+  import Icon from './Icon.svelte';
 
-  let { lesson, onExit, mode = 'lesson', level = LESSON_LEVELS, jumpLessonIds = [], targetLessonId } = $props<{
+  // The exercise engine for practice reviews and "Jump here?" tests. Verses themselves are taught by
+  // JourneyScreen; both of these play one flat queue of exercises.
+  let { lesson, onExit, mode, jumpLessonIds = [], targetLessonId } = $props<{
     lesson: Lesson;
     onExit: () => void;
-    mode?: 'lesson' | 'practice' | 'jump';
-    /**
-     * Which of the verse's three levels this session plays (lessons only):
-     * 1 = hear the verse and learn its words · 2 = build each phrase · 3 = assemble the whole verse
-     */
-    level?: number;
+    mode: 'practice' | 'jump';
     /** Lessons marked complete when a jump test is passed */
     jumpLessonIds?: string[];
     /** The real lesson id a jump test targets — `lesson.id` is a synthetic id for jump mode */
@@ -40,42 +31,19 @@
 
   const isPractice = $derived(mode === 'practice');
   const isJump = $derived(mode === 'jump');
-  const cfg = learningConfig(gameState.profile, gameState.difficultyTier);
+  const cfg = learningConfig(gameState.profile);
 
   // A jump test is a placement check: hearts aren't spent, but too many mistakes ends it
   const JUMP_MISTAKES_ALLOWED = 3;
   let jumpMistakes = $state(0);
 
-  // ─── Phase State Machine ───────────────────────────────────────────────────
-  type Phase =
-    | 'verse_hook'      // Level 1: verse intro with recitation
-    | 'word_discover'   // Level 1: the part's words as flip cards
-    | 'phrase_intro'    // Level 2: the part's phrase, before building it
-    | 'part_play'       // Exercises for current part (Level 1: word warm-ups; Level 2: phrase exercises)
-    | 'synthesis_intro' // Level 3: full verse assembled
-    | 'synthesis_play'; // Final exercises (or the whole practice / jump session)
-
-  // Captured once on purpose: the routes key this component per lesson, so `lesson` never changes under it
-  // svelte-ignore state_referenced_locally
-  const parts: VersePart[] = lesson.parts && lesson.parts.length > 0 ? lesson.parts : [];
-  const hasParts = parts.length > 0;
-  // Only real lessons with parts are split into levels; practice, jump tests and part-less lessons play as one
-  // svelte-ignore state_referenced_locally
-  const lvl = mode === 'lesson' && hasParts ? Math.min(Math.max(level, 1), LESSON_LEVELS) : LESSON_LEVELS;
   const synthesisQuestions = (): Question[] =>
     lesson.finalSynthesisQuestions && lesson.finalSynthesisQuestions.length > 0
       ? lesson.finalSynthesisQuestions
       : lesson.questions;
 
-  const initialPhase = (): Phase =>
-    !hasParts ? 'synthesis_play' : lvl === 1 ? 'verse_hook' : lvl === 2 ? 'phrase_intro' : 'synthesis_intro';
-  let phase = $state<Phase>(initialPhase());
-  let partIndex = $state(0);
-
-  let currentPart = $derived<VersePart | null>(hasParts && partIndex < parts.length ? parts[partIndex] : null);
-
   // ─── Exercise Queue ────────────────────────────────────────────────────────
-  // A missed exercise is re-queued at the end of the current set so the learner can
+  // A missed exercise is re-queued at the end of the set so the learner can
   // answer it correctly before moving on. `key` gives each queue entry a fresh
   // component instance, so a resurfaced question never inherits stale selections.
   interface QueueItem {
@@ -87,7 +55,7 @@
   let nextKey = 0;
   const toQueue = (qs: Question[]): QueueItem[] => qs.map((q) => ({ q, key: nextKey++, isRetry: false }));
 
-  let queue = $state<QueueItem[]>(hasParts ? [] : toQueue(synthesisQuestions()));
+  let queue = $state<QueueItem[]>(toQueue(synthesisQuestions()));
   let queueIndex = $state(0);
   let current = $derived<QueueItem | undefined>(queue[queueIndex]);
   let activeQuestion = $derived<Question | undefined>(current?.q);
@@ -102,17 +70,11 @@
   let encouragement = $state('');
   let isGameOver = $state(false);
   let isLessonCompleted = $state(false);
-  let showFloatingXP = $state(false);
-  let showStreak = $state(false);
   let showQuit = $state(false);
   let sessionResult = $state<SessionResult | null>(null);
   let combo = $state(0);
   // A correct translate answer in a different word order from the reference
   let translatedDifferently = $state(false);
-
-  // Set once, in finishSession(), from whichever lesson this session just completed
-  let pendingStory = $state<UnitStory | null>(null);
-  let showStory = $state(false);
 
   // Session tracking
   let missedWords = new Set<string>();
@@ -127,13 +89,10 @@
   let matchShock = $state(false);
   let shockTimer: ReturnType<typeof setTimeout> | undefined;
 
-  const onLastLife = () =>
-    isJump ? jumpMistakes >= JUMP_MISTAKES_ALLOWED : !isPractice && gameState.hearts <= 1;
-
   const exerciseMood = $derived.by((): MascotMood => {
     if (isChecked) {
       if (isCorrect) return combo >= 5 ? 'amazed' : combo >= 3 ? 'excited' : 'cheerful';
-      return onLastLife() ? 'worried' : 'disappointed';
+      return isJump && jumpMistakes >= JUMP_MISTAKES_ALLOWED ? 'worried' : 'disappointed';
     }
     return matchShock ? 'shocked' : 'default';
   });
@@ -150,26 +109,11 @@
     return selectedOption !== null;
   });
 
-  // One continuous bar across this level's screens, like a single Duolingo lesson
-  const totalSteps = !hasParts ? 1 : lvl === 1 ? 1 + parts.length * 2 : lvl === 2 ? parts.length * 2 : 2;
+  // One continuous bar across the whole queue
   let progress = $derived.by(() => {
-    const queueFrac = queue.length ? (queueIndex + (isChecked && isCorrect ? 1 : 0)) / queue.length : 0;
-    if (!hasParts) return isLessonCompleted ? 1 : queueFrac;
-    let step = 0;
-    let frac = 0;
-    if (phase === 'word_discover') step = 1 + partIndex * 2;
-    else if (phase === 'phrase_intro') step = partIndex * 2;
-    else if (phase === 'part_play') { step = (lvl === 1 ? 2 : 1) + partIndex * 2; frac = queueFrac; }
-    else if (phase === 'synthesis_play') { step = 1; frac = queueFrac; }
-    return (step + frac) / totalSteps;
+    if (isLessonCompleted) return 1;
+    return queue.length ? (queueIndex + (isChecked && isCorrect ? 1 : 0)) / queue.length : 0;
   });
-
-  // ─── Phase Transitions ─────────────────────────────────────────────────────
-  function startExerciseSet(qs: Question[]) {
-    queue = toQueue(qs);
-    queueIndex = 0;
-    resetSelection();
-  }
 
   function resetSelection() {
     selectedOption = null;
@@ -183,59 +127,14 @@
     encouragement = '';
   }
 
-  // Level 1 keeps only each part's word warm-ups (the retrieval check on the words just seen);
-  // Level 2 plays the rest — the phrase-level exercises.
-  const partQuestions = (part: VersePart | null): Question[] =>
-    !part ? lesson.questions : part.questions.filter((q) => (lvl === 1 ? !!q.warmup : !q.warmup));
-
-  function handleVerseHookComplete() {
-    partIndex = 0;
-    phase = 'word_discover';
-  }
-
-  function playPart() {
-    const qs = partQuestions(currentPart);
-    // A part can have nothing to play at this level (e.g. a hand-authored part with no warm-up)
-    if (qs.length === 0) return handlePartPlayComplete();
-    startExerciseSet(qs);
-    phase = 'part_play';
-  }
-
-  function handleWordDiscoveryComplete() {
-    playPart();
-  }
-
-  function handlePhraseIntroComplete() {
-    playPart();
-  }
-
-  function handlePartPlayComplete() {
-    if (partIndex + 1 < parts.length) {
-      partIndex += 1;
-      phase = lvl === 1 ? 'word_discover' : 'phrase_intro';
-    } else {
-      finishSession();
-    }
-  }
-
-  function startSynthesisPlay() {
-    startExerciseSet(synthesisQuestions());
-    phase = 'synthesis_play';
-  }
-
   // ─── Exercise Handlers ─────────────────────────────────────────────────────
-  function loseHeart() {
-    if (isPractice) return; // practice is low-stakes
-    if (isJump) {
-      jumpMistakes += 1;
-      return;
-    }
-    gameState.decrementHeart();
+  // Practice is low-stakes, and a jump test counts mistakes instead of spending hearts
+  function recordMistake() {
+    if (isJump) jumpMistakes += 1;
   }
 
   function outOfLives(): boolean {
-    if (isJump) return jumpMistakes > JUMP_MISTAKES_ALLOWED;
-    return !isPractice && gameState.hearts <= 0;
+    return isJump && jumpMistakes > JUMP_MISTAKES_ALLOWED;
   }
 
   function handleMatchIncorrect(confusedTerms: string[]) {
@@ -244,8 +143,9 @@
     clearTimeout(shockTimer);
     shockTimer = setTimeout(() => (matchShock = false), 900);
     wrongCount += 1;
-    confusedTerms.flatMap(romanWords).forEach((w) => missedWords.add(w));
-    loseHeart();
+    // A single vocabulary word (even one written as two, like "tyag kar") is one memory key; a phrase is several
+    confusedTerms.flatMap((t) => (lookupMeaning(wordKey(t)) ? [wordKey(t)] : romanWords(t))).forEach((w) => missedWords.add(w));
+    recordMistake();
     if (outOfLives()) isGameOver = true;
   }
 
@@ -337,7 +237,7 @@
       correctCount += 1;
     } else {
       wrongCount += 1;
-      loseHeart();
+      recordMistake();
       wordsTestedBy(q).forEach((w) => missedWords.add(w));
       willResurface = !isJump && resurface(current);
     }
@@ -351,13 +251,8 @@
 
   function handleContinue() {
     resetSelection();
-    if (queueIndex < queue.length - 1) {
-      queueIndex += 1;
-    } else if (phase === 'part_play') {
-      handlePartPlayComplete();
-    } else {
-      finishSession();
-    }
+    if (queueIndex < queue.length - 1) queueIndex += 1;
+    else finishSession();
   }
 
   function finishSession() {
@@ -365,60 +260,17 @@
     const missed = [...missedWords];
     sessionResult = isPractice
       ? gameState.completePractice(words, missed)
-      : isJump
-        ? gameState.completeJump(jumpLessonIds, words, missed)
-        : gameState.completeLevel(lesson.id, lvl, words, missed);
+      : gameState.completeJump(jumpLessonIds, words, missed);
     const attempts = correctCount + wrongCount;
     summary = {
       accuracy: attempts ? Math.round((correctCount / attempts) * 100) : 100,
       seconds: Math.round((Date.now() - startedAt) / 1000)
     };
     isLessonCompleted = true;
-    showFloatingXP = true;
-    pendingStory = checkUnitStory();
-  }
-
-  /**
-   * Fires the unit-completion story reward: the real lesson id this session finished
-   * (a jump test's own `lesson.id` is synthetic, so it uses `targetLessonId` instead),
-   * only when that lesson's whole section is now complete and hasn't shown its story yet.
-   */
-  function checkUnitStory(): UnitStory | null {
-    if (isPractice) return null;
-    const checkId = isJump ? targetLessonId : lesson.id;
-    if (!checkId) return null;
-    const found = sectionForLesson(gitaData, checkId);
-    if (!found) return null;
-    const { section } = found;
-    if (gameState.hasSeenStory(section.id)) return null;
-    if (!section.lessons.every((l) => gameState.completedLessons.includes(l.id))) return null;
-    return storyForSection(section);
-  }
-
-  function handleCompleteContinue() {
-    if (pendingStory) {
-      showStory = true;
-      return;
-    }
-    afterCelebrations();
-  }
-
-  function handleStoryComplete() {
-    if (pendingStory) gameState.markStorySeen(pendingStory.sectionId);
-    showStory = false;
-    pendingStory = null;
-    afterCelebrations();
-  }
-
-  function afterCelebrations() {
-    if (sessionResult?.streakExtended) showStreak = true;
-    else onExit();
   }
 
   function restartLesson() {
-    if (!isJump) gameState.refillHearts();
     jumpMistakes = 0;
-    partIndex = 0;
     missedWords = new Set();
     resurfaceCounts = {};
     combo = 0;
@@ -428,28 +280,16 @@
     summary = null;
     isGameOver = false;
     isLessonCompleted = false;
-    showFloatingXP = false;
-    showStreak = false;
-    showStory = false;
-    pendingStory = null;
     sessionResult = null;
-    if (hasParts) {
-      queue = [];
-      queueIndex = 0;
-      resetSelection();
-      phase = initialPhase();
-    } else {
-      startExerciseSet(synthesisQuestions());
-      phase = 'synthesis_play';
-    }
+    queue = toQueue(synthesisQuestions());
+    queueIndex = 0;
+    resetSelection();
   }
 
   // Enter checks / continues, as on Duolingo's web app. Focused controls handle their own Enter.
   function onKey(e: KeyboardEvent) {
     if (e.key !== 'Enter' || showQuit || isGameOver || isLessonCompleted) return;
     if ((e.target as HTMLElement | null)?.closest?.('button, textarea, input')) return;
-    if (phase === 'synthesis_intro') return startSynthesisPlay();
-    if (phase !== 'part_play' && phase !== 'synthesis_play') return;
     if (showFeedback) handleContinue();
     else checkAnswer();
   }
@@ -504,165 +344,51 @@
     }
   });
 
-  const completion = $derived.by(() => {
-    if (isPractice) return {
-      title: 'Practice complete!',
-      subtitle: `You reviewed ${lesson.wordBreakdown.length} words. Reviewing just as you begin to forget is what makes them stay.`
-    };
-    if (isJump) return {
-      title: 'You jumped ahead!',
-      subtitle: `${jumpLessonIds.length} verse${jumpLessonIds.length === 1 ? '' : 's'} skipped — ${lesson.verseRef} is unlocked. Their words will come back in Practice.`
-    };
-    if (lvl === 1) return {
-      title: 'Level 1 complete!',
-      subtitle: `You know the words of ${lesson.verseRef}. Next up: build its phrases.`
-    };
-    if (lvl === 2) return {
-      title: 'Level 2 complete!',
-      subtitle: `You can build every phrase of ${lesson.verseRef}. One more level to put the whole verse together.`
-    };
-    return { title: 'Lesson complete!', subtitle: goalNudge(gameState.profile) || `You've learned ${lesson.verseRef}, ${lesson.title}.` };
-  });
-
-  const accuracyLabel = (a: number) => (a === 100 ? 'Amazing' : a >= 80 ? 'Great' : a >= 60 ? 'Good' : 'Steady');
-  const formatTime = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  const completion = $derived.by(() =>
+    isPractice
+      ? {
+          title: 'Practice complete!',
+          subtitle: `You reviewed ${lesson.wordBreakdown.length} words. Reviewing just as you begin to forget is what makes them stay.`
+        }
+      : {
+          title: 'You jumped ahead!',
+          subtitle: `${jumpLessonIds.length} verse${jumpLessonIds.length === 1 ? '' : 's'} skipped — ${lesson.verseRef} is unlocked. Their words will come back in Practice.`
+        }
+  );
 </script>
 
 <svelte:window onkeydown={onKey} />
 
-{#snippet statCard(label: string, color: string, icon: IconName, value: string)}
-  <div class="rounded-2xl border-2 overflow-hidden animate-pop-in" style="border-color: {color}; background: {color}">
-    <p class="text-[11px] font-black uppercase tracking-wider text-white py-1">{label}</p>
-    <div class="bg-bg-base rounded-[14px] py-3 flex items-center justify-center gap-1.5" style="color: {color}">
-      <Icon name={icon} class="w-5 h-5" />
-      <span class="text-lg font-black tabular-nums">{value}</span>
-    </div>
-  </div>
-{/snippet}
-
 <div class="w-full h-full flex flex-col bg-bg-base text-text-primary relative select-none overflow-hidden">
 
-  {#if showStory && pendingStory}
-    <StoryReward story={pendingStory} onComplete={handleStoryComplete} />
-
-  {:else if showStreak}
-    <StreakCelebration streak={gameState.streak} activeDays={gameState.activeDays} onContinue={onExit} />
-
-  {:else if isGameOver}
-    <!-- ═══ OUT OF HEARTS / JUMP TEST NOT PASSED ═══ -->
+  {#if isGameOver}
+    <!-- ═══ JUMP TEST NOT PASSED ═══ -->
     <div class="flex-1 flex flex-col items-center justify-center px-6 text-center animate-[fade-in_0.3s_ease-out]">
-      <Mascot mood={isJump ? 'disappointed' : 'crying'} size="xl" />
-      <h1 class="text-3xl font-black mt-6">{isJump ? 'Not quite yet!' : 'You ran out of hearts!'}</h1>
+      <Mascot mood="disappointed" size="xl" />
+      <h1 class="text-3xl font-black mt-6">Not quite yet!</h1>
       <p class="text-base font-bold text-text-muted mt-2 max-w-xs leading-relaxed">
-        {isJump
-          ? 'The earlier verses still have something to teach you. Work through them in order, or try the test again.'
-          : 'Mistakes are part of the path. Refill your hearts and try again.'}
+        The earlier verses still have something to teach you. Work through them in order, or try the test again.
       </p>
     </div>
     <div class="lesson-footer flex flex-col gap-3">
-      {#if isJump}
-        <button onclick={onExit} class="btn btn-primary w-full">Back to the path</button>
-        <button onclick={restartLesson} class="btn btn-ghost w-full">Try the test again</button>
-      {:else}
-        <button onclick={restartLesson} class="btn btn-primary w-full">
-          <Icon name="heart" class="w-5 h-5" /> Refill hearts and retry
-        </button>
-        <button onclick={onExit} class="btn btn-ghost w-full">No thanks</button>
-      {/if}
+      <button onclick={onExit} class="btn btn-primary w-full">Back to the path</button>
+      <button onclick={restartLesson} class="btn btn-ghost w-full">Try the test again</button>
     </div>
 
   {:else if isLessonCompleted && sessionResult && summary}
-    <!-- ═══ SESSION COMPLETE ═══ -->
-    <div class="flex-1 overflow-y-auto scrollbar-none flex flex-col items-center justify-center px-6 py-8 text-center relative animate-[fade-in_0.3s_ease-out]">
-      {#if showFloatingXP}
-        <div class="absolute top-[18%] z-10 animate-float-xp font-black text-3xl text-gold flex items-center gap-1 pointer-events-none">
-          +{sessionResult.xpEarned} XP
-        </div>
-      {/if}
-
-      <Mascot mood="celebrating" size="xl" animate={true} />
-      <h1 class="text-3xl font-black text-gold mt-6">{completion.title}</h1>
-      <p class="text-base font-bold text-text-muted mt-2 max-w-xs leading-relaxed">{completion.subtitle}</p>
-
-      <div class="grid grid-cols-3 gap-3 w-full mt-8">
-        {@render statCard('Total XP', 'var(--color-gold)', 'bolt', String(sessionResult.xpEarned))}
-        {@render statCard(accuracyLabel(summary.accuracy), 'var(--color-success)', 'target', `${summary.accuracy}%`)}
-        {@render statCard(summary.seconds <= 150 ? 'Speedy' : 'Committed', 'var(--color-info)', 'clock', formatTime(summary.seconds))}
-      </div>
-
-      {#if sessionResult.goalJustMet}
-        <p class="mt-6 flex items-center gap-2 text-success font-black text-base animate-pop-in">
-          <Icon name="check" class="w-5 h-5" /> Daily goal reached!
-        </p>
-      {/if}
-    </div>
-    <div class="lesson-footer">
-      <button onclick={handleCompleteContinue} class="btn btn-primary w-full">Continue</button>
-    </div>
+    <CompleteFlow
+      {sessionResult}
+      {summary}
+      title={completion.title}
+      subtitle={completion.subtitle}
+      storyLessonId={isJump ? targetLessonId : undefined}
+      {onExit}
+    />
 
   {:else}
-    <LessonProgress {progress} {combo} onCancel={() => (showQuit = true)} showHearts={mode === 'lesson'} />
+    <LessonProgress {progress} {combo} onCancel={() => (showQuit = true)} showHearts={false} />
 
-    {#if phase === 'verse_hook'}
-      <VerseHookScreen {lesson} onComplete={handleVerseHookComplete} autoPlay={cfg.autoPlayRecitation} />
-
-    {:else if phase === 'word_discover' && currentPart}
-      <WordDiscoveryScreen
-        part={currentPart}
-        partIndex={partIndex + 1}
-        totalParts={parts.length}
-        onComplete={handleWordDiscoveryComplete}
-        canSkip={cfg.skippableDiscovery}
-      />
-
-    {:else if phase === 'phrase_intro' && currentPart}
-      {#key partIndex}
-        <PhraseIntroScreen
-          part={currentPart}
-          partIndex={partIndex + 1}
-          totalParts={parts.length}
-          onComplete={handlePhraseIntroComplete}
-        />
-      {/key}
-
-    {:else if phase === 'synthesis_intro'}
-      <!-- ═══ FINAL STAGE INTRO ═══ -->
-      <div class="flex-1 overflow-y-auto scrollbar-none px-5 pt-4 pb-6 flex flex-col gap-5">
-        <div>
-          <p class="text-sm font-extrabold uppercase tracking-wider text-gold-dark dark:text-gold flex items-center gap-1.5">
-            <Icon name="star" class="w-4 h-4" /> Final stage
-          </p>
-          <h2 class="text-2xl font-black leading-tight mt-1">Put the whole verse together</h2>
-        </div>
-        <div class="flex items-center gap-2">
-          <div class="shrink-0 -ml-1"><Mascot mood="proud" size="md" /></div>
-          <div class="bubble bubble-left flex-1">
-            <p class="text-[15px] font-bold">You've learned every part. Now let's master the full verse!</p>
-          </div>
-        </div>
-        <div class="card p-5 flex flex-col gap-3">
-          <p class="text-xs font-black uppercase tracking-wider text-primary">{lesson.verseRef}</p>
-          <div class="text-center">
-            <VerseText
-              hindi={hindiOf(lesson)}
-              class="text-lg font-bold text-primary-dark dark:text-primary leading-relaxed"
-            />
-          </div>
-          <p class="text-[15px] font-bold text-text-muted leading-relaxed pt-3 border-t-2 border-border-warm">{lesson.translation}</p>
-          {#if cfg.meaningFocus && lesson.commentary}
-            <div class="pt-3 border-t-2 border-border-warm flex flex-col gap-1">
-              <p class="text-xs font-black uppercase tracking-wider text-accent">Commentary · {lesson.commentary.author}</p>
-              <p class="text-[15px] font-semibold leading-relaxed">{lesson.commentary.text}</p>
-              <p class="text-xs font-bold text-text-muted">{lesson.commentary.tradition}</p>
-            </div>
-          {/if}
-        </div>
-      </div>
-      <div class="lesson-footer">
-        <button onclick={startSynthesisPlay} class="btn btn-primary w-full">Continue</button>
-      </div>
-
-    {:else if current && activeQuestion}
+    {#if current && activeQuestion}
       <!-- ═══ EXERCISE ═══ -->
       <div class="flex-1 overflow-y-auto scrollbar-none px-5 pt-4 {showFeedback ? 'pb-56' : 'pb-6'}">
         <div class="flex items-end gap-3">
@@ -676,16 +402,8 @@
               <p class="text-sm font-extrabold uppercase tracking-wider text-accent mb-1">
                 Jump test · {left} mistake{left === 1 ? '' : 's'} left
               </p>
-            {:else if isPractice}
+            {:else}
               <p class="text-sm font-extrabold uppercase tracking-wider text-accent mb-1">{lesson.title}</p>
-            {:else if phase === 'synthesis_play'}
-              <p class="flex items-center gap-1.5 text-sm font-extrabold uppercase tracking-wider text-gold-dark dark:text-gold mb-1">
-                <Icon name="star" class="w-4 h-4" /> Full verse
-              </p>
-            {:else if currentPart}
-              <p class="text-sm font-extrabold uppercase tracking-wider text-text-muted mb-1">
-                {lvl === 1 ? 'Words' : 'Phrase'} · Part {partIndex + 1} of {parts.length}
-              </p>
             {/if}
 
             {#if activeQuestion.type !== 'reflection'}
@@ -714,6 +432,7 @@
             {:else if activeQuestion.type === 'phrase_matching'}
               <PhraseMatcher
                 pairs={activeQuestion.pairs}
+                voice={isPractice}
                 onIncorrect={handleMatchIncorrect}
                 onAllMatched={() => (matchComplete = true)}
               />
@@ -785,7 +504,7 @@
         <Mascot mood="puppy" size="lg" />
         <h2 class="text-2xl font-black mt-3">Wait, don't go!</h2>
         <p class="text-base font-bold text-text-muted mt-1">
-          {isPractice ? "You're so close to finishing this review." : "You'll lose your progress in this level if you quit now."}
+          {isPractice ? "You're so close to finishing this review." : "You'll lose your progress in this test if you quit now."}
         </p>
         <button onclick={() => (showQuit = false)} class="btn btn-primary w-full mt-6">Keep learning</button>
         <button onclick={onExit} class="btn btn-ghost w-full mt-2 text-error!">End session</button>

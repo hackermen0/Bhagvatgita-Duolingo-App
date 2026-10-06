@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
   import { goto } from '$app/navigation';
-  import { gameState, LESSON_LEVELS, levelXP } from '$lib/state/gameState.svelte';
+  import { gameState, VERSE_XP, REPLAY_XP } from '$lib/state/gameState.svelte';
+  import { JOURNEY_PAGES, JOURNEY_PAGE_COUNT } from '$lib/data/journey';
   import { gitaData, type Lesson, type Section } from '$lib/data/gitaData';
   import { practiceStatus } from '$lib/data/practice';
   import { planById } from '$lib/data/onboarding';
@@ -12,7 +13,7 @@
   import StoryReward from '$lib/components/StoryReward.svelte';
   import { storyForSection, type UnitStory } from '$lib/data/stories';
 
-  const cfg = $derived(learningConfig(gameState.profile, gameState.difficultyTier));
+  const cfg = $derived(learningConfig(gameState.profile));
   const allLessons = gitaData.chapters.flatMap((c) => c.sections.flatMap((s) => s.lessons));
   const practice = $derived(practiceStatus());
 
@@ -73,20 +74,6 @@
       return { chapter, section, unitNumber: sIdx + 1, startIndex };
     })
   );
-
-  // Each verse is one node taught over LESSON_LEVELS levels; the ring around the node fills one segment per level.
-  const LEVEL_NAMES = ['Meet the words', 'Build the phrases', 'Put it together'];
-  const RING = { cx: 48, cy: 45, rx: 41, ry: 38, gap: 18 };
-
-  function ringArc(i: number): string {
-    const step = 360 / LESSON_LEVELS;
-    const toRad = (deg: number) => (deg * Math.PI) / 180;
-    // Start at the top; the gap is split across both ends so segments are visibly separate
-    const a0 = toRad(-90 + i * step + RING.gap / 2);
-    const a1 = toRad(-90 + (i + 1) * step - RING.gap / 2);
-    const pt = (a: number) => `${(RING.cx + RING.rx * Math.cos(a)).toFixed(2)} ${(RING.cy + RING.ry * Math.sin(a)).toFixed(2)}`;
-    return `M ${pt(a0)} A ${RING.rx} ${RING.ry} 0 0 1 ${pt(a1)}`;
-  }
 
   let selected = $state<string | null>(null);
   let replayStory = $state<UnitStory | null>(null);
@@ -163,8 +150,7 @@
           {@const canJump = !unlocked && cfg.pathAccess === 'jump'}
           {@const isOpen = selected === lesson.id}
           {@const lessonNumber = idx + 1}
-          {@const doneLevels = gameState.levelsDone(lesson.id)}
-          {@const nextLevel = Math.min(doneLevels + 1, LESSON_LEVELS)}
+          {@const checkpoint = done ? undefined : gameState.checkpointFor(lesson.id)}
 
           <div class="relative w-full flex justify-center items-start h-[124px] {isOpen ? 'z-30' : ''}">
             <div class="relative" style="transform: translateX({offset}px)" id="node-{lesson.id}">
@@ -185,24 +171,6 @@
                 </div>
               {/if}
 
-              <!-- Level ring: one segment per level, filled as the levels are finished -->
-              {#if unlocked && !done}
-                <svg
-                  viewBox="0 0 96 90"
-                  class="absolute -inset-[13px] translate-y-1.5 pointer-events-none"
-                  style="width: 96px; height: 90px"
-                  fill="none"
-                  stroke-width="7"
-                  stroke-linecap="round"
-                  role="img"
-                  aria-label="{doneLevels} of {LESSON_LEVELS} levels complete"
-                >
-                  {#each { length: LESSON_LEVELS } as _, i}
-                    <path d={ringArc(i)} style="stroke: {i < doneLevels ? 'var(--unit)' : 'var(--color-track-base)'}" />
-                  {/each}
-                </svg>
-              {/if}
-
               <button
                 type="button"
                 onclick={() => toggleNode(lesson.id)}
@@ -215,6 +183,13 @@
                   <Icon name="star" class="w-8 h-8" />
                 {/if}
               </button>
+              <!-- A verse left part-way shows how far the learner got -->
+              {#if checkpoint && unlocked}
+                <span
+                  class="absolute left-1/2 -bottom-1 -translate-x-1/2 px-2 py-0.5 rounded-full bg-bg-surface border-2 text-[11px] font-black tabular-nums whitespace-nowrap pointer-events-none"
+                  style="border-color: var(--unit); color: var(--unit)"
+                >{checkpoint.page}/{JOURNEY_PAGE_COUNT}</span>
+              {/if}
             </div>
 
             <!-- Popover card -->
@@ -239,13 +214,24 @@
                       {#if locked && canJump}
                         Know the earlier verses? Pass a test on the {lessonsSkippedBy(lesson)} before this to jump ahead.
                       {:else if locked}
-                        Complete all levels above to unlock this!
+                        Complete the verse above to unlock this!
                       {:else}
                         Lesson {lessonNumber} of {section.lessons.length} · {lesson.verseRef}
                       {/if}
                     </p>
                     {#if !locked && !done}
-                      <p class="text-sm font-extrabold mt-1">Level {nextLevel} of {LESSON_LEVELS} · {LEVEL_NAMES[nextLevel - 1]}</p>
+                      <p class="text-sm font-extrabold mt-1">
+                        {#if checkpoint}
+                          Page {checkpoint.page + 1} of {JOURNEY_PAGE_COUNT} · {JOURNEY_PAGES[checkpoint.page].title}
+                        {:else}
+                          {JOURNEY_PAGE_COUNT} short pages · words, phrases, recital
+                        {/if}
+                      </p>
+                      {#if checkpoint}
+                        <div class="mt-2 h-2.5 rounded-full bg-white/25 overflow-hidden" role="progressbar" aria-valuemin="0" aria-valuemax={JOURNEY_PAGE_COUNT} aria-valuenow={checkpoint.page}>
+                          <div class="h-full rounded-full bg-white" style="width: {(checkpoint.page / JOURNEY_PAGE_COUNT) * 100}%"></div>
+                        </div>
+                      {/if}
                     {/if}
                     {#if current && !advice}
                       <p class="text-sm font-extrabold mt-1">{goalGreeting(gameState.profile, lesson.verseRef)}</p>
@@ -272,9 +258,16 @@
                         Review first +15 XP
                       </button>
                     {/if}
-                    <button type="button" class="btn btn-on-color w-full" onclick={() => goto(`/lesson/${lesson.id}?level=${done ? LESSON_LEVELS : nextLevel}`)}>
-                      {done ? 'Practice +15 XP' : doneLevels === 0 ? `Start +${levelXP(1)} XP` : `Continue +${levelXP(nextLevel)} XP`}
+                    <button type="button" class="btn btn-on-color w-full" onclick={() => goto(`/lesson/${lesson.id}`)}>
+                      {done ? `Practice +${REPLAY_XP} XP` : checkpoint ? `Continue +${VERSE_XP} XP` : `Start +${VERSE_XP} XP`}
                     </button>
+                    {#if checkpoint}
+                      <button
+                        type="button"
+                        class="text-sm font-extrabold underline opacity-90 self-center"
+                        onclick={() => { gameState.clearCheckpoint(lesson.id); goto(`/lesson/${lesson.id}`); }}
+                      >Start over</button>
+                    {/if}
                   {/if}
                 </div>
               </div>

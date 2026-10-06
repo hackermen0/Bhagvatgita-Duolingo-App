@@ -1,10 +1,13 @@
 <script lang="ts">
   import type { HindiText, PhrasePair } from '../data/gitaData';
   import { playPopSound, playSuccessSound, playErrorSound } from '../utils/soundEffects';
+  import { speak } from '../utils/speech';
   import HindiWord from './HindiWord.svelte';
 
-  let { pairs, onIncorrect, onAllMatched } = $props<{
+  let { pairs, onIncorrect, onAllMatched, voice = false } = $props<{
     pairs: PhrasePair[];
+    /** Speak each tapped tile: Hindi tiles in Hindi, meanings in English */
+    voice?: boolean;
     /** Romanized Hindi of the two terms that were confused, for spaced review */
     onIncorrect: (confusedTerms: string[]) => void;
     onAllMatched: () => void;
@@ -52,6 +55,7 @@
   function selectHindi(id: number) {
     if (busy() || matched.includes(id)) return;
     playPopSound();
+    if (voice && selectedHindi !== id) speak(pairs[id].hindi.dev, 'hi');
     selectedHindi = selectedHindi === id ? null : id;
     checkMatch();
   }
@@ -59,6 +63,7 @@
   function selectEnglish(id: number) {
     if (busy() || matched.includes(id)) return;
     playPopSound();
+    if (voice && selectedEnglish !== id) speak(pairs[id].english, 'en');
     selectedEnglish = selectedEnglish === id ? null : id;
     checkMatch();
   }

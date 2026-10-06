@@ -2,15 +2,16 @@ import { gitaData, type Lesson, type Question, type WordMeaning } from './gitaDa
 import { gameState, isDue } from '../state/gameState.svelte';
 import { learningConfig } from './learningConfig';
 import { romanWords, scriptText } from './hindi';
+import { journeyWordsFor, toWordMeaning } from './journey';
 
 export const allLessons: Lesson[] = gitaData.chapters.flatMap((c) => c.sections.flatMap((s) => s.lessons));
 
-/** Every curated word a lesson teaches (part breakdowns + lesson-level highlights), deduped. */
+/**
+ * Every word a lesson teaches, deduped — all of the verse's journey words, not just the few its
+ * word-matching pages show, so review rotates through every one of them.
+ */
 export function lessonWords(lesson: Lesson): WordMeaning[] {
-  const seen = new Map<string, WordMeaning>();
-  const entries = [...(lesson.parts ?? []).flatMap((p) => p.wordBreakdown), ...(lesson.wordBreakdown ?? [])];
-  for (const w of entries) if (!seen.has(w.word)) seen.set(w.word, w);
-  return [...seen.values()];
+  return journeyWordsFor(lesson).map(toWordMeaning);
 }
 
 const glossary = new Map<string, WordMeaning>();
@@ -95,6 +96,19 @@ function distractors(target: WordMeaning, count: number, preferred: WordMeaning[
   return picked;
 }
 
+/** Plausible but wrong English meanings for a multiple-choice answer, `preferred` ones first, then the glossary. */
+export function wrongMeanings(meaning: string, count: number, preferred: string[] = []): string[] {
+  const used = new Set([meaning.toLowerCase()]);
+  const out: string[] = [];
+  for (const m of [...shuffle(preferred), ...shuffle(glossaryWords.map((w) => w.meaning))]) {
+    if (out.length >= count) break;
+    if (used.has(m.toLowerCase())) continue;
+    used.add(m.toLowerCase());
+    out.push(m);
+  }
+  return out;
+}
+
 /**
  * Due words first, then the weakest remaining ones, so a session is always available
  * once enough words are learned. Words sharing a meaning are skipped — identical
@@ -125,7 +139,7 @@ function pickTargets(max: number, focusMistakes = false): WordMeaning[] {
 }
 
 /** A word as the learner reads it: Roman letters on Beginner, Devanagari otherwise. */
-const label = (w: WordMeaning) => scriptText({ dev: w.devanagari, roman: w.word }, gameState.tierScriptMode);
+const label = (w: WordMeaning) => scriptText({ dev: w.devanagari, roman: w.roman ?? w.word }, gameState.tierScriptMode);
 
 export function meaningQuestion(w: WordMeaning, id: string | number, pool: WordMeaning[] = []): Question {
   const wrong = distractors(w, 2, pool);
@@ -175,7 +189,7 @@ export function wordMatchingQuestion(words: WordMeaning[], id: string): Question
     type: 'phrase_matching',
     prompt: 'Match each Hindi word to its meaning.',
     targetWords: words.map((w) => w.word),
-    pairs: words.map((w) => ({ hindi: { dev: w.devanagari, roman: w.word }, english: w.meaning }))
+    pairs: words.map((w) => ({ hindi: { dev: w.devanagari, roman: w.roman ?? w.word }, english: w.meaning }))
   };
 }
 
@@ -187,7 +201,7 @@ export function wordMatchingQuestion(words: WordMeaning[], id: string): Question
 export function buildPracticeLesson(opts: { listening: boolean; kind?: PracticeKind }): Lesson | null {
   const kind = opts.kind ?? 'review';
   if (kind === 'listening' && !opts.listening) return null;
-  const cfg = learningConfig(gameState.profile, gameState.difficultyTier);
+  const cfg = learningConfig(gameState.profile);
   const targets = pickTargets(cfg.practiceSize, kind === 'mistakes');
   if (targets.length < MIN_PRACTICE_WORDS) return null;
 

@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
 import { planById, type OnboardingProfile, type PracticePreference, type DifficultyTier } from '../data/onboarding';
+import { JOURNEY_PAGE_COUNT } from '../data/journey';
 
 export type { DifficultyTier };
 /** How Hindi is written on screen: Roman letters (Hinglish) or Devanagari. */
@@ -47,17 +48,32 @@ export const DAILY_GOAL_OPTIONS = [
   { xp: 50, label: 'Intense' }
 ];
 
-/** Each verse is taught over three levels: meet the words, build the phrases, assemble the whole verse. */
-export const LESSON_LEVELS = 3;
-/** First-time XP per level (totals the old 50 for a whole lesson) */
-const LEVEL_XP = [15, 15, 20];
-const REPLAY_XP = 15;
-
-/** XP a first-time run of this level pays, for showing on the path. */
-export function levelXP(level: number): number {
-  return LEVEL_XP[Math.min(Math.max(level, 1), LESSON_LEVELS) - 1];
-}
+/** XP for finishing a verse's journey the first time, and for every replay after that */
+export const VERSE_XP = 50;
+export const REPLAY_XP = 15;
 const PRACTICE_XP = 15;
+
+/**
+ * Where a learner left off in a verse's journey. Saved after every finished page, so leaving mid-verse
+ * resumes at that page instead of the start. The seed and word batches fix what the remaining pages show.
+ */
+export interface JourneyCheckpoint {
+  /** Index of the next page to play */
+  page: number;
+  /** How many pages the journey had when this was saved — a checkpoint from a different layout can't be resumed */
+  pages: number;
+  seed: number;
+  /** Word keys shown on each half's word-matching page */
+  batches: string[][];
+  /** Word keys the learner got wrong, for the re-exam */
+  missedWords: string[];
+  /** Word keys the learner has met this run */
+  seenWords: string[];
+  correct: number;
+  wrong: number;
+  /** Time spent playing so far, across sittings */
+  elapsedMs: number;
+}
 const JUMP_XP = 30;
 
 export function dateKey(d: Date = new Date()): string {
@@ -85,8 +101,8 @@ class GameState {
   xp = $state(0);
   streak = $state(0);
   completedLessons = $state<string[]>([]);
-  /** Levels finished so far on lessons that aren't complete yet (completed lessons implicitly have them all) */
-  levelProgress = $state<Record<string, number>>({});
+  /** Verses left part-way through their journey, keyed by lesson id */
+  journeyCheckpoint = $state<Record<string, JourneyCheckpoint>>({});
   lastActiveDate = $state<string | null>(null);
   activeDays = $state<string[]>([]);
   difficultyTier = $state<DifficultyTier>('beginner');
@@ -124,7 +140,12 @@ class GameState {
         this.xp = parsed.xp ?? 0;
         this.streak = parsed.streak ?? 0;
         this.completedLessons = parsed.completedLessons ?? [];
-        this.levelProgress = parsed.levelProgress ?? {};
+        // Saves from the three-level design had `levelProgress`; a half-finished level can't be resumed, so it's dropped
+        this.journeyCheckpoint = Object.fromEntries(
+          Object.entries((parsed.journeyCheckpoint ?? {}) as Record<string, JourneyCheckpoint>).filter(
+            ([, c]) => c.pages === JOURNEY_PAGE_COUNT
+          )
+        );
         this.activeDays = parsed.activeDays ?? [];
         const savedTier = parsed.difficultyTier ?? parsed.profile?.difficultyTier;
         this.difficultyTier = DIFFICULTY_TIER_IDS.includes(savedTier) ? savedTier : 'beginner';
@@ -163,7 +184,7 @@ class GameState {
         xp: this.xp,
         streak: this.streak,
         completedLessons: $state.snapshot(this.completedLessons),
-        levelProgress: $state.snapshot(this.levelProgress),
+        journeyCheckpoint: $state.snapshot(this.journeyCheckpoint),
         lastActiveDate: this.lastActiveDate,
         activeDays: $state.snapshot(this.activeDays),
         difficultyTier: this.difficultyTier,
@@ -304,38 +325,39 @@ class GameState {
     return true;
   }
 
-  /** How many of a lesson's levels are done (all of them once the lesson is complete). */
-  levelsDone(lessonId: string): number {
-    return this.completedLessons.includes(lessonId) ? LESSON_LEVELS : (this.levelProgress[lessonId] ?? 0);
+  /** Where the learner left off in this verse's journey, or undefined if they aren't part-way through. */
+  checkpointFor(lessonId: string): JourneyCheckpoint | undefined {
+    return this.journeyCheckpoint[lessonId];
+  }
+
+  saveCheckpoint(lessonId: string, checkpoint: JourneyCheckpoint) {
+    this.journeyCheckpoint[lessonId] = checkpoint;
+    this.saveState();
+  }
+
+  clearCheckpoint(lessonId: string) {
+    if (!(lessonId in this.journeyCheckpoint)) return;
+    delete this.journeyCheckpoint[lessonId];
+    this.saveState();
   }
 
   /**
-   * Records a finished level. The lesson itself only completes with its last level, which is
-   * what unlocks the next verse. A level left unfinished saves nothing — it restarts next time.
+   * Records a finished journey: the verse completes (unlocking the next one), its checkpoint is cleared,
+   * and only the words the learner actually met are credited in spaced-repetition memory.
    */
-  completeLevel(lessonId: string, level: number, words: string[], missed: string[]): SessionResult {
-    const first = level > this.levelsDone(lessonId);
-    const finishesLesson = level >= LESSON_LEVELS;
-    if (first) {
-      if (finishesLesson) {
-        if (!this.completedLessons.includes(lessonId)) this.completedLessons.push(lessonId);
-        delete this.levelProgress[lessonId];
-      } else {
-        this.levelProgress[lessonId] = level;
-      }
-    }
+  completeVerse(lessonId: string, words: string[], missed: string[]): SessionResult {
+    const first = !this.completedLessons.includes(lessonId);
+    if (first) this.completedLessons.push(lessonId);
+    delete this.journeyCheckpoint[lessonId];
     this.updateWordMemory(words, missed);
     this.rollDaily();
-    if (finishesLesson) {
-      this.daily.lessons += 1;
-      if (first) this.daily.newLessons += 1;
-    }
+    this.daily.lessons += 1;
+    if (first) this.daily.newLessons += 1;
     const streakExtended = this.recordActivity();
-    const xpEarned = first ? levelXP(level) : REPLAY_XP;
+    const xpEarned = first ? VERSE_XP : REPLAY_XP;
     const goalJustMet = this.addXP(xpEarned);
     return { xpEarned, streakExtended, goalJustMet };
   }
-
 
   completePractice(words: string[], missed: string[]): SessionResult {
     this.updateWordMemory(words, missed);
@@ -384,7 +406,7 @@ class GameState {
     this.xp = 0;
     this.streak = 0;
     this.completedLessons = [];
-    this.levelProgress = {};
+    this.journeyCheckpoint = {};
     this.lastActiveDate = null;
     this.activeDays = [];
     // The difficulty tier is a preference, not progress, so a progress reset keeps it

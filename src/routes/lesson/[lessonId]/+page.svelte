@@ -1,49 +1,25 @@
 <script lang="ts">
-  import { untrack } from 'svelte';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import { gitaData } from '$lib/data/gitaData';
-  import { gameState, LESSON_LEVELS } from '$lib/state/gameState.svelte';
-  import { learningConfig } from '$lib/data/learningConfig';
-  import { personalizeLesson } from '$lib/data/personalization';
-  import QuizScreen from '$lib/components/QuizScreen.svelte';
+  import JourneyScreen from '$lib/components/JourneyScreen.svelte';
   import Mascot from '$lib/components/Mascot.svelte';
 
-  // Personalized once per lesson visit (untracked): it picks random exercise targets, and
-  // progress saved mid-lesson must not regenerate the lesson underneath the learner.
-  // The level is likewise fixed at entry: finishing a level updates saved progress, which must not
-  // swap the level under the learner. Levels play in order, so ?level= can't skip ahead.
-  let activeLesson = $derived.by(() => {
-    const lessonId = $page.params.lessonId;
-    const base = gitaData.chapters
-      .flatMap(c => c.sections.flatMap(s => s.lessons))
-      .find(l => l.id === lessonId);
-    if (!base) return undefined;
-    return untrack(() =>
-      personalizeLesson(base, learningConfig(gameState.profile, gameState.difficultyTier), {
-        speech: typeof window !== 'undefined' && 'speechSynthesis' in window
-      })
-    );
-  });
-
-  const activeLevel = $derived.by(() => {
-    const id = $page.params.lessonId ?? '';
-    const requested = Number($page.url.searchParams.get('level'));
-    return untrack(() => {
-      const done = gameState.levelsDone(id);
-      const furthest = Math.min(done + 1, LESSON_LEVELS);
-      return requested >= 1 && requested <= furthest ? requested : furthest;
-    });
-  });
+  const lesson = $derived(
+    gitaData.chapters
+      .flatMap((c) => c.sections.flatMap((s) => s.lessons))
+      .find((l) => l.id === $page.params.lessonId)
+  );
 
   function handleExit() {
     goto('/');
   }
 </script>
 
-{#if activeLesson}
-  {#key `${activeLesson.id}:${activeLevel}`}
-    <QuizScreen lesson={activeLesson} level={activeLevel} onExit={handleExit} />
+{#if lesson}
+  <!-- Keyed per verse: the journey reads its checkpoint once, on entry, and saving progress must not rebuild it -->
+  {#key lesson.id}
+    <JourneyScreen {lesson} onExit={handleExit} />
   {/key}
 {:else}
   <div class="w-full h-full flex flex-col bg-bg-base select-none">

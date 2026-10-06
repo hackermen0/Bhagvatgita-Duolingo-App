@@ -1,4 +1,4 @@
-import type { DifficultyTier, OnboardingProfile } from './onboarding';
+import type { OnboardingProfile } from './onboarding';
 
 export type ListeningLevel = 'none' | 'light' | 'heavy';
 /** sequential: finish lessons in order · jump: locked lessons offer a "Jump here?" test · open: whole path unlocked */
@@ -13,15 +13,7 @@ export interface NewContentRule {
 export interface LearningConfig {
   listening: ListeningLevel;
   autoPlayRecitation: boolean;
-  /** Commentary and an extra reflection in lessons */
-  meaningFocus: boolean;
-  /** Extra vocabulary and word-matching rounds closing each verse (Hard tier) */
-  vocabDrills: boolean;
-  /** "I know these words" skip on word-discovery cards */
-  skippableDiscovery: boolean;
   pathAccess: PathAccess;
-  /** Extra recall exercises at the end of each lesson */
-  deepRecall: boolean;
   practiceSize: number;
   newContent: NewContentRule | null;
 }
@@ -29,11 +21,7 @@ export interface LearningConfig {
 const DEFAULT_CONFIG: LearningConfig = {
   listening: 'light',
   autoPlayRecitation: false,
-  meaningFocus: false,
-  vocabDrills: false,
-  skippableDiscovery: false,
   pathAccess: 'sequential',
-  deepRecall: false,
   practiceSize: 5,
   newContent: null
 };
@@ -70,21 +58,15 @@ function configFromProfile(profile: OnboardingProfile): LearningConfig {
     ...DEFAULT_CONFIG,
     listening,
     autoPlayRecitation: listening === 'heavy',
-    meaningFocus: goal === 'meaning' || goal === 'both' || pref === 'reading',
-    skippableDiscovery: knowsVerses,
     pathAccess: knowsVerses ? 'open' : known === 'few' ? 'jump' : 'sequential',
-    deepRecall: minutes >= 15,
     practiceSize: Math.min(8, Math.max(3, Math.floor(minutes / 2))),
     newContent: newContentRule(minutes)
   };
 }
 
-/** The learner's profile sets the pacing; the difficulty tier sets how much vocabulary work each verse carries. */
-export function learningConfig(profile: OnboardingProfile | null, tier: DifficultyTier): LearningConfig {
-  return {
-    ...(profile ? configFromProfile(profile) : DEFAULT_CONFIG),
-    vocabDrills: tier === 'hard'
-  };
+/** The learner's profile sets the pacing: listening, path access, review size and the new-content rule. */
+export function learningConfig(profile: OnboardingProfile | null): LearningConfig {
+  return profile ? configFromProfile(profile) : DEFAULT_CONFIG;
 }
 
 export type NewContentAdvice = 'review-due' | 'daily-limit' | null;
