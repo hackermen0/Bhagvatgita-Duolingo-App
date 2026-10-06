@@ -1,136 +1,352 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Krishna mascot — animation preview</title>
+<title>Krishna mascot â€” animation preview</title>
 <style>
-  :root { color-scheme: light dark; }
-  body { margin: 0; font-family: system-ui, sans-serif; background: #fffcf7; color: #3a2b1e; display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 16px; }
-  #stage { width: min(78vw, 420px); aspect-ratio: 1; }
+  body { margin: 0; font-family: system-ui, sans-serif; background: #fffcf7; color: #3a2b1e; display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 16px; }
+  #stage { width: min(86vw, 440px); aspect-ratio: 1; }
   #stage svg { width: 100%; height: 100%; overflow: visible; }
-  .row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
-  button { font: 700 14px system-ui; padding: 10px 16px; border-radius: 14px; border: 2px solid #ede2d1; border-bottom-width: 4px; background: #fff; color: #3a2b1e; cursor: pointer; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 560px; }
+  button { font: 700 14px system-ui; padding: 10px 14px; border-radius: 14px; border: 2px solid #ede2d1; border-bottom-width: 4px; background: #fff; color: #3a2b1e; cursor: pointer; }
+  button small { display: block; font-weight: 600; font-size: 11px; opacity: .55; }
   button:active { transform: translateY(2px); border-bottom-width: 2px; }
+  button.primary { background: #3bb5f8; border-color: #1c8fd0; color: #fff; }
+  button.primary small { opacity: .8; }
   label { font: 600 14px system-ui; display: flex; align-items: center; gap: 6px; }
-  p { max-width: 460px; text-align: center; font-size: 13px; opacity: .7; margin: 0; }
+  #now { font: 800 13px system-ui; letter-spacing: .06em; text-transform: uppercase; color: #1c8fd0; min-height: 1.2em; }
+  p { max-width: 480px; text-align: center; font-size: 13px; opacity: .7; margin: 0; }
 </style>
 </head>
 <body>
 <div id="stage"><!--SVG--></div>
+<div id="now">idle</div>
 <div class="row">
-  <button data-act="correct">Correct</button>
-  <button data-act="wrong">Wrong</button>
-  <button data-act="celebrate">Celebrate</button>
-  <button data-act="think">Thinking</button>
+  <button data-act="correct">Correct<small>laughing Â· 1</small></button>
+  <button data-act="combo">Combo<small>amazed Â· 2</small></button>
+  <button data-act="wrong">Wrong<small>disappointed Â· 3</small></button>
+  <button data-act="angry">Grr<small>angry Â· 4</small></button>
+  <button data-act="heartbreak">Out of hearts<small>crying Â· 5</small></button>
+  <button data-act="love">Love<small>affectionate Â· 6</small></button>
+  <button data-act="celebrate">Celebrate<small>lesson done Â· 7</small></button>
+  <button data-act="think">Thinking<small>default Â· 8</small></button>
+  <button class="primary" id="demo">Play all<small>space</small></button>
 </div>
-<label><input type="checkbox" id="idleToggle" checked> Idle animation (breathing, blinking, feather sway)</label>
-<p>Prototype: the layered SVG is animated directly (no Lottie). Expressions here are faked by flipping/tilting the existing mouth and brows; real expression variants would look better.</p>
+<label><input type="checkbox" id="idleToggle" checked> Idle (breathing, blinking, looking around)</label>
+<p>Layered SVG animated with the Web Animations API. Each reaction swaps in that expression's face with a quick blink-cut, then returns to the default face.</p>
 
 <script>
 const NS = 'http://www.w3.org/2000/svg';
 const svg = document.querySelector('#stage svg');
-const $ = (id) => svg.getElementById(id);
+const root = svg.querySelector('#default-krishna') || svg;
+const els = {}; for (const el of svg.querySelectorAll('[id]')) els[el.id] = el;
 
-// Everything except the ground shadow moves with the character; `bob` carries the idle motion and
-// `char` carries one-shot reactions, so the two never fight over one transform.
-const bob = document.createElementNS(NS, 'g'); bob.id = 'bob';
-const char = document.createElementNS(NS, 'g'); char.id = 'char';
-[...svg.children].filter((c) => c.id !== 'shadow').forEach((c) => char.appendChild(c));
-bob.appendChild(char); svg.appendChild(bob);
+// Layers: `bob` carries idle motion, `char` carries one-shot reactions, so they never fight over a transform.
+// The ground shadow stays put; `fx` (particles) sits on top of everything.
+const mk = (id) => { const g = document.createElementNS(NS, 'g'); g.id = id; return (els[id] = g); };
+const bob = mk('bob'), char = mk('char'), fx = mk('fx');
+[...root.children].filter((c) => c.id !== 'shadow').forEach((c) => char.appendChild(c));
+bob.appendChild(char); root.appendChild(bob); svg.appendChild(fx);
+for (const el of [bob, char, ...Object.values(els)]) el.style.transformOrigin = '0 0';
+// Small decorative bits pivot on their own centre
+const selfPivot = (el) => { el.style.transformBox = 'fill-box'; el.style.transformOrigin = 'center'; };
+['amazed--left-eye-star', 'amazed--right-eye-star', 'crying--left-tear', 'crying--right-tear',
+ 'affectionate--left-brush', 'affectionate--right-blush', 'love--left-heart-top', 'love--left-heart-bottom', 'love--right-heart']
+  .forEach((id) => els[id] && selfPivot(els[id]));
 
-// Every animation writes its own pivot into the keyframe, so all layers can stack with composite:'add'
+// Each keyframe writes its own pivot, so stacked animations (composite:'add') each rotate about the right point
 const rot = (a, px, py) => `translate(${px}px, ${py}px) rotate(${a}deg) translate(${-px}px, ${-py}px)`;
 const sc = (sx, sy, px, py) => `translate(${px}px, ${py}px) scale(${sx}, ${sy}) translate(${-px}px, ${-py}px)`;
 const tr = (x, y) => `translate(${x}px, ${y}px)`;
 const HEAD = ['hair-back', 'hair-bun', 'left-ear', 'right-ear', 'head', 'peacock-feather', 'hair-front', 'headband'];
-const NECK = [627, 745], FEET = [627, 1170];
+const NECK = [627, 745], FEET = [627, 1170], FACE = [627, 600];
 const P = {
-  leftShoulder: [498, 832], rightShoulder: [772, 830], feather: [735, 240],
-  leftEye: [506, 571], rightEye: [747, 571], mouth: [627, 670], earL: [373, 625], earR: [882, 625],
-  browL: [497, 455], browR: [759, 455], shadow: [618, 1169],
+  leftShoulder: [498, 832], rightShoulder: [772, 830], raisedElbow: [455, 945], feather: [735, 240],
+  leftEye: [505, 598], rightEye: [745, 598], earL: [373, 625], earR: [882, 625],
 };
-const els = {}; for (const el of svg.querySelectorAll('[id]')) els[el.id] = el;
-for (const el of [bob, char, els.shadow, ...Object.values(els)]) el.style.transformOrigin = '0 0';
+const show = (el, on) => (on ? el.removeAttribute('display') : el.setAttribute('display', 'none'));
+const rand = (a, b) => a + Math.random() * (b - a);
 
-const running = [];
-function play(el, frames, opts = {}) {
-  const a = el.animate(frames, { fill: 'none', easing: 'ease-in-out', ...opts });
-  return a;
-}
+// â”€â”€ Idle loop â”€â”€
 const loops = [];
+const loop = (el, frames, o) => loops.push(el.animate(frames, { iterations: Infinity, direction: 'alternate', easing: 'ease-in-out', ...o }));
 function startIdle() {
   stopIdle();
-  const L = (el, frames, o) => loops.push(play(el, frames, { iterations: Infinity, direction: 'alternate', ...o }));
-  L(bob, [{ transform: tr(0, 0) + sc(1, 1, ...FEET) }, { transform: tr(0, -5) + sc(1.008, 1.012, ...FEET) }], { duration: 1900 });
-  for (const id of HEAD) L(els[id], [{ transform: rot(-1.3, ...NECK) }, { transform: rot(1.3, ...NECK) }], { duration: 3400 });
-  L(els['peacock-feather'], [{ transform: rot(-3.5, ...P.feather) }, { transform: rot(3.5, ...P.feather) }], { duration: 2300, composite: 'add' });
-  L(els['earring-left'], [{ transform: rot(-9, ...P.earL) }, { transform: rot(9, ...P.earL) }], { duration: 1500 });
-  L(els['earring-right'], [{ transform: rot(9, ...P.earR) }, { transform: rot(-9, ...P.earR) }], { duration: 1500 });
-  // Blink: squash each eye to a line and back, every few seconds
+  loop(bob, [{ transform: tr(0, 0) + sc(1, 1, ...FEET) }, { transform: tr(0, -5) + sc(1.008, 1.012, ...FEET) }], { duration: 1900 });
+  for (const id of HEAD) loop(els[id], [{ transform: rot(-1.3, ...NECK) }, { transform: rot(1.3, ...NECK) }], { duration: 3400 });
+  loop(els['peacock-feather'], [{ transform: rot(-3.5, ...P.feather) }, { transform: rot(3.5, ...P.feather) }], { duration: 2300, composite: 'add' });
+  loop(els['earring-left'], [{ transform: rot(-9, ...P.earL) }, { transform: rot(9, ...P.earL) }], { duration: 1500 });
+  loop(els['earring-right'], [{ transform: rot(9, ...P.earR) }, { transform: rot(-9, ...P.earR) }], { duration: 1500 });
   for (const [id, p] of [['left-eye', P.leftEye], ['right-eye', P.rightEye]]) {
-    loops.push(play(els[id], [
+    loops.push(els[id].animate([
       { transform: sc(1, 1, ...p), offset: 0 }, { transform: sc(1, 1, ...p), offset: 0.93 },
       { transform: sc(1, 0.07, ...p), offset: 0.965 }, { transform: sc(1, 1, ...p), offset: 1 },
-    ], { duration: 4200, iterations: Infinity, easing: 'linear' }));
+    ], { duration: 4200, iterations: Infinity }));
+  }
+  // Glance left, back, right, back
+  for (const id of ['left-pupil', 'right-pupil']) {
+    loops.push(els[id].animate([
+      { transform: tr(0, 0), offset: 0 }, { transform: tr(0, 0), offset: 0.3 },
+      { transform: tr(-11, 3), offset: 0.35 }, { transform: tr(-11, 3), offset: 0.5 },
+      { transform: tr(0, 0), offset: 0.55 }, { transform: tr(0, 0), offset: 0.7 },
+      { transform: tr(10, -2), offset: 0.75 }, { transform: tr(10, -2), offset: 0.88 },
+      { transform: tr(0, 0), offset: 0.93 }, { transform: tr(0, 0), offset: 1 },
+    ], { duration: 9000, iterations: Infinity, easing: 'ease-out' }));
   }
 }
 function stopIdle() { loops.forEach((a) => a.cancel()); loops.length = 0; }
 
-// ── One-shot reactions (all layered on top of idle with composite:'add') ──
-const R = (el, frames, o) => play(el, frames, { composite: 'add', ...o });
-const hopFrames = (h, s = 1) => [
-  { transform: tr(0, 0) + sc(1, 1, ...FEET), offset: 0 },
-  { transform: tr(0, 0) + sc(1 + 0.07 * s, 1 - 0.1 * s, ...FEET), offset: 0.18 },
-  { transform: tr(0, -h) + sc(1 - 0.03 * s, 1 + 0.05 * s, ...FEET), offset: 0.5 },
-  { transform: tr(0, 0) + sc(1 + 0.08 * s, 1 - 0.1 * s, ...FEET), offset: 0.82 },
-  { transform: tr(0, 0) + sc(1, 1, ...FEET), offset: 1 },
-];
-function hop(h = 110, dur = 800, armsUp = 38) {
-  R(char, hopFrames(h), { duration: dur, easing: 'ease-out' });
-  R(els.shadow, [{ transform: sc(1, 1, ...P.shadow), offset: 0 }, { transform: sc(0.72, 0.72, ...P.shadow), offset: 0.5 }, { transform: sc(1, 1, ...P.shadow), offset: 1 }], { duration: dur });
-  for (const [id, p, a] of [['left-arm', P.leftShoulder, armsUp], ['right-arm', P.rightShoulder, -armsUp]]) {
-    R(els[id], [{ transform: rot(0, ...p) }, { transform: rot(a, ...p), offset: 0.5 }, { transform: rot(0, ...p) }], { duration: dur });
-  }
-  R(els['peacock-feather'], [{ transform: rot(0, ...P.feather) }, { transform: rot(-9, ...P.feather), offset: 0.5 }, { transform: rot(3, ...P.feather), offset: 0.8 }, { transform: rot(0, ...P.feather) }], { duration: dur });
+// â”€â”€ Reaction bookkeeping: a new reaction cancels the one in progress â”€â”€
+let ctx = null;
+const R = (el, frames, o) => { const a = el.animate(frames, { composite: 'add', easing: 'ease-in-out', ...o }); ctx?.anims.push(a); return a; };
+const later = (ms, fn) => ctx.timers.push(setTimeout(fn, ms));
+function begin(label) {
+  if (ctx) { ctx.anims.forEach((a) => a.cancel()); ctx.timers.forEach(clearTimeout); reset(); }
+  ctx = { anims: [], timers: [] };
+  document.getElementById('now').textContent = label;
 }
-function grin(dur) {
-  R(els.mouth, [{ transform: sc(1, 1, ...P.mouth) }, { transform: sc(1.45, 1.7, ...P.mouth), offset: 0.15 }, { transform: sc(1.45, 1.7, ...P.mouth), offset: 0.8 }, { transform: sc(1, 1, ...P.mouth) }], { duration: dur });
-  for (const [id, p] of [['left-eye', P.leftEye], ['right-eye', P.rightEye]]) {
-    R(els[id], [{ transform: sc(1, 1, ...p) }, { transform: sc(1.05, 0.72, ...p), offset: 0.15 }, { transform: sc(1.05, 0.72, ...p), offset: 0.8 }, { transform: sc(1, 1, ...p) }], { duration: dur });
-  }
-  for (const id of ['eye-brow-left', 'eye-brow-right']) {
-    R(els[id], [{ transform: tr(0, 0) }, { transform: tr(0, -14), offset: 0.15 }, { transform: tr(0, -14), offset: 0.8 }, { transform: tr(0, 0) }], { duration: dur });
-  }
+function finish(ms) {
+  later(ms, () => { setFace('default'); setArm(false); show(els['love-hearts'], false); });
+  later(ms + 250, () => { ctx = null; document.getElementById('now').textContent = 'idle'; });
 }
-function correct() { hop(110, 800); grin(800); }
-function celebrate() {
-  hop(150, 1000, 60); setTimeout(() => hop(150, 1000, 60), 950); grin(2000);
-  for (const id of HEAD) R(els[id], [{ transform: rot(0, ...NECK) }, { transform: rot(-8, ...NECK), offset: 0.25 }, { transform: rot(8, ...NECK), offset: 0.75 }, { transform: rot(0, ...NECK) }], { duration: 2000 });
-}
-function wrong() {
-  const dur = 1300;
-  R(char, [{ transform: tr(0, 0) + sc(1, 1, ...FEET), offset: 0 }, { transform: tr(0, 6) + sc(1.03, 0.95, ...FEET), offset: 0.2 }, { transform: tr(0, 6) + sc(1.03, 0.95, ...FEET), offset: 0.8 }, { transform: tr(0, 0) + sc(1, 1, ...FEET), offset: 1 }], { duration: dur });
-  const shake = [0, -7, 7, -6, 6, -3, 0];
-  for (const id of HEAD) {
-    R(els[id], shake.map((a, i) => ({ transform: rot(a, ...NECK) + tr(0, a === 0 ? 0 : 4), offset: i / (shake.length - 1) })), { duration: dur, easing: 'linear' });
-  }
-  R(els.mouth, [{ transform: sc(1, 1, ...P.mouth) }, { transform: sc(0.9, -1, ...P.mouth), offset: 0.2 }, { transform: sc(0.9, -1, ...P.mouth), offset: 0.8 }, { transform: sc(1, 1, ...P.mouth) }], { duration: dur });
-  R(els['eye-brow-left'], [{ transform: rot(0, ...P.browL) }, { transform: tr(0, -4) + rot(-15, ...P.browL), offset: 0.2 }, { transform: tr(0, -4) + rot(-15, ...P.browL), offset: 0.8 }, { transform: rot(0, ...P.browL) }], { duration: dur });
-  R(els['eye-brow-right'], [{ transform: rot(0, ...P.browR) }, { transform: tr(0, -4) + rot(15, ...P.browR), offset: 0.2 }, { transform: tr(0, -4) + rot(15, ...P.browR), offset: 0.8 }, { transform: rot(0, ...P.browR) }], { duration: dur });
-  for (const [id, p, a] of [['left-arm', P.leftShoulder, -7], ['right-arm', P.rightShoulder, 7]]) {
-    R(els[id], [{ transform: rot(0, ...p) }, { transform: rot(a, ...p), offset: 0.25 }, { transform: rot(a, ...p), offset: 0.8 }, { transform: rot(0, ...p) }], { duration: dur });
-  }
-}
-function think() {
-  const dur = 1800;
-  for (const id of HEAD) R(els[id], [{ transform: rot(0, ...NECK) }, { transform: rot(9, ...NECK) + tr(6, 0), offset: 0.25 }, { transform: rot(9, ...NECK) + tr(6, 0), offset: 0.8 }, { transform: rot(0, ...NECK) }], { duration: dur });
-  R(els['eye-brow-right'], [{ transform: tr(0, 0) }, { transform: tr(0, -18), offset: 0.25 }, { transform: tr(0, -18), offset: 0.8 }, { transform: tr(0, 0) }], { duration: dur });
-  for (const id of ['left-pupil', 'right-pupil']) R(els[id], [{ transform: tr(0, 0) }, { transform: tr(-16, -20), offset: 0.25 }, { transform: tr(-16, -20), offset: 0.8 }, { transform: tr(0, 0) }], { duration: dur });
+function reset() { setFace('default', false); setArm(false, false); show(els['love-hearts'], false); flush.style.opacity = 0; }
+
+// â”€â”€ Face swap: squash the face shut, swap, spring it open (reads as a blink cut) â”€â”€
+const faceGroups = [...svg.querySelectorAll('[data-face]')];
+let face = 'default';
+function setFace(name, animate = true) {
+  if (name === face) return;
+  face = name;
+  const swap = () => faceGroups.forEach((g) => show(g, g.dataset.face === face));
+  if (!animate) return swap();
+  els.faces.animate([{ transform: sc(1, 1, ...FACE) }, { transform: sc(1.06, 0.08, ...FACE) }], { duration: 70, easing: 'ease-in' })
+    .onfinish = () => {
+      swap();
+      els.faces.animate([{ transform: sc(1.06, 0.08, ...FACE) }, { transform: sc(0.97, 1.08, ...FACE), offset: 0.6 }, { transform: sc(1, 1, ...FACE) }], { duration: 220, easing: 'ease-out' });
+    };
 }
 
-const ACTIONS = { correct, wrong, celebrate, think };
-document.querySelectorAll('button[data-act]').forEach((b) => b.addEventListener('click', () => ACTIONS[b.dataset.act]()));
+// â”€â”€ Arm swap: the raised fist flicks up from the elbow â”€â”€
+let armUp = false;
+function setArm(up, animate = true) {
+  if (up === armUp) return;
+  armUp = up;
+  show(els['left-arm'], !up); show(els['arm-raised'], up);
+  if (animate) {
+    const el = up ? els['arm-raised'] : els['left-arm'];
+    const p = up ? P.raisedElbow : P.leftShoulder;
+    el.animate([{ transform: rot(up ? -40 : 25, ...p) }, { transform: rot(up ? 8 : -5, ...p), offset: 0.65 }, { transform: rot(0, ...p) }], { duration: 260, easing: 'ease-out' });
+  }
+}
+
+// Red flush for anger: a copy of the head shape, tinted, between the skin and the face
+const flush = els['head-shape'].cloneNode(true);
+flush.id = 'flush';
+flush.innerHTML = '';
+svg.insertAdjacentHTML('afterbegin', '<defs><linearGradient id="flushGrad" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff3b3b" stop-opacity=".75"/><stop offset=".7" stop-color="#ff3b3b" stop-opacity=".25"/><stop offset="1" stop-color="#ff3b3b" stop-opacity="0"/></linearGradient></defs>');
+flush.setAttribute('fill', 'url(#flushGrad)');
+flush.style.opacity = 0;
+els['head-shape'].after(flush);
+
+// â”€â”€ Particles â”€â”€
+function spawn(markup, frames, opts) {
+  fx.insertAdjacentHTML('beforeend', markup);
+  const el = fx.lastElementChild;
+  selfPivot(el);
+  const a = el.animate(frames, { fill: 'forwards', ...opts });
+  a.onfinish = () => el.remove();
+}
+const starD = (x, y, r) => `M${x},${y - r}Q${x},${y} ${x + r},${y}Q${x},${y} ${x},${y + r}Q${x},${y} ${x - r},${y}Q${x},${y} ${x},${y - r}Z`;
+const heartD = (x, y, r) => `M${x},${y + 0.9 * r}C${x - 1.5 * r},${y - 0.1 * r} ${x - r},${y - 1.25 * r} ${x},${y - 0.45 * r}C${x + r},${y - 1.25 * r} ${x + 1.5 * r},${y - 0.1 * r} ${x},${y + 0.9 * r}Z`;
+const dropD = (x, y, r) => `M${x},${y - 1.8 * r}C${x + 0.5 * r},${y - 0.9 * r} ${x + r},${y - 0.3 * r} ${x + r},${y + 0.2 * r}A${r},${r} 0 0 1 ${x - r},${y + 0.2 * r}C${x - r},${y - 0.3 * r} ${x - 0.5 * r},${y - 0.9 * r} ${x},${y - 1.8 * r}Z`;
+
+function sparkles(n, cx = 627, cy = 430, radius = 400, colors = ['#f9c517', '#ffffff', '#f9c517']) {
+  for (let i = 0; i < n; i++) {
+    const ang = (-170 + (160 * i) / Math.max(1, n - 1) + rand(-8, 8)) * Math.PI / 180;
+    const d = radius * rand(0.75, 1.05), x = cx + Math.cos(ang) * d, y = cy + Math.sin(ang) * d;
+    const r = rand(18, 34), c = colors[i % colors.length];
+    spawn(`<path d="${starD(x, y, r)}" fill="${c}" stroke="#f3a41f" stroke-width="3"/>`, [
+      { transform: `${tr((cx - x) * 0.35, (cy - y) * 0.35)} scale(0) rotate(0deg)`, opacity: 1 },
+      { transform: `${tr(0, 0)} scale(1.2) rotate(60deg)`, opacity: 1, offset: 0.45 },
+      { transform: `${tr(0, -10)} scale(0) rotate(120deg)`, opacity: 0.6 },
+    ], { duration: rand(650, 850), delay: rand(0, 160), easing: 'ease-out' });
+  }
+}
+function confetti(n) {
+  const colors = ['#f9c517', '#f3798c', '#3bb5f8', '#4eb649', '#f18a22', '#a58ebf'];
+  for (let i = 0; i < n; i++) {
+    const x = 627 + rand(-260, 260), y = rand(60, 140), w = rand(14, 22), h = rand(24, 36);
+    const vx = rand(-380, 380), up = rand(-260, -120), fall = rand(950, 1150), spin = rand(-720, 720);
+    spawn(`<rect x="${x - w / 2}" y="${y - h / 2}" width="${w}" height="${h}" rx="4" fill="${colors[i % colors.length]}"/>`, [
+      { transform: `${tr(0, 0)} rotate(0deg) scale(0.4)` },
+      { transform: `${tr(vx * 0.55, up)} rotate(${spin * 0.4}deg) scale(1)`, offset: 0.3, easing: 'ease-in' },
+      { transform: `${tr(vx, fall)} rotate(${spin}deg) scale(1)`, opacity: 0.9 },
+    ], { duration: rand(1500, 2200), delay: rand(0, 200), easing: 'cubic-bezier(.2,.6,.4,1)' });
+  }
+}
+function steam(x, y, dir) {
+  spawn(`<circle cx="${x}" cy="${y}" r="22" fill="#eef2f6" stroke="#cfd8e0" stroke-width="3"/>`, [
+    { transform: `${tr(0, 0)} scale(0.3)`, opacity: 0.95 },
+    { transform: `${tr(dir * 70, -60)} scale(1.3)`, opacity: 0.85, offset: 0.5 },
+    { transform: `${tr(dir * 120, -140)} scale(1.8)`, opacity: 0 },
+  ], { duration: 700, easing: 'ease-out' });
+}
+function teardrop(x, y, dir) {
+  const dx = dir * rand(40, 110);
+  spawn(`<path d="${dropD(x, y, 13)}" fill="#8fd3ff" stroke="#3a9fd8" stroke-width="2.5"/>`, [
+    { transform: `${tr(0, 0)} scale(0.4)` },
+    { transform: `${tr(dx * 0.6, -25)} scale(1)`, offset: 0.3, easing: 'ease-in' },
+    { transform: `${tr(dx, 380)} scale(0.9)`, opacity: 0.2 },
+  ], { duration: rand(750, 950), easing: 'linear' });
+}
+function floatHeart(x, y, r) {
+  spawn(`<path d="${heartD(x, y, r)}" fill="#f3798c" stroke="#e0566d" stroke-width="3"/>`, [
+    { transform: `${tr(0, 0)} scale(0) rotate(0deg)`, opacity: 1 },
+    { transform: `${tr(rand(-20, 20), -60)} scale(1.15) rotate(${rand(-15, 15)}deg)`, opacity: 1, offset: 0.25 },
+    { transform: `${tr(rand(-50, 50), -260)} scale(0.8) rotate(${rand(-25, 25)}deg)`, opacity: 0 },
+  ], { duration: rand(1300, 1700), easing: 'ease-out' });
+}
+
+// â”€â”€ Motion building blocks â”€â”€
+function hop(h = 110, dur = 800, armsUp = 38, raisedArm = false) {
+  R(char, [
+    { transform: tr(0, 0) + sc(1, 1, ...FEET), offset: 0 },
+    { transform: tr(0, 0) + sc(1.07, 0.9, ...FEET), offset: 0.18 },
+    { transform: tr(0, -h) + sc(0.97, 1.05, ...FEET), offset: 0.5 },
+    { transform: tr(0, 0) + sc(1.08, 0.9, ...FEET), offset: 0.82 },
+    { transform: tr(0, 0) + sc(1, 1, ...FEET), offset: 1 },
+  ], { duration: dur, easing: 'ease-out' });
+  R(els.shadow, [{ transform: sc(1, 1, 618, 1169) }, { transform: sc(0.7, 0.7, 618, 1169), offset: 0.5 }, { transform: sc(1, 1, 618, 1169) }], { duration: dur });
+  const arms = [['right-arm', P.rightShoulder, -armsUp]];
+  if (!raisedArm) arms.push(['left-arm', P.leftShoulder, armsUp]);
+  for (const [id, p, a] of arms) R(els[id], [{ transform: rot(0, ...p) }, { transform: rot(a, ...p), offset: 0.5 }, { transform: rot(0, ...p) }], { duration: dur });
+  R(els['peacock-feather'], [{ transform: rot(0, ...P.feather) }, { transform: rot(-10, ...P.feather), offset: 0.5 }, { transform: rot(4, ...P.feather), offset: 0.8 }, { transform: rot(0, ...P.feather) }], { duration: dur });
+}
+const headSeq = (angles, dur, extra = () => '', o = {}) => {
+  for (const id of HEAD) R(els[id], angles.map((a, i) => ({ transform: rot(a, ...NECK) + extra(i, a), offset: i / (angles.length - 1) })), { duration: dur, ...o });
+};
+const pulse = (id, s, dur, iterations = 1) => els[id] && R(els[id], [{ transform: 'scale(1)' }, { transform: `scale(${s})` }, { transform: 'scale(1)' }], { duration: dur, iterations });
+
+// â”€â”€ Reactions â”€â”€
+function correct() {
+  begin('correct â†’ laughing');
+  setFace('laughing'); setArm(true);
+  hop(100, 760, 34, true);
+  later(120, () => headSeq([0, -5, 4, -5, 4, -3, 0], 900, (i, a) => tr(0, a ? 3 : 0), { easing: 'linear' }));
+  R(els['arm-raised'], [0, -14, 6, -14, 6, 0].map((a, i, arr) => ({ transform: rot(a, ...P.raisedElbow), offset: i / (arr.length - 1) })), { duration: 900, delay: 150 });
+  later(260, () => sparkles(5));
+  finish(1300);
+}
+function combo() {
+  begin('combo â†’ amazed');
+  setFace('amazed');
+  hop(160, 900, 55);
+  for (const id of ['amazed--left-eye-star', 'amazed--right-eye-star']) {
+    R(els[id], [{ transform: 'rotate(0deg) scale(1)' }, { transform: 'rotate(90deg) scale(1.45)', offset: 0.3 }, { transform: 'rotate(180deg) scale(1)', offset: 0.6 }, { transform: 'rotate(270deg) scale(1.35)', offset: 0.8 }, { transform: 'rotate(360deg) scale(1)' }], { duration: 1500, easing: 'ease-in-out' });
+  }
+  later(300, () => sparkles(9, 627, 440, 440, ['#f9c517', '#ffffff', '#3bb5f8']));
+  later(800, () => sparkles(5, 627, 420, 330));
+  finish(1700);
+}
+function wrong() {
+  begin('wrong â†’ disappointed');
+  setFace('disappointed');
+  const dur = 1500, hold = (a, b, o = {}) => [{ transform: a, offset: 0 }, { transform: b, offset: 0.2 }, { transform: b, offset: 0.82 }, { transform: a, offset: 1 }];
+  R(char, hold(tr(0, 0) + sc(1, 1, ...FEET), tr(0, 8) + sc(1.03, 0.94, ...FEET)), { duration: dur });
+  headSeq([0, 3, -5, 5, -4, 3, 3, 0], dur, (i) => tr(0, i === 0 || i === 7 ? 0 : 14));
+  R(els['left-arm'], hold(rot(0, ...P.leftShoulder), rot(-8, ...P.leftShoulder)), { duration: dur });
+  R(els['right-arm'], hold(rot(0, ...P.rightShoulder), rot(6, ...P.rightShoulder)), { duration: dur });
+  R(els['peacock-feather'], hold(rot(0, ...P.feather), rot(16, ...P.feather)), { duration: dur });
+  later(350, () => spawn(`<path d="${dropD(858, 470, 16)}" fill="#8fd3ff" stroke="#3a9fd8" stroke-width="3"/>`, [
+    { transform: 'translate(0,0) scale(0)', opacity: 1 }, { transform: 'translate(0,0) scale(1)', opacity: 1, offset: 0.2 },
+    { transform: 'translate(8px,70px) scale(0.9)', opacity: 0 },
+  ], { duration: 1000, easing: 'ease-in' }));
+  finish(1450);
+}
+function angry() {
+  begin('grr â†’ angry');
+  setFace('angry');
+  ctx.anims.push(flush.animate([{ opacity: 0 }, { opacity: 1, offset: 0.25 }, { opacity: 1, offset: 0.8 }, { opacity: 0 }], { duration: 1600 }));
+  const shake = [0, -14, 14, -12, 12, -9, 9, -5, 5, 0];
+  R(char, shake.map((x, i) => ({ transform: tr(x, 0) + sc(1, 1, ...FEET), offset: i / (shake.length - 1) })), { duration: 600, delay: 100, easing: 'linear' });
+  R(char, [{ transform: tr(0, 0) + sc(1, 1, ...FEET) }, { transform: tr(0, -40) + sc(0.98, 1.04, ...FEET), offset: 0.4 }, { transform: tr(0, 0) + sc(1.1, 0.88, ...FEET), offset: 0.7 }, { transform: tr(0, 0) + sc(1, 1, ...FEET) }], { duration: 420, delay: 750 });
+  headSeq([0, -3, 3, -3, 3, -2, 2, 0], 1300, (i, a) => tr(0, a ? 4 : 0), { easing: 'linear', delay: 100 });
+  R(els['left-arm'], [{ transform: rot(0, ...P.leftShoulder) }, { transform: rot(-12, ...P.leftShoulder), offset: 0.3 }, { transform: rot(-12, ...P.leftShoulder), offset: 0.8 }, { transform: rot(0, ...P.leftShoulder) }], { duration: 1500 });
+  for (let k = 0; k < 4; k++) later(250 + k * 230, () => { steam(305, 600, -1); steam(950, 600, 1); });
+  finish(1550);
+}
+function heartbreak() {
+  begin('out of hearts â†’ crying');
+  setFace('crying'); setArm(true);
+  const dur = 2500, sob = [];
+  for (let i = 0; i <= 14; i++) sob.push({ transform: tr(0, i % 2 ? 7 : 0) + sc(i % 2 ? 1.015 : 1, i % 2 ? 0.985 : 1, ...FEET), offset: i / 14 });
+  R(char, sob, { duration: dur, easing: 'ease-in-out' });
+  R(els['arm-raised'], [0, 6, -3, 6, -3, 6, -3, 6, 0].map((a, i, arr) => ({ transform: rot(a, ...P.raisedElbow), offset: i / (arr.length - 1) })), { duration: dur });
+  headSeq([0, 4, 4, 2, 4, 0], dur, (i) => tr(0, i === 0 || i === 5 ? 0 : 10));
+  R(els['peacock-feather'], [{ transform: rot(0, ...P.feather) }, { transform: rot(18, ...P.feather), offset: 0.15 }, { transform: rot(18, ...P.feather), offset: 0.85 }, { transform: rot(0, ...P.feather) }], { duration: dur });
+  for (const id of ['crying--left-tear', 'crying--right-tear']) R(els[id], [{ transform: 'scale(1,1)' }, { transform: 'scale(1.25,1.35)' }, { transform: 'scale(1,1)' }], { duration: 300, iterations: 8 });
+  for (let k = 0; k < 11; k++) later(200 + k * 190, () => { teardrop(484, 664, -1); teardrop(786, 662, 1); });
+  finish(2450);
+}
+function love() {
+  begin('love â†’ affectionate');
+  setFace('affectionate');
+  show(els['love-hearts'], true);
+  ['love--left-heart-top', 'love--right-heart', 'love--left-heart-bottom'].forEach((id, i) => {
+    R(els[id], [
+      { transform: 'translate(0,0) scale(0)', opacity: 1 }, { transform: 'translate(0,0) scale(1.3)', opacity: 1, offset: 0.12 },
+      { transform: 'translate(0,0) scale(1)', opacity: 1, offset: 0.2 }, { transform: 'translate(0,-15px) scale(1.12)', opacity: 1, offset: 0.45 },
+      { transform: 'translate(0,-5px) scale(1)', opacity: 1, offset: 0.7 }, { transform: 'translate(0,-120px) scale(0.7)', opacity: 0 },
+    ], { duration: 2300, delay: i * 140, fill: 'backwards', composite: 'replace' });
+  });
+  headSeq([0, -7, -7, 6, 6, 0], 2300);
+  R(char, [{ transform: rot(0, ...FEET) }, { transform: rot(-2.5, ...FEET), offset: 0.3 }, { transform: rot(2.5, ...FEET), offset: 0.7 }, { transform: rot(0, ...FEET) }], { duration: 2300 });
+  pulse('affectionate--left-brush', 1.18, 500, 4); pulse('affectionate--right-blush', 1.18, 500, 4);
+  for (let k = 0; k < 7; k++) later(300 + k * 260, () => floatHeart(627 + (k % 2 ? 1 : -1) * rand(300, 390), rand(420, 700), rand(18, 30)));
+  finish(2350);
+}
+function celebrate() {
+  begin('lesson done â†’ celebrate');
+  setFace('amazed');
+  hop(170, 950, 60);
+  later(150, () => confetti(46));
+  later(300, () => sparkles(7, 627, 430, 420));
+  later(900, () => { setFace('laughing'); setArm(true); });
+  later(950, () => {
+    hop(150, 850, 40, true);
+    R(els['arm-raised'], [0, -16, 6, -16, 0].map((a, i, arr) => ({ transform: rot(a, ...P.raisedElbow), offset: i / (arr.length - 1) })), { duration: 850 });
+    headSeq([0, -6, 5, -6, 5, 0], 850, () => '', { easing: 'linear' });
+  });
+  later(1500, () => confetti(24));
+  finish(2300);
+}
+function think() {
+  begin('thinking');
+  const dur = 1800, hold = (a, b) => [{ transform: a }, { transform: b, offset: 0.25 }, { transform: b, offset: 0.8 }, { transform: a }];
+  for (const id of HEAD) R(els[id], hold(rot(0, ...NECK), rot(9, ...NECK) + tr(6, 0)), { duration: dur });
+  R(els['eye-brow-right'], hold(tr(0, 0), tr(0, -18)), { duration: dur });
+  for (const id of ['left-pupil', 'right-pupil']) R(els[id], hold(tr(0, 0), tr(-14, -22)), { duration: dur });
+  finish(dur);
+}
+
+const ACTIONS = { correct, combo, wrong, angry, heartbreak, love, celebrate, think };
+const ORDER = ['correct', 'combo', 'wrong', 'angry', 'heartbreak', 'love', 'celebrate'];
+const LENGTH = { correct: 1600, combo: 2000, wrong: 1800, angry: 1900, heartbreak: 2800, love: 2700, celebrate: 2600, think: 2100 };
+let demoTimer = null;
+function demo() {
+  clearTimeout(demoTimer);
+  let i = 0;
+  const step = () => { if (i >= ORDER.length) return; const n = ORDER[i++]; ACTIONS[n](); demoTimer = setTimeout(step, LENGTH[n] + 400); };
+  step();
+}
+document.querySelectorAll('button[data-act]').forEach((b) => b.addEventListener('click', () => { clearTimeout(demoTimer); ACTIONS[b.dataset.act](); }));
+document.getElementById('demo').addEventListener('click', demo);
+addEventListener('keydown', (e) => {
+  if (e.key === ' ') { e.preventDefault(); demo(); }
+  const n = Object.keys(ACTIONS)[+e.key - 1];
+  if (n) { clearTimeout(demoTimer); ACTIONS[n](); }
+});
 document.getElementById('idleToggle').addEventListener('change', (e) => (e.target.checked ? startIdle() : stopIdle()));
 if (!matchMedia('(prefers-reduced-motion: reduce)').matches) startIdle();
 window.__actions = ACTIONS;

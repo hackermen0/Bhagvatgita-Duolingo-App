@@ -11,7 +11,6 @@ const pickOne = <T>(items: T[]): T | undefined => items[Math.floor(Math.random()
  * - everyone else with listening on gets one in the final stage
  * - Deep-plan learners get extra recall exercises at the end
  * - Hard-tier learners close each verse with a vocabulary word-matching round and recall exercises
- * - Beginner-tier learners skip the word-by-word warm-up matching (via `cfg.wordWarmups`)
  * - meaning-focused learners get the lesson's reflection prompt if it has none
  */
 export function personalizeLesson(lesson: Lesson, cfg: LearningConfig, opts: { speech: boolean }): Lesson {
@@ -20,7 +19,7 @@ export function personalizeLesson(lesson: Lesson, cfg: LearningConfig, opts: { s
   const listenedWords = new Set<string>();
 
   const parts = (lesson.parts ?? []).map((part, pi) => {
-    let questions = cfg.wordWarmups ? part.questions : part.questions.filter((q) => !q.warmup);
+    let questions = part.questions;
     if (canListen && cfg.listening === 'heavy') {
       const target = pickOne(part.wordBreakdown);
       if (target) {

@@ -2,11 +2,13 @@
   import { onDestroy, onMount, tick } from 'svelte';
   import { playPopSound } from '../utils/soundEffects';
 
-  // The learner builds their English answer from these word tiles
-  let { tiles, onChange, disabled = false } = $props<{
+  // The learner builds their English answer from these tiles — words or short phrases. `highlight` lists
+  // tiles that translate a clue word in the question; they are emphasized so the link is easy to spot.
+  let { tiles, onChange, disabled = false, highlight = [] } = $props<{
     tiles: string[];
     onChange: (selectedWords: string[]) => void;
     disabled?: boolean;
+    highlight?: string[];
   }>();
 
   interface TileItem {
@@ -167,7 +169,11 @@
 </script>
 
 {#snippet label(text: string)}
-  <span class="text-base font-bold leading-tight">{text}</span>
+  {#if highlight.includes(text)}
+    <span class="text-base font-black leading-tight px-1.5 py-0.5 rounded-md bg-primary-soft text-primary-dark dark:text-primary">{text}</span>
+  {:else}
+    <span class="text-base font-bold leading-tight">{text}</span>
+  {/if}
 {/snippet}
 
 <div class="flex flex-col gap-10 w-full select-none">

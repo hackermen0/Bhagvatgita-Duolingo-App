@@ -15,8 +15,6 @@ export interface LearningConfig {
   autoPlayRecitation: boolean;
   /** Commentary and an extra reflection in lessons */
   meaningFocus: boolean;
-  /** Word-by-word matching before phrase-level matching (every tier but Beginner) */
-  wordWarmups: boolean;
   /** Extra vocabulary and word-matching rounds closing each verse (Hard tier) */
   vocabDrills: boolean;
   /** "I know these words" skip on word-discovery cards */
@@ -32,7 +30,6 @@ const DEFAULT_CONFIG: LearningConfig = {
   listening: 'light',
   autoPlayRecitation: false,
   meaningFocus: false,
-  wordWarmups: true,
   vocabDrills: false,
   skippableDiscovery: false,
   pathAccess: 'sequential',
@@ -86,7 +83,6 @@ function configFromProfile(profile: OnboardingProfile): LearningConfig {
 export function learningConfig(profile: OnboardingProfile | null, tier: DifficultyTier): LearningConfig {
   return {
     ...(profile ? configFromProfile(profile) : DEFAULT_CONFIG),
-    wordWarmups: tier !== 'beginner',
     vocabDrills: tier === 'hard'
   };
 }

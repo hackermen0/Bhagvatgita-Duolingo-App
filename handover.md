@@ -54,7 +54,9 @@ Files in `design/mascot-svg/`:
 
 Preview limits: expressions are faked (mouth flipped for a frown, eyes squashed for a blink). Faint seam in the hair near the ears (overlap the two hair shapes in Illustrator to fix). SVG angles: positive = clockwise, so the viewer's-left arm lifts with `+`, right arm with `−`.
 
-### Next steps
+**Expressions done (2026-10-06):** `design/mascot-svg/expressions/*.svg` (default, laughing, amazed, disappointed, angry, crying, affectionate; Crying's artboard is offset by (3.45, 7.11), corrected in the build). `build-preview.cjs` now uses `expressions/default.svg` as the base, stacks every expression's `face` group inside `#faces` (ids prefixed `<emotion>--`), adds the raised-fist arm (`#arm-raised`, from Laughing) and the Affectionate hearts (`#love-hearts`). Preview reactions: correct→laughing, combo→amazed, wrong→disappointed, angry, out of hearts→crying, love→affectionate, celebrate (amazed→laughing + confetti), thinking; keys 1–8, space plays all. Remaining step is wiring into `Mascot.svelte` (step 3 below).
+
+### Next steps (history)
 1. **Expression variants (user is drawing these).** One artboard per emotion, whole character copied, group named `<emotion>-krishna` (e.g. `disappointed-krishna`), face parts named like the defaults (`left-eye`, `eye-brow-left`, `mouth`, plus extras like `eyelid-left`, tears). First export received as a screenshot only — **the SVG itself has not been sent yet**. Plan: export with *Use Artboards* so each is its own SVG; code takes only the face parts and swaps them over the default face (with a quick squash) during reactions.
    Suggested first three: `disappointed` (wrong), `cheerful` (correct), `shocked` (wrong match). Full mapping idea: wrong→disappointed, last heart→worried, wrong pair→shocked_1, correct→cheerful, streak 3/5→too_exited/amazed, out of hearts→crying, complete→celebrating.
    Emotion PNGs use the same body pose except celebrating, thinking, proud, unimpressed, too_exited, fire_angry, super_angry (those change arms/body — later). Detailed eyes in most emotion PNGs differ from the default's plain eyes; consider redrawing the default face to match.

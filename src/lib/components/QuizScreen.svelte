@@ -195,7 +195,7 @@
 
   function playPart() {
     const qs = partQuestions(currentPart);
-    // A learner whose profile skips the warm-ups can have nothing to play in a part
+    // A part can have nothing to play at this level (e.g. a hand-authored part with no warm-up)
     if (qs.length === 0) return handlePartPlayComplete();
     startExerciseSet(qs);
     phase = 'part_play';
@@ -321,8 +321,9 @@
         // ("your right is only in action" / "action is your only right"), and small grammar words
         // are the learner's choice. Right = every meaning word of the reference, no decoys; a
         // different phrasing still gets the reference shown.
+        // Tiles are phrase chunks, so split them back into words before comparing
         const answerWords = q.answer.split(/\s+/).map(normalize);
-        const given = selectedWords.map(normalize);
+        const given = selectedWords.flatMap((t) => t.split(/\s+/)).map(normalize);
         const meaningWords = (ws: string[]) => ws.filter((w) => !GRAMMAR_WORDS.has(w)).sort().join(' ');
         const onlyAnswerWords = given.every((w) => answerWords.includes(w));
         isCorrect = onlyAnswerWords && meaningWords(given) === meaningWords(answerWords);
@@ -461,7 +462,7 @@
       case 'phrase_matching': return 'Tap the matching pairs';
       case 'fill_in_the_blank': return 'Fill in the blank';
       case 'listening': return 'Tap what you hear';
-      case 'translate': return 'Write this in English';
+      case 'translate': return 'Translate this sentence';
       default: return cleanPrompt(q.prompt);
     }
   }
@@ -720,6 +721,7 @@
               <TranslateExercise
                 hindi={activeQuestion.hindi}
                 tiles={activeQuestion.tiles}
+                clues={activeQuestion.clues}
                 onChange={handleWordChange}
                 disabled={isChecked}
                 mascotMood={exerciseMood}

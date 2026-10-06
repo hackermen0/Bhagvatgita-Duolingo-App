@@ -50,7 +50,7 @@ export const DIFFICULTY_TIERS: DifficultyTierInfo[] = [
     subtitle: 'Hindi in Devanagari script',
     short: 'Devanagari',
     sample: 'आपका अधिकार केवल कर्म करने पर है, उसके फलों पर कभी नहीं...',
-    description: 'Read each verse in Hindi script, with word warm-ups before each phrase, then solve it in English.'
+    description: 'Read each verse in Hindi script, then solve it in English. Word matching comes before every phrase.'
   },
   {
     tier: 'hard',

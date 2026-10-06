@@ -2,15 +2,17 @@
   import { onMount } from 'svelte';
   import { lookupMeaning } from '../data/practice';
   import { hindiTokens, wordKey } from '../data/hindi';
-  import type { HindiText } from '../data/gitaData';
+  import type { HindiText, TranslateClue } from '../data/gitaData';
   import HindiWord from './HindiWord.svelte';
   import WordTilePicker from './WordTilePicker.svelte';
   import Mascot, { type MascotMood } from './Mascot.svelte';
 
   // "Write this in English": Krishna says a Hindi phrase; the learner builds its meaning from English tiles
-  let { hindi, tiles, onChange, disabled = false, mascotMood = 'default', autoPlay = false } = $props<{
+  let { hindi, tiles, clues = [], onChange, disabled = false, mascotMood = 'default', autoPlay = false } = $props<{
     hindi: HindiText;
     tiles: string[];
+    /** Hindi words to highlight, each paired with the bank tile that translates it */
+    clues?: TranslateClue[];
     onChange: (words: string[]) => void;
     disabled?: boolean;
     mascotMood?: MascotMood;
@@ -18,6 +20,7 @@
   }>();
 
   const words = $derived(hindiTokens(hindi));
+  const isClue = (i: number) => clues.some((c: TranslateClue) => i >= c.from && i < c.to);
   let hintIndex = $state<number | null>(null);
 
   let speechSupported = $state(false);
@@ -78,7 +81,11 @@
             class="relative flex flex-col items-center px-0.5 border-b-2 disabled:cursor-default
               {meaning ? 'border-dashed border-primary-edge cursor-help' : 'border-transparent'}"
           >
-            <HindiWord hindi={word} />
+            {#if isClue(i)}
+              <span class="px-1.5 py-0.5 rounded-md bg-primary-soft text-primary-dark dark:text-primary"><HindiWord hindi={word} /></span>
+            {:else}
+              <HindiWord hindi={word} />
+            {/if}
             {#if hintIndex === i && meaning}
               <span class="absolute top-full mt-2 left-1/2 -translate-x-1/2 z-20 whitespace-nowrap px-3 py-1.5 rounded-xl bg-bg-surface border-2 border-border-warm text-sm font-bold text-text-primary shadow-lg animate-pop-in">
                 {meaning}
@@ -90,5 +97,5 @@
     </div>
   </div>
 
-  <WordTilePicker {tiles} onChange={(w: string[]) => { hintIndex = null; onChange(w); }} {disabled} />
+  <WordTilePicker {tiles} highlight={clues.map((c: TranslateClue) => c.tile)} onChange={(w: string[]) => { hintIndex = null; onChange(w); }} {disabled} />
 </div>
