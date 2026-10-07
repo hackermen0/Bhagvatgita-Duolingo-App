@@ -6,6 +6,7 @@
   import { hasRecognition, listen, speak, stopSpeaking, type Listener } from '../utils/speech';
   import SpeakButton from './SpeakButton.svelte';
   import SpokenText, { englishLines, hindiLines } from './SpokenText.svelte';
+  import VoiceWave from './VoiceWave.svelte';
   import Mascot from './Mascot.svelte';
 
   // An audio recital: the learner chooses Hindi or English, then says the text aloud (speech recognition)
@@ -34,6 +35,9 @@
   let voiceSupported = $state(false);
   let typing = $state(false);
   let listening = $state(false);
+  // What the microphone is doing, for the waveform: opening, open and waiting, or picking up the learner's voice
+  let micState = $state<'off' | 'starting' | 'ready' | 'speaking'>('off');
+  let startingTimer: ReturnType<typeof setTimeout> | undefined;
   let typed = $state('');
   let transcript = $state('');
   let result = $state<RecitalScore | null>(null);
@@ -44,6 +48,7 @@
     voiceSupported = hasRecognition();
     typing = !voiceSupported;
     return () => {
+      clearTimeout(startingTimer);
       listener?.stop();
       stopSpeaking();
     };
@@ -80,8 +85,20 @@
     result = null;
     message = '';
     listening = true;
+    micState = 'starting';
+    // Not every browser reports the moment the mic opens, so don't say "starting" for ever
+    clearTimeout(startingTimer);
+    startingTimer = setTimeout(() => {
+      if (micState === 'starting') micState = 'ready';
+    }, 1200);
     listener = listen(lang, {
       onResult: evaluate,
+      onReady: () => {
+        if (micState === 'starting') micState = 'ready';
+      },
+      onSpeaking: (speaking) => {
+        if (listening) micState = speaking ? 'speaking' : 'ready';
+      },
       onError: (reason) => {
         if (reason === 'none') message = "I didn't hear anything — tap the microphone and try again.";
         else {
@@ -92,9 +109,16 @@
               : "Voice isn't available here, so type it instead.";
         }
       },
-      onEnd: () => (listening = false)
+      onEnd: () => {
+        listening = false;
+        micState = 'off';
+        clearTimeout(startingTimer);
+      }
     });
-    if (!listener) listening = false;
+    if (!listener) {
+      listening = false;
+      micState = 'off';
+    }
   }
 
   function checkTyped() {
@@ -109,6 +133,16 @@
   }
 
   const percent = $derived(result ? Math.round(result.score * 100) : 0);
+
+  const micLabel = $derived(
+    micState === 'speaking'
+      ? 'I can hear you…'
+      : micState === 'ready'
+        ? 'Listening… say it out loud'
+        : micState === 'starting'
+          ? 'Starting the microphone…'
+          : 'Tap and speak'
+  );
 </script>
 
 <div class="flex-1 overflow-y-auto scrollbar-none px-5 pt-4 pb-6 flex flex-col gap-5 select-none">
@@ -188,6 +222,8 @@
       </div>
     {:else}
       <div class="flex flex-col items-center gap-3">
+        <!-- Moves when the learner's voice is picked up, so they can see they are being heard -->
+        <VoiceWave state={micState === 'speaking' ? 'speaking' : micState === 'off' ? 'idle' : 'listening'} />
         <button
           type="button"
           onclick={toggleListening}
@@ -200,7 +236,8 @@
             <path d="M12 14a3 3 0 003-3V6a3 3 0 10-6 0v5a3 3 0 003 3zm5-3a5 5 0 01-10 0H5a7 7 0 006 6.92V21h2v-3.08A7 7 0 0019 11h-2z" />
           </svg>
         </button>
-        <p class="text-sm font-black uppercase tracking-wide text-text-muted">{listening ? 'Listening… tap when you finish' : 'Tap and speak'}</p>
+        <p class="text-sm font-black uppercase tracking-wide {micState === 'speaking' ? 'text-success' : 'text-text-muted'}" aria-live="polite">{micLabel}</p>
+        {#if listening}<p class="text-xs font-bold text-text-muted -mt-1.5">Tap the button when you finish</p>{/if}
         <button type="button" onclick={() => { typing = true; message = ''; }} class="text-sm font-black uppercase tracking-wide text-info underline">Type it instead</button>
       </div>
     {/if}

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { gameState, DAILY_GOAL_OPTIONS } from '$lib/state/gameState.svelte';
-  import { planById, DIFFICULTY_TIERS, type PracticePreference } from '$lib/data/onboarding';
+  import { planById, DIFFICULTY_TIERS, LEARNING_MODES, learningModeInfo, type PracticePreference } from '$lib/data/onboarding';
   import { gitaData } from '$lib/data/gitaData';
   import { JOURNEY_PAGE_COUNT } from '$lib/data/journey';
   import Icon from '$lib/components/Icon.svelte';
@@ -26,8 +26,8 @@
   const allIds = units.flatMap((u) => u.section.lessons.map((l) => l.id));
 
   function devStatus(id: string): { label: string; tone: 'done' | 'progress' | 'idle' } {
-    if (gameState.completedLessons.includes(id)) return { label: 'Completed', tone: 'done' };
-    const cp = gameState.checkpointFor(id);
+    if (gameState.isVerseDone(id)) return { label: 'Completed', tone: 'done' };
+    const cp = gameState.learningMode === 'normal' ? gameState.checkpointFor(id) : undefined;
     if (cp) return { label: `Page ${cp.page + 1} of ${JOURNEY_PAGE_COUNT}`, tone: 'progress' };
     return { label: 'Not started', tone: 'idle' };
   }
@@ -71,6 +71,24 @@
         >
           <span class="absolute top-1 left-1 w-6 h-6 rounded-full bg-white shadow transition-transform {gameState.themeMode === 'dark' ? 'translate-x-6' : ''}"></span>
         </button>
+      </div>
+      <div class="px-4 py-4 flex flex-col gap-3">
+        <span class="text-base font-black">Learning mode</span>
+        <div class="grid grid-cols-2 gap-2">
+          {#each LEARNING_MODES as modeOpt}
+            <button
+              type="button"
+              onclick={() => gameState.setLearningMode(modeOpt.mode)}
+              class="tile py-2.5 px-2 flex flex-col items-center text-center {gameState.learningMode === modeOpt.mode ? 'tile-selected' : ''}"
+            >
+              <span class="text-sm font-black">{modeOpt.title}</span>
+              <span class="text-[10px] font-bold text-text-muted mt-0.5">{modeOpt.subtitle}</span>
+            </button>
+          {/each}
+        </div>
+        <p class="text-xs font-bold text-text-muted leading-relaxed">
+          {learningModeInfo(gameState.learningMode).description} Each mode keeps its own progress on the path.
+        </p>
       </div>
       <div class="px-4 py-4 flex flex-col gap-3">
         <div class="flex items-center justify-between">
@@ -197,7 +215,7 @@
           </div>
         {/each}
         <p class="text-xs font-bold text-text-muted leading-relaxed">
-          Complete marks a verse done without playing it (no XP). Reset puts it back to not started, drops any saved page and lets the unit story play again. Neither touches XP or streak.
+          Acts on the {learningModeInfo(gameState.learningMode).title} mode path. Complete marks a verse done without playing it (no XP). Reset puts it back to not started, drops any saved page and lets the unit story play again. Neither touches XP or streak.
         </p>
       </div>
     {/if}

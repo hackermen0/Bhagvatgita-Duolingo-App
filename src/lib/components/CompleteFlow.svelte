@@ -27,7 +27,7 @@
     if (!found) return null;
     const { section } = found;
     if (gameState.hasSeenStory(section.id)) return null;
-    if (!section.lessons.every((l) => gameState.completedLessons.includes(l.id))) return null;
+    if (!section.lessons.every((l) => gameState.isVerseDone(l.id))) return null;
     return storyForSection(section);
   }
 

@@ -4,11 +4,14 @@
     PLANS,
     CUSTOM_MINUTES_OPTIONS,
     DIFFICULTY_TIERS,
+    LEARNING_MODES,
+    learningModeInfo,
     planById,
     recommendPlan,
     labelFor,
     type OnboardingProfile,
-    type DifficultyTier
+    type DifficultyTier,
+    type LearningMode
   } from '../data/onboarding';
   import { gameState } from '../state/gameState.svelte';
   import { playPopSound } from '../utils/soundEffects';
@@ -19,7 +22,7 @@
     onComplete: (profile: OnboardingProfile) => void;
   }>();
 
-  type Stage = 'welcome' | 'chooseDifficulty' | 'question' | 'recommend' | 'choosePlan' | 'customTime';
+  type Stage = 'welcome' | 'chooseMode' | 'chooseDifficulty' | 'question' | 'recommend' | 'choosePlan' | 'customTime';
 
   // Colors for each tier's badge; the copy lives in DIFFICULTY_TIERS so Settings shows the same wording
   const BADGE_COLORS: Record<DifficultyTier, string> = {
@@ -29,6 +32,7 @@
   };
 
   let stage = $state<Stage>('welcome');
+  let selectedMode = $state<LearningMode>(gameState.learningMode ?? 'normal');
   let selectedTier = $state<DifficultyTier>(gameState.difficultyTier ?? 'beginner');
   let qIndex = $state(0);
   let answers = $state<Partial<OnboardingProfile>>({});
@@ -39,17 +43,29 @@
   const question = $derived(ONBOARDING_QUESTIONS[qIndex]);
   const currentAnswer = $derived((answers as Record<string, string>)[question?.key]);
 
-  // Welcome counts as step 0, difficulty as step 1, questions, then plan
-  const totalSteps = ONBOARDING_QUESTIONS.length + 2;
+  // Welcome counts as step 0, mode as step 1, difficulty as step 2, questions, then plan
+  const totalSteps = ONBOARDING_QUESTIONS.length + 3;
   const progress = $derived(
     stage === 'welcome'
       ? 0
-      : stage === 'chooseDifficulty'
+      : stage === 'chooseMode'
         ? 1 / totalSteps
-        : stage === 'question'
-          ? (qIndex + 2) / totalSteps
-          : 1
+        : stage === 'chooseDifficulty'
+          ? 2 / totalSteps
+          : stage === 'question'
+            ? (qIndex + 3) / totalSteps
+            : 1
   );
+
+  function selectMode(mode: LearningMode) {
+    playPopSound();
+    selectedMode = mode;
+  }
+
+  function continueMode() {
+    answers.learningMode = selectedMode;
+    stage = 'chooseDifficulty';
+  }
 
   function selectTier(tier: DifficultyTier) {
     playPopSound();
@@ -101,12 +117,15 @@
   }
 
   function finish() {
+    answers.learningMode = selectedMode;
     onComplete(answers as OnboardingProfile);
   }
 
   function back() {
-    if (stage === 'chooseDifficulty') {
+    if (stage === 'chooseMode') {
       stage = 'welcome';
+    } else if (stage === 'chooseDifficulty') {
+      stage = 'chooseMode';
     } else if (stage === 'question') {
       if (qIndex === 0) stage = 'chooseDifficulty';
       else qIndex -= 1;
@@ -122,7 +141,8 @@
 
   function onKey(e: KeyboardEvent) {
     if (e.key !== 'Enter' || (e.target as HTMLElement | null)?.closest?.('button')) return;
-    if (stage === 'welcome') stage = 'chooseDifficulty';
+    if (stage === 'welcome') stage = 'chooseMode';
+    else if (stage === 'chooseMode') continueMode();
     else if (stage === 'chooseDifficulty') continueDifficulty();
     else if (stage === 'question') continueQuestion();
     else if (stage === 'recommend') confirmRecommendedPlan();
@@ -164,8 +184,38 @@
         </div>
         <Mascot mood="affectionate" size="xl" animate={true} />
         <p class="text-base font-bold text-text-muted max-w-xs">
-          Answer {ONBOARDING_QUESTIONS.length + 1} quick questions and we'll shape your daily practice around you.
+          Answer {ONBOARDING_QUESTIONS.length + 2} quick questions and we'll shape your daily practice around you.
         </p>
+      </div>
+
+    {:else if stage === 'chooseMode'}
+      {@render askBubble('How would you like to learn?', 'You can switch any time in Settings.')}
+      <div class="flex flex-col gap-3.5 mt-6">
+        {#each LEARNING_MODES as option}
+          {@const isSelected = selectedMode === option.mode}
+          <button
+            type="button"
+            onclick={() => selectMode(option.mode)}
+            class="tile w-full text-left p-4 flex flex-col gap-2.5 transition-all relative {isSelected ? 'tile-selected border-primary! shadow-md ring-2 ring-primary/20' : ''}"
+          >
+            <div class="flex items-center justify-between">
+              <span class="text-lg font-black">{option.title}</span>
+              <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors {isSelected ? 'border-primary bg-primary text-white' : 'border-border-warm bg-bg-surface'}">
+                {#if isSelected}
+                  <Icon name="check" class="w-3.5 h-3.5" />
+                {/if}
+              </div>
+            </div>
+            <p class="text-xs font-black uppercase tracking-wider text-primary">{option.subtitle}</p>
+            <div class="flex flex-wrap items-center gap-1.5">
+              {#each option.steps as step, i}
+                {#if i > 0}<Icon name="chevron-right" class="w-3.5 h-3.5 text-text-muted" />{/if}
+                <span class="text-xs font-extrabold px-2 py-1 rounded-lg bg-bg-base/70 border border-border-warm">{step}</span>
+              {/each}
+            </div>
+            <p class="text-xs font-bold text-text-muted leading-relaxed">{option.description}</p>
+          </button>
+        {/each}
       </div>
 
     {:else if stage === 'chooseDifficulty'}
@@ -224,6 +274,7 @@
         </div>
         <p class="text-base font-bold text-text-muted">{plan.purpose}</p>
         <ul class="mt-4 pt-4 border-t-2 border-border-warm flex flex-col gap-2.5">
+          <li class="flex items-start gap-2.5 text-[15px] font-bold"><Icon name="star" class="w-5 h-5 text-primary shrink-0" /> {learningModeInfo(selectedMode).title} mode · {learningModeInfo(selectedMode).subtitle}</li>
           <li class="flex items-start gap-2.5 text-[15px] font-bold"><Icon name="target" class="w-5 h-5 text-primary shrink-0" /> {labelFor('goal', answers.goal)}</li>
           <li class="flex items-start gap-2.5 text-[15px] font-bold"><Icon name="book" class="w-5 h-5 text-primary shrink-0" /> {DIFFICULTY_TIERS.find((t) => t.tier === selectedTier)?.title} tier · {DIFFICULTY_TIERS.find((t) => t.tier === selectedTier)?.subtitle}</li>
           <li class="flex items-start gap-2.5 text-[15px] font-bold"><Icon name="clock" class="w-5 h-5 text-primary shrink-0" /> {labelFor('timeBudget', answers.timeBudget)} a day</li>
@@ -267,7 +318,11 @@
 
   <div class="lesson-footer flex flex-col gap-3">
     {#if stage === 'welcome'}
-      <button type="button" onclick={() => (stage = 'chooseDifficulty')} class="btn btn-primary w-full">Get started</button>
+      <button type="button" onclick={() => (stage = 'chooseMode')} class="btn btn-primary w-full">Get started</button>
+    {:else if stage === 'chooseMode'}
+      <button type="button" onclick={continueMode} class="btn btn-primary w-full">
+        Continue with {learningModeInfo(selectedMode).title}
+      </button>
     {:else if stage === 'chooseDifficulty'}
       <button type="button" onclick={continueDifficulty} class="btn btn-primary w-full">
         Continue with {DIFFICULTY_TIERS.find((o) => o.tier === selectedTier)?.title ?? 'Selected'} Tier

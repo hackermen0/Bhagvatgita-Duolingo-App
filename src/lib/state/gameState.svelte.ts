@@ -1,14 +1,15 @@
 import { browser } from '$app/environment';
-import { planById, type OnboardingProfile, type PracticePreference, type DifficultyTier } from '../data/onboarding';
+import { planById, type OnboardingProfile, type PracticePreference, type DifficultyTier, type LearningMode } from '../data/onboarding';
 import { JOURNEY_PAGE_COUNT } from '../data/journey';
 import { gitaData, sectionForLesson } from '../data/gitaData';
 
-export type { DifficultyTier };
+export type { DifficultyTier, LearningMode };
 /** How Hindi is written on screen: Roman letters (Hinglish) or Devanagari. */
 export type TierScriptMode = 'roman_hindi' | 'devanagari';
 export type ThemeMode = 'light' | 'dark';
 
 export const DIFFICULTY_TIER_IDS: readonly DifficultyTier[] = ['beginner', 'medium', 'hard'];
+export const LEARNING_MODE_IDS: readonly LearningMode[] = ['normal', 'philosophy'];
 
 /** beginner → Romanized Hindi (Hinglish) · medium / hard → Devanagari Hindi */
 export function scriptModeForTier(tier: DifficultyTier): TierScriptMode {
@@ -52,6 +53,9 @@ export const DAILY_GOAL_OPTIONS = [
 /** XP for finishing a verse's journey the first time, and for every replay after that */
 export const VERSE_XP = 50;
 export const REPLAY_XP = 15;
+/** Philosophy mode's shorter verse session: first time, then every replay */
+export const PHILOSOPHY_XP = 30;
+export const PHILOSOPHY_REPLAY_XP = 10;
 const PRACTICE_XP = 15;
 
 /**
@@ -101,7 +105,11 @@ class GameState {
   hearts = $state(5);
   xp = $state(0);
   streak = $state(0);
+  /** Verses finished in the normal (word-by-word) mode */
   completedLessons = $state<string[]>([]);
+  /** Verses finished in philosophy mode — tracked apart, since that mode doesn't teach the words */
+  philosophyCompleted = $state<string[]>([]);
+  learningMode = $state<LearningMode>('normal');
   /** Verses left part-way through their journey, keyed by lesson id */
   journeyCheckpoint = $state<Record<string, JourneyCheckpoint>>({});
   lastActiveDate = $state<string | null>(null);
@@ -127,6 +135,20 @@ class GameState {
     return scriptModeForTier(this.difficultyTier);
   }
 
+  /** The verses finished in the mode being played now: what the path unlocks and ticks off by */
+  get completedInMode(): string[] {
+    return this.learningMode === 'philosophy' ? this.philosophyCompleted : this.completedLessons;
+  }
+
+  isVerseDone(lessonId: string): boolean {
+    return this.completedInMode.includes(lessonId);
+  }
+
+  /** Verses finished in either mode */
+  get versesLearned(): string[] {
+    return [...new Set([...this.completedLessons, ...this.philosophyCompleted])];
+  }
+
   get today(): DailyStats {
     return this.daily.date === dateKey() ? this.daily : emptyDaily(dateKey());
   }
@@ -141,6 +163,9 @@ class GameState {
         this.xp = parsed.xp ?? 0;
         this.streak = parsed.streak ?? 0;
         this.completedLessons = parsed.completedLessons ?? [];
+        this.philosophyCompleted = parsed.philosophyCompleted ?? [];
+        const savedMode = parsed.learningMode ?? parsed.profile?.learningMode;
+        this.learningMode = LEARNING_MODE_IDS.includes(savedMode) ? savedMode : 'normal';
         // Saves from the three-level design had `levelProgress`; a half-finished level can't be resumed, so it's dropped
         this.journeyCheckpoint = Object.fromEntries(
           Object.entries((parsed.journeyCheckpoint ?? {}) as Record<string, JourneyCheckpoint>).filter(
@@ -185,6 +210,8 @@ class GameState {
         xp: this.xp,
         streak: this.streak,
         completedLessons: $state.snapshot(this.completedLessons),
+        philosophyCompleted: $state.snapshot(this.philosophyCompleted),
+        learningMode: this.learningMode,
         journeyCheckpoint: $state.snapshot(this.journeyCheckpoint),
         lastActiveDate: this.lastActiveDate,
         activeDays: $state.snapshot(this.activeDays),
@@ -226,6 +253,14 @@ class GameState {
     this.saveState();
   }
 
+  setLearningMode(mode: LearningMode) {
+    this.learningMode = mode;
+    if (this.profile) {
+      this.profile = { ...this.profile, learningMode: mode };
+    }
+    this.saveState();
+  }
+
   setPracticePreference(pref: PracticePreference) {
     if (!this.profile) return;
     this.profile = { ...this.profile, practicePreference: pref };
@@ -255,6 +290,7 @@ class GameState {
     this.profile = profile;
     this.onboardingComplete = true;
     this.difficultyTier = profile.difficultyTier;
+    this.learningMode = profile.learningMode;
 
     const targetXP =
       profile.plan === 'custom' && profile.customMinutes
@@ -360,6 +396,19 @@ class GameState {
     return { xpEarned, streakExtended, goalJustMet };
   }
 
+  /** Records a finished philosophy session. No words are taught there, so word memory is left alone. */
+  completePhilosophyVerse(lessonId: string): SessionResult {
+    const first = !this.philosophyCompleted.includes(lessonId);
+    if (first) this.philosophyCompleted.push(lessonId);
+    this.rollDaily();
+    this.daily.lessons += 1;
+    if (first) this.daily.newLessons += 1;
+    const streakExtended = this.recordActivity();
+    const xpEarned = first ? PHILOSOPHY_XP : PHILOSOPHY_REPLAY_XP;
+    const goalJustMet = this.addXP(xpEarned);
+    return { xpEarned, streakExtended, goalJustMet };
+  }
+
   completePractice(words: string[], missed: string[]): SessionResult {
     this.updateWordMemory(words, missed);
     this.rollDaily();
@@ -409,10 +458,12 @@ class GameState {
    */
   devSetLessonsComplete(lessonIds: string[], complete: boolean) {
     const ids = new Set(lessonIds);
+    // Acts on the mode being played, so the path in front of the tester changes
+    const key = this.learningMode === 'philosophy' ? 'philosophyCompleted' : 'completedLessons';
     if (complete) {
-      for (const id of lessonIds) if (!this.completedLessons.includes(id)) this.completedLessons.push(id);
+      for (const id of lessonIds) if (!this[key].includes(id)) this[key].push(id);
     } else {
-      this.completedLessons = this.completedLessons.filter((id) => !ids.has(id));
+      this[key] = this[key].filter((id) => !ids.has(id));
       const sections = new Set(lessonIds.map((id) => sectionForLesson(gitaData, id)?.section.id));
       this.storiesSeen = this.storiesSeen.filter((s) => !sections.has(s));
     }
@@ -431,10 +482,11 @@ class GameState {
     this.xp = 0;
     this.streak = 0;
     this.completedLessons = [];
+    this.philosophyCompleted = [];
     this.journeyCheckpoint = {};
     this.lastActiveDate = null;
     this.activeDays = [];
-    // The difficulty tier is a preference, not progress, so a progress reset keeps it
+    // The difficulty tier and learning mode are preferences, not progress, so a progress reset keeps them
     this.userReflections = {};
     this.wordMemory = {};
     this.daily = emptyDaily(dateKey());

@@ -6,8 +6,11 @@ export type TimeBudget = '5-7' | '10-12' | '15-20' | 'variable';
 export type PracticePreference = 'listening' | 'reading' | 'balanced';
 export type PlanId = 'quick' | 'regular' | 'deep' | 'custom';
 export type DifficultyTier = 'beginner' | 'medium' | 'hard';
+/** normal: the full word → phrase → recital journey · philosophy: backstory video → verse + meaning → questions */
+export type LearningMode = 'normal' | 'philosophy';
 
 export interface OnboardingProfile {
+  learningMode: LearningMode;
   difficultyTier: DifficultyTier;
   goal: Goal;
   gitaKnowledge: GitaKnowledge;
@@ -16,6 +19,38 @@ export interface OnboardingProfile {
   plan: PlanId;
   /** Only set when plan === 'custom' */
   customMinutes?: number;
+}
+
+// ─── Learning modes ─────────────────────────────────────────────────────────
+export interface LearningModeInfo {
+  mode: LearningMode;
+  title: string;
+  /** One line on what a verse feels like in this mode */
+  subtitle: string;
+  /** The steps of one verse, shown as a mini flow on the picker */
+  steps: string[];
+  description: string;
+}
+
+export const LEARNING_MODES: LearningModeInfo[] = [
+  {
+    mode: 'normal',
+    title: 'Learn the verse',
+    subtitle: 'Words, phrases and recital',
+    steps: ['Words', 'Phrases', 'Fill gaps', 'Recite'],
+    description: 'Learn each verse word by word until you can recite it from memory. About 10 minutes a verse.'
+  },
+  {
+    mode: 'philosophy',
+    title: 'Philosophy',
+    subtitle: 'The story and meaning behind each verse',
+    steps: ['Story video', 'Verse + meaning', 'Questions'],
+    description: 'Watch the backstory, read the verse and what it means, then answer questions on its ideas. About 5 minutes a verse.'
+  }
+];
+
+export function learningModeInfo(mode: LearningMode): LearningModeInfo {
+  return LEARNING_MODES.find((m) => m.mode === mode) ?? LEARNING_MODES[0];
 }
 
 // ─── Difficulty tiers ───────────────────────────────────────────────────────

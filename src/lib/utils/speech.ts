@@ -17,6 +17,10 @@ interface SpeechRecognitionLike {
   onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
   onerror: ((e: { error: string }) => void) | null;
   onend: (() => void) | null;
+  /** The microphone is open and audio is being captured */
+  onaudiostart: (() => void) | null;
+  onspeechstart: (() => void) | null;
+  onspeechend: (() => void) | null;
   start(): void;
   stop(): void;
   abort(): void;
@@ -210,7 +214,14 @@ export interface ListenOptions {
   /** `denied` = microphone blocked, `none` = nothing was heard, `unsupported`, or `other` */
   onError: (reason: 'denied' | 'none' | 'unsupported' | 'other') => void;
   onEnd: () => void;
+  /** The microphone is open: from here on, speaking will be heard */
+  onReady?: () => void;
+  /** Voice is being picked up (true), or has gone quiet again (false). Drives the "I can hear you" waveform. */
+  onSpeaking?: (speaking: boolean) => void;
 }
+
+/** How long after the last sign of voice the learner counts as having stopped speaking. */
+const QUIET_AFTER_MS = 1000;
 
 /** Listens once for the learner's voice. Returns null when the browser has no speech recognition. */
 export function listen(lang: SpeechLang, opts: ListenOptions): Listener | null {
@@ -221,16 +232,40 @@ export function listen(lang: SpeechLang, opts: ListenOptions): Listener | null {
   }
   const rec = new Ctor();
   rec.lang = lang === 'hi' ? 'hi-IN' : 'en-IN';
-  rec.interimResults = false;
+  // Interim results arrive while the learner is still talking, which is what keeps the waveform alive
+  rec.interimResults = true;
   rec.continuous = true;
   rec.maxAlternatives = 1;
   let heard = '';
   let errored = false;
+
+  // Voice counts as "being heard" from the engine's speech-start (or any partial result) until things go quiet.
+  // This uses the recognition engine's own events rather than a second microphone stream, which some phones
+  // can't share with recognition.
+  let speaking = false;
+  let quietTimer: ReturnType<typeof setTimeout> | undefined;
+  const setSpeaking = (value: boolean) => {
+    if (speaking === value) return;
+    speaking = value;
+    opts.onSpeaking?.(value);
+  };
+  const heardVoice = () => {
+    setSpeaking(true);
+    clearTimeout(quietTimer);
+    quietTimer = setTimeout(() => setSpeaking(false), QUIET_AFTER_MS);
+  };
+  rec.onaudiostart = () => opts.onReady?.();
+  rec.onspeechstart = heardVoice;
+  rec.onspeechend = () => {
+    clearTimeout(quietTimer);
+    setSpeaking(false);
+  };
   rec.onresult = (e) => {
     heard = Array.from(e.results)
       .map((r) => r[0]?.transcript ?? '')
       .join(' ')
       .trim();
+    if (heard) heardVoice();
   };
   rec.onerror = (e) => {
     errored = true;
@@ -240,6 +275,8 @@ export function listen(lang: SpeechLang, opts: ListenOptions): Listener | null {
     else opts.onError('other');
   };
   rec.onend = () => {
+    clearTimeout(quietTimer);
+    setSpeaking(false);
     if (!errored) {
       if (heard) opts.onResult(heard);
       else opts.onError('none');

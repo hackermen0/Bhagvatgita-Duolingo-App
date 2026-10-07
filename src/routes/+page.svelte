@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
   import { goto } from '$app/navigation';
-  import { gameState, VERSE_XP, REPLAY_XP } from '$lib/state/gameState.svelte';
+  import { gameState, VERSE_XP, REPLAY_XP, PHILOSOPHY_XP, PHILOSOPHY_REPLAY_XP } from '$lib/state/gameState.svelte';
+  import { philosophyFor } from '$lib/data/philosophy';
   import { JOURNEY_PAGES, JOURNEY_PAGE_COUNT } from '$lib/data/journey';
   import { gitaData, type Lesson, type Section } from '$lib/data/gitaData';
   import { practiceStatus } from '$lib/data/practice';
@@ -16,21 +17,27 @@
   const cfg = $derived(learningConfig(gameState.profile));
   const allLessons = gitaData.chapters.flatMap((c) => c.sections.flatMap((s) => s.lessons));
   const practice = $derived(practiceStatus());
+  // The path shows the mode being played: its own progress, page counts and XP
+  const philosophyMode = $derived(gameState.learningMode === 'philosophy');
+  // Jump tests check words, which philosophy mode doesn't teach, so there the path stays sequential
+  const pathAccess = $derived(philosophyMode && cfg.pathAccess === 'jump' ? 'sequential' : cfg.pathAccess);
+  const startXP = $derived(philosophyMode ? PHILOSOPHY_XP : VERSE_XP);
+  const replayXP = $derived(philosophyMode ? PHILOSOPHY_REPLAY_XP : REPLAY_XP);
 
   function isLessonUnlocked(lessonId: string): boolean {
-    if (cfg.pathAccess === 'open') return true;
+    if (pathAccess === 'open') return true;
     const i = allLessons.findIndex((l) => l.id === lessonId);
-    return i <= 0 || gameState.completedLessons.includes(allLessons[i - 1].id);
+    return i <= 0 || gameState.isVerseDone(allLessons[i - 1].id);
   }
 
-  const isDone = (id: string) => gameState.completedLessons.includes(id);
+  const isDone = (id: string) => gameState.isVerseDone(id);
 
   const nextLesson = $derived(allLessons.find((l) => !isDone(l.id) && isLessonUnlocked(l.id)) ?? null);
   const firstLockedId = $derived(allLessons.find((l) => !isDone(l.id) && !isLessonUnlocked(l.id))?.id ?? null);
 
   // The plan's new-content rule, surfaced as a suggestion on the current lesson's popover
   const advice = $derived(
-    nextLesson && practice.available ? newContentAdvice(cfg, practice.dueCount, gameState.today.newLessons) : null
+    nextLesson && practice.available && !philosophyMode ? newContentAdvice(cfg, practice.dueCount, gameState.today.newLessons) : null
   );
   const planName = $derived(gameState.profile ? planById(gameState.profile.plan).name : '');
 
@@ -147,10 +154,10 @@
           {@const done = isDone(lesson.id)}
           {@const unlocked = isLessonUnlocked(lesson.id)}
           {@const current = lesson.id === nextLesson?.id}
-          {@const canJump = !unlocked && cfg.pathAccess === 'jump'}
+          {@const canJump = !unlocked && pathAccess === 'jump'}
           {@const isOpen = selected === lesson.id}
           {@const lessonNumber = idx + 1}
-          {@const checkpoint = done ? undefined : gameState.checkpointFor(lesson.id)}
+          {@const checkpoint = done || philosophyMode ? undefined : gameState.checkpointFor(lesson.id)}
 
           <div class="relative w-full flex justify-center items-start h-[124px] {isOpen ? 'z-30' : ''}">
             <div class="relative" style="transform: translateX({offset}px)" id="node-{lesson.id}">
@@ -221,7 +228,9 @@
                     </p>
                     {#if !locked && !done}
                       <p class="text-sm font-extrabold mt-1">
-                        {#if checkpoint}
+                        {#if philosophyMode}
+                          Story video · verse · {philosophyFor(lesson.id)?.questions.length ?? 0} questions
+                        {:else if checkpoint}
                           Page {checkpoint.page + 1} of {JOURNEY_PAGE_COUNT} · {JOURNEY_PAGES[checkpoint.page].title}
                         {:else}
                           {JOURNEY_PAGE_COUNT} short pages · words, phrases, recital
@@ -259,7 +268,7 @@
                       </button>
                     {/if}
                     <button type="button" class="btn btn-on-color w-full" onclick={() => goto(`/lesson/${lesson.id}`)}>
-                      {done ? `Practice +${REPLAY_XP} XP` : checkpoint ? `Continue +${VERSE_XP} XP` : `Start +${VERSE_XP} XP`}
+                      {done ? `${philosophyMode ? 'Revisit' : 'Practice'} +${replayXP} XP` : checkpoint ? `Continue +${startXP} XP` : `Start +${startXP} XP`}
                     </button>
                     {#if checkpoint}
                       <button

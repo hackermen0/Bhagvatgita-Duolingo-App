@@ -21,7 +21,7 @@
   });
 
   const sectionComplete = $derived(
-    !!found && found.section.lessons.every((l) => gameState.completedLessons.includes(l.id))
+    !!found && found.section.lessons.every((l) => gameState.versesLearned.includes(l.id))
   );
 
   let replayStory = $state<UnitStory | null>(null);
@@ -67,7 +67,7 @@
 
     <div class="flex flex-col gap-8 mt-8 pb-6">
       {#each found.section.lessons as lesson, i}
-        {@const unlocked = gameState.completedLessons.includes(lesson.id)}
+        {@const unlocked = gameState.versesLearned.includes(lesson.id)}
         <section>
           <p class="text-xs font-extrabold uppercase tracking-wider text-primary">Lesson {i + 1} · {lesson.verseRef}</p>
           <h3 class="text-xl font-black mt-0.5 mb-3">{lesson.title}</h3>
