@@ -6,15 +6,20 @@
     JOURNEY_PAGES,
     JOURNEY_PAGE_COUNT,
     clueFor,
+    containsPhrase,
     getJourneyContent,
     inVerseOrder,
     journeyPool,
+    journeyVariantFor,
     keysFromAnswer,
     keysFromRoman,
+    languageName,
     newSeed,
     pickWordBatch,
     reexamWords,
+    blankInScript,
     type BlankSet,
+    type RecitalClue,
     type JourneyWord
   } from '../data/journey';
   import { scriptText } from '../data/hindi';
@@ -30,7 +35,7 @@
   import ReciteScreen from './ReciteScreen.svelte';
   import BlankFill from './BlankFill.svelte';
   import SpeakButton from './SpeakButton.svelte';
-  import SpokenText, { hindiLines } from './SpokenText.svelte';
+  import SpokenText, { englishLines, hindiLines } from './SpokenText.svelte';
   import WordFlashcard from './WordFlashcard.svelte';
   import HindiWord from './HindiWord.svelte';
   import CompleteFlow from './CompleteFlow.svelte';
@@ -54,17 +59,28 @@
     return c ? $state.snapshot(c) : undefined;
   });
   const seed = saved?.seed ?? newSeed();
+  // The tier is fixed for the session (changing it means leaving for Settings), and picks which version of the verse plays
+  const tier = untrack(() => gameState.difficultyTier);
   // svelte-ignore state_referenced_locally
-  const content = getJourneyContent(lesson, seed);
+  const content = getJourneyContent(lesson, seed, tier);
   const pool = journeyPool(content);
-  const byKey = new Map(pool.map((w) => [w.key, w]));
+  /** The verse's own language: Medium plays BG 2.48 in Sanskrit */
+  const langName = languageName(content);
+  /** Whether this tier reads Devanagari (Hard) rather than Roman letters */
+  const isDeva = $derived(gameState.tierScriptMode === 'devanagari');
 
-  // Which words each half's word-matching page shows, fixed for this run (see pickWordBatch)
+  // Which words each half's flashcards and word-matching page show, fixed for this run (see pickWordBatch).
+  // The verse is in two halves and each half's pages only use words said in that half's own Hindi; a word that
+  // appears in both (tatha, mein) belongs to both.
+  const wordsOfHalf = (h: number): JourneyWord[] => {
+    const half = content.halves[h];
+    const own = half.words.filter((w) => containsPhrase(half.hindi.roman, w.hindi.roman));
+    return own.length ? own : half.words;
+  };
   const batches: JourneyWord[][] = [0, 1].map((h) => {
-    const restored = (saved?.batches[h] ?? []).map((k) => byKey.get(k)).filter((w): w is JourneyWord => !!w);
-    return restored.length
-      ? restored
-      : pickWordBatch(content.halves[h].words, untrack(() => gameState.wordMemory), seed + 100 + h);
+    const own = wordsOfHalf(h);
+    const restored = (saved?.batches[h] ?? []).map((k) => own.find((w) => w.key === k)).filter((w): w is JourneyWord => !!w);
+    return restored.length ? restored : pickWordBatch(own, untrack(() => gameState.wordMemory), seed + 100 + h);
   });
 
   const missed = new Set<string>(saved?.missedWords ?? []);
@@ -127,6 +143,7 @@
     gameState.saveCheckpoint(lessonId, {
       page,
       pages: JOURNEY_PAGE_COUNT,
+      variant: journeyVariantFor(lessonId, tier),
       seed,
       batches: batches.map((b) => b.map((w) => w.key)),
       missedWords: [...missed],
@@ -221,7 +238,7 @@
   }
 
   // ─── Fill-in-the-blank pages ────────────────────────────────────────────────
-  const blankSet = $derived.by((): BlankSet | null => {
+  const blankBase = $derived.by((): BlankSet | null => {
     if (spec.kind !== 'blanks') return null;
     const h = spec.half ?? 0;
     switch (spec.blank) {
@@ -230,6 +247,14 @@
       case 'single': return content.singleBlanks[h];
       default: return content.fullBlanks;
     }
+  });
+  // Blanks written in the verse's own language show in the tier's script (Medium: Roman, Hard: Devanagari)
+  const blankSet = $derived(blankBase ? blankInScript(blankBase, isDeva) : null);
+  // A Roman option is spoken in its Devanagari form, which is what the voice reads
+  const blankSpoken = $derived.by((): Record<string, string> | undefined => {
+    const dev = blankBase?.dev;
+    if (!blankBase || !dev || isDeva) return undefined;
+    return Object.fromEntries(blankBase.options.map((o, i) => [o, dev.options[i]]));
   });
 
   const norm = (s: string | null) => (s ?? '').trim().toLowerCase();
@@ -246,7 +271,7 @@
       if (ok) correct += 1;
       else {
         wrong += 1;
-        keysFromAnswer(content, blankSet!.answers[i]).forEach((k) => missed.add(k));
+        (blankSet!.answerKeys?.[i] ?? keysFromAnswer(content, blankSet!.answers[i])).forEach((k) => missed.add(k));
       }
     });
     if (!isCorrect) loseHeart();
@@ -259,6 +284,8 @@
   });
 
   // ─── Recital pages ──────────────────────────────────────────────────────────
+  /** How this recital page gives its clue: the whole verse is audio-only unless the content says otherwise */
+  const recitalClue = $derived<RecitalClue>(content.recitalClues?.[spec.half ?? 2] ?? (spec.half === undefined ? 'audio' : 'text'));
   function handleRecitalDone(result: { passed: boolean; missedKeys: string[] } | null) {
     if (result) {
       if (result.passed) correct += 1;
@@ -361,7 +388,6 @@
   }
 
   const scriptOf = (h: HindiText) => scriptText(h, gameState.tierScriptMode);
-  const isDeva = $derived(gameState.tierScriptMode === 'devanagari');
 </script>
 
 <svelte:window onkeydown={onKey} />
@@ -377,10 +403,17 @@
   </div>
 {/snippet}
 
-<!-- The Hindi being worked on, in the tier's script, with a voice -->
+<!-- The Hindi (or Sanskrit) being worked on, in the tier's script, with a voice -->
 {#snippet hindiCard(h: HindiText)}
   <div class="card px-4 py-3">
-    <SpokenText lines={hindiLines(h, isDeva)} lang="hi" label="Hindi" textClass="text-lg leading-snug {isDeva ? 'font-deva font-bold' : 'font-black'}" />
+    <SpokenText lines={hindiLines(h, isDeva)} lang="hi" label={langName} textClass="text-lg leading-snug {isDeva ? 'font-deva font-bold' : 'font-black'}" />
+  </div>
+{/snippet}
+
+<!-- The English meaning, as the clue above blanks written in the verse's own language -->
+{#snippet englishCard(text: string)}
+  <div class="card px-4 py-3">
+    <SpokenText lines={englishLines(text)} lang="en" label="English" textClass="text-lg leading-snug font-black" />
   </div>
 {/snippet}
 
@@ -429,7 +462,7 @@
           <!-- Re-keyed per word so each one pops in on its own screen -->
           {#key cardWords[cardIndex]?.key}
             {#if cardWords[cardIndex]}
-              <WordFlashcard word={cardWords[cardIndex]} />
+              <WordFlashcard word={cardWords[cardIndex]} {langName} />
             {/if}
           {/key}
         </div>
@@ -448,8 +481,8 @@
           {@render header(
             spec.title,
             spec.kind === 'word_match'
-              ? 'Tap a Hindi word, then its English meaning. Tap any card to hear it.'
-              : 'Now match each Hindi phrase to its English meaning.'
+              ? `Tap a ${langName} word, then its English meaning. Tap any card to hear it.`
+              : `Now match each ${langName} phrase to its English meaning.`
           )}
           {@render hindiCard(half.hindi)}
           <PhraseMatcher {pairs} voice onIncorrect={handleMatchIncorrect} onAllMatched={() => (matchComplete = true)} />
@@ -472,11 +505,16 @@
                 ? 'The whole verse: fill every gap.'
                 : 'Tap the phrase that fits.'
           )}
-          {@render hindiCard(spec.blank === 'full' ? content.verseHindi : content.halves[spec.half ?? 0].hindi)}
+          {#if content.blankClue === 'english'}
+            {@render englishCard(spec.blank === 'full' ? content.verseEnglish : content.halves[spec.half ?? 0].english)}
+          {:else}
+            {@render hindiCard(spec.blank === 'full' ? content.verseHindi : content.halves[spec.half ?? 0].hindi)}
+          {/if}
           <BlankFill
             template={blankSet.template}
             options={blankSet.options}
             answers={blankSet.answers}
+            spoken={blankSpoken}
             checked={isChecked}
             disabled={isChecked}
             onChange={(f) => (filled = f)}
@@ -504,7 +542,8 @@
           hindi={spec.half === undefined ? content.verseHindi : content.halves[spec.half].hindi}
           english={spec.half === undefined ? content.verseEnglish : content.halves[spec.half].english}
           {pool}
-          hideText={spec.half === undefined}
+          clue={recitalClue}
+          {langName}
           title={spec.title}
           onDone={handleRecitalDone}
         />

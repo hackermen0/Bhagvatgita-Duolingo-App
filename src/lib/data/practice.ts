@@ -138,7 +138,7 @@ function pickTargets(max: number, focusMistakes = false): WordMeaning[] {
   return targets;
 }
 
-/** A word as the learner reads it: Roman letters on Beginner, Devanagari otherwise. */
+/** A word as the learner reads it: Roman letters on Beginner and Medium, Devanagari on Hard. */
 const label = (w: WordMeaning) => scriptText({ dev: w.devanagari, roman: w.roman ?? w.word }, gameState.tierScriptMode);
 
 export function meaningQuestion(w: WordMeaning, id: string | number, pool: WordMeaning[] = []): Question {

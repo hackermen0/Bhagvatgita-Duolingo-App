@@ -44,8 +44,8 @@ export const LEARNING_MODES: LearningModeInfo[] = [
     mode: 'philosophy',
     title: 'Philosophy',
     subtitle: 'The story and meaning behind each verse',
-    steps: ['Story video', 'Verse + meaning', 'Questions'],
-    description: 'Watch the backstory, read the verse and what it means, then answer questions on its ideas. About 5 minutes a verse.'
+    steps: ['The story', 'Verse + philosophy', 'Questions'],
+    description: 'Hear the story behind the Gita, read each verse and its philosophy, then answer a few questions on its ideas.'
   }
 ];
 
@@ -54,13 +54,14 @@ export function learningModeInfo(mode: LearningMode): LearningModeInfo {
 }
 
 // ─── Difficulty tiers ───────────────────────────────────────────────────────
-// Every tier presents the verse as Hindi and asks the learner to answer in English; the tier only
-// changes the script (see `scriptModeForTier` in gameState) and how much vocabulary work comes with it.
+// The learner always answers in English. Beginner reads the verse as Hindi in Roman letters; Medium reads the original
+// Sanskrit in Roman letters (IAST); Hard reads the Sanskrit in Devanagari. The script comes from `scriptModeForTier`
+// in gameState. Only some verses have Sanskrit content so far (see TIER_JOURNEY_OVERRIDES); the rest stay Hindi.
 export interface DifficultyTierInfo {
   tier: DifficultyTier;
   title: string;
   badge: string;
-  /** One line on how the Hindi is written */
+  /** One line on the language and script the verse is read in */
   subtitle: string;
   /** Short label for compact pickers */
   short: string;
@@ -82,19 +83,19 @@ export const DIFFICULTY_TIERS: DifficultyTierInfo[] = [
     tier: 'medium',
     title: 'Medium',
     badge: 'Balanced',
-    subtitle: 'Hindi in Devanagari script',
-    short: 'Devanagari',
-    sample: 'आपका अधिकार केवल कर्म करने पर है, उसके फलों पर कभी नहीं...',
-    description: 'Read each verse in Hindi script, then solve it in English. Word matching comes before every phrase.'
+    subtitle: 'Sanskrit in Roman letters',
+    short: 'Roman Sanskrit',
+    sample: 'yoga-sthaḥ kuru karmāṇi saṅgaṁ tyaktvā dhanañjaya...',
+    description: 'Read each verse in the original Sanskrit written in English letters, then solve it in English.'
   },
   {
     tier: 'hard',
     title: 'Hard',
     badge: 'Challenge',
-    subtitle: 'Devanagari + vocabulary drills',
-    short: 'Devanagari + drills',
-    sample: 'आपका अधिकार केवल कर्म करने पर है, उसके फलों पर कभी नहीं...',
-    description: 'Devanagari Hindi with extra vocabulary and word-matching rounds at the end of every verse.'
+    subtitle: 'Sanskrit in Devanagari script',
+    short: 'Devanagari Sanskrit',
+    sample: 'योगस्थः कुरु कर्माणि सङ्गं त्यक्त्वा धनञ्जय...',
+    description: 'Read each verse in the original Sanskrit in Devanagari script, then solve it in English.'
   }
 ];
 

@@ -3,8 +3,8 @@
   import { scriptText } from '../data/hindi';
   import type { HindiText } from '../data/gitaData';
 
-  // A Hindi word or short phrase, written in the script the difficulty tier calls for:
-  // Roman letters (Hinglish) on Beginner, Devanagari on Medium and Hard.
+  // A Hindi (or Sanskrit) word or short phrase, written in the script the difficulty tier calls for:
+  // Roman letters on Beginner and Medium, Devanagari on Hard.
   let { hindi, size = 'md', inverted = false } = $props<{
     hindi: HindiText;
     size?: 'sm' | 'md' | 'lg';

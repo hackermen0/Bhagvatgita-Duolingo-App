@@ -1,7 +1,7 @@
 <script lang="ts">
   import { gameState } from '../state/gameState.svelte';
   import type { Lesson } from '../data/gitaData';
-  import type { JourneyContent } from '../data/journey';
+  import { languageName, type JourneyContent } from '../data/journey';
   import SpokenText, { englishLines, hindiLines } from './SpokenText.svelte';
   import Mascot from './Mascot.svelte';
 
@@ -14,10 +14,13 @@
   }>();
 
   const isDeva = $derived(gameState.tierScriptMode === 'devanagari');
+  // The verse's own language: Hindi, or Sanskrit on Medium's BG 2.48
+  const langName = $derived(languageName(content));
 
   const hindi = $derived(hindiLines(content.verseHindi, isDeva));
   const english = $derived(englishLines(content.verseEnglish));
-  const meaning = $derived(englishLines(content.deeperMeaning.join('\n')));
+  // Hard writes the verse's key words in the explanation in Devanagari
+  const meaning = $derived(englishLines((isDeva && content.deeperMeaningDev ? content.deeperMeaningDev : content.deeperMeaning).join('\n')));
 </script>
 
 <div class="flex-1 overflow-y-auto scrollbar-none px-5 pt-4 pb-6 flex flex-col gap-4 select-none">
@@ -36,14 +39,15 @@
   {/if}
 
   <div class="card p-4 flex flex-col gap-3">
-    <p class="text-xs font-black uppercase tracking-wider text-primary">In Hindi</p>
-    <SpokenText lines={hindi} lang="hi" label="Hear Hindi" tappable textClass="text-xl leading-tight {isDeva ? 'font-deva' : 'font-black'}" />
+    <p class="text-xs font-black uppercase tracking-wider text-primary">In {langName}</p>
+    <SpokenText lines={hindi} lang="hi" label="Hear {langName}" tappable textClass="text-xl leading-tight {isDeva ? 'font-deva' : 'font-black'}" />
     <p class="text-xs font-bold text-text-muted">Tap any word to hear it.</p>
   </div>
 
   <div class="card p-4 flex flex-col gap-3">
     <p class="text-xs font-black uppercase tracking-wider text-primary">In English</p>
-    <SpokenText lines={english} lang="en" label="Hear English" textClass="text-[17px] font-bold leading-relaxed" />
+    <SpokenText lines={english} lang="en" label="Hear English" tappable textClass="text-[17px] font-bold leading-relaxed" />
+    <p class="text-xs font-bold text-text-muted">Tap any word to hear it.</p>
   </div>
 
   <div class="card p-4 flex flex-col gap-3">

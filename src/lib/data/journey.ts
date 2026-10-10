@@ -3,9 +3,9 @@
 // This file must not import practice.ts — practice.ts imports it for the word list.
 
 import { gitaData, type HindiText, type Lesson, type PhrasePair, type VersePart, type WordMeaning } from './gitaData';
-import { hindiOf, wordKey } from './hindi';
-import { JOURNEY_OVERRIDES } from './journeyContent';
-import { WORD_IMAGES } from './wordImages';
+import { foldRoman, hindiOf, wordKey } from './hindi';
+import { JOURNEY_OVERRIDES, TIER_JOURNEY_OVERRIDES } from './journeyContent';
+import type { DifficultyTier } from './onboarding';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -20,6 +20,8 @@ export interface JourneyWord {
   kind: WordKind;
   /** A short aside shown with the word's flashcard */
   note?: string;
+  /** The same aside as the Devanagari tier writes it, when it names the word itself */
+  noteDev?: string;
 }
 
 export interface JourneyHalf {
@@ -36,6 +38,15 @@ export interface BlankSet {
   template: string;
   options: string[];
   answers: string[];
+  /** Word keys behind each answer, for the re-exam. Needed when the answers aren't English (see keysFromAnswer). */
+  answerKeys?: string[][];
+  /** The same set in Devanagari, option for option in the same order, for the tier that reads Devanagari; `template` etc. are Roman then. */
+  dev?: { template: string; options: string[]; answers: string[] };
+}
+
+/** The set as the tier's script writes it: Devanagari where the set has that twin and the tier reads Devanagari. */
+export function blankInScript(set: BlankSet, devanagari: boolean): BlankSet {
+  return devanagari && set.dev ? { ...set, ...set.dev } : set;
 }
 
 export interface JourneyContent {
@@ -43,13 +54,28 @@ export interface JourneyContent {
   verseEnglish: string;
   /** Paragraphs of the verse's deeper meaning */
   deeperMeaning: string[];
+  /** The same paragraphs as the Devanagari tier writes them (they name the verse's key words), when those differ */
+  deeperMeaningDev?: string[];
   halves: [JourneyHalf, JourneyHalf];
   wordBlanks: [BlankSet, BlankSet];
   chunkBlanks: [BlankSet, BlankSet];
   singleBlanks: [BlankSet, BlankSet];
   fullBlanks: BlankSet;
   reflectionPrompt: string;
+  /** The language of `verseHindi`, the words and the phrases (the field names say Hindi, but they hold Sanskrit too). Hindi if absent. */
+  language?: 'hindi' | 'sanskrit';
+  /** Names this version of the content for checkpoints, when more than one tier plays it (default: the tier's name) */
+  variant?: string;
+  /** What the fill-in-the-blank pages show above the sentence: the English meaning, when the blanks are in the verse's own language. By default the verse itself. */
+  blankClue?: 'english';
+  /** How each recital page gives its clue — first half, second half, whole verse. Default: text, text, audio. */
+  recitalClues?: [RecitalClue, RecitalClue, RecitalClue];
 }
+
+/** text: the text to recite is shown · audio: hidden, the clue is spoken in the chosen language · opposite-audio: hidden, the clue is spoken in the other language (hear the meaning, say the verse) */
+export type RecitalClue = 'text' | 'audio' | 'opposite-audio';
+
+export const languageName = (content: JourneyContent): 'Hindi' | 'Sanskrit' => (content.language === 'sanskrit' ? 'Sanskrit' : 'Hindi');
 
 export type PageKind = 'intro' | 'flashcards' | 'word_match' | 'phrase_match' | 'blanks' | 'recital' | 'reexam' | 'reflection';
 export type BlankKind = 'word' | 'chunk' | 'single' | 'full';
@@ -182,34 +208,36 @@ export function journeyWordsFor(lesson: Lesson): JourneyWord[] {
 
 type Memory = Record<string, { strength: number; lastPracticed: number }>;
 
-/** How many words a half's flashcards and word-matching page work on. */
+/** The fewest words a half's flashcards and word-matching page work on; a run uses this many or one more. */
 export const WORD_BATCH_SIZE = 4;
 
+/** 4 or 5 words per half, decided by the run's seed, so the page isn't always the same length either. */
+export const batchSizeFor = (seed: number): number => WORD_BATCH_SIZE + (seed % 2);
+
 /**
- * The words a half's flashcards and word-matching page work on: words that have a flashcard picture first, then
- * the weakest content words (words never seen count as weakest), nouns before verbs and adjectives when equally weak. Grammar words only pad
- * a page up to the batch size when the half has too few content words; they are tested in the re-exam and
- * in practice. The seed fixes the pick for a checkpoint; a replay gets a new seed, and since the words just
- * learned are no longer the weakest, the ones the learner hasn't met rotate in.
+ * The words a half's flashcards and word-matching page work on: a random pick (fixed by the seed, so a resumed
+ * checkpoint rebuilds it) from the half's content words. A noun is three times as likely to be drawn as a verb or
+ * adjective, and a word the learner already knows less likely (unseen words count as weakest), so a replay leans
+ * towards words not yet met. Whether a word has a flashcard picture plays no part. Grammar words (he, mein, tatha…)
+ * are only drawn to pad a half that has too few content words; the re-exam and practice test them instead.
+ * Every new start gets a new seed, so the words change from one start to the next.
  */
-export function pickWordBatch(pool: JourneyWord[], memory: Memory, seed: number, size = WORD_BATCH_SIZE): JourneyWord[] {
-  const shuffled = seededShuffle(pool, seed);
+export function pickWordBatch(pool: JourneyWord[], memory: Memory, seed: number, size = batchSizeFor(seed)): JourneyWord[] {
+  const rnd = seededRandom(seed);
   const strength = (w: JourneyWord) => memory[w.key]?.strength ?? -1;
-  const lastPracticed = (w: JourneyWord) => memory[w.key]?.lastPracticed ?? 0;
-  const nounFirst = (w: JourneyWord) => (w.kind === 'noun' ? 0 : 1);
-  // The shuffle above breaks ties, because the sort is stable
-  const pictured = (w: JourneyWord) => (WORD_IMAGES[w.key] ? 0 : 1);
-  const weakestFirst = (ws: JourneyWord[]) =>
-    [...ws].sort(
-      (a, b) =>
-        pictured(a) - pictured(b) || strength(a) - strength(b) || nounFirst(a) - nounFirst(b) || lastPracticed(a) - lastPracticed(b)
-    );
+  const weight = (w: JourneyWord) => (w.kind === 'noun' ? 3 : 1) / (1 + Math.max(0, strength(w) + 1));
+  // Weighted draw without replacement: each word gets rnd^(1/weight), and the highest scores are taken first
+  const drawOrder = (ws: JourneyWord[]) =>
+    ws
+      .map((w) => ({ w, score: Math.pow(rnd(), 1 / weight(w)) }))
+      .sort((a, b) => b.score - a.score)
+      .map((x) => x.w);
 
   const picked: JourneyWord[] = [];
   const keys = new Set<string>();
   const meanings = new Set<string>();
   const take = (ws: JourneyWord[]) => {
-    for (const w of weakestFirst(ws)) {
+    for (const w of drawOrder(ws)) {
       if (picked.length >= size) break;
       const m = w.english.toLowerCase();
       // Two words sharing an English meaning would make the matching ambiguous
@@ -219,8 +247,8 @@ export function pickWordBatch(pool: JourneyWord[], memory: Memory, seed: number,
       picked.push(w);
     }
   };
-  take(shuffled.filter((w) => w.kind !== 'grammar'));
-  if (picked.length < size) take(shuffled.filter((w) => w.kind === 'grammar'));
+  take(pool.filter((w) => w.kind !== 'grammar'));
+  if (picked.length < size) take(pool.filter((w) => w.kind === 'grammar'));
   return seededShuffle(picked, seed + 1);
 }
 
@@ -269,7 +297,7 @@ export function reexamWords(
 
 // ─── Text matching helpers ──────────────────────────────────────────────────
 
-const plain = (s: string) => s.toLowerCase().replace(/[^a-z\s]/g, ' ').replace(/\s+/g, ' ').trim();
+const plain = (s: string) => foldRoman(s).replace(/[^a-z\s]/g, ' ').replace(/\s+/g, ' ').trim();
 
 /** Whether the Roman phrase contains `needle` as whole words in order. */
 export function containsPhrase(haystackRoman: string, needleRoman: string): boolean {
@@ -319,9 +347,10 @@ export function keysFromAnswer(content: JourneyContent, answer: string): string[
   return [...keys];
 }
 
-/** The phrase a word came from, as a clue for the re-exam. */
+/** The phrase a word came from, as a clue for the re-exam. A half that teaches the word is searched first (yoga is also inside yoga-sthaḥ). */
 export function clueFor(content: JourneyContent, word: JourneyWord): { hindi: HindiText; english: string } {
-  for (const half of content.halves) {
+  const owning = content.halves.filter((h) => h.words.some((w) => w.key === word.key));
+  for (const half of [...owning, ...content.halves.filter((h) => !owning.includes(h))]) {
     for (const p of half.phrases) {
       if (containsPhrase(p.hindi.roman, word.hindi.roman)) return { hindi: p.hindi, english: p.english };
     }
@@ -557,9 +586,22 @@ function generateJourney(lesson: Lesson, seed: number): JourneyContent {
   };
 }
 
-/** The journey's content for a verse: hand-authored where it exists, generated from its parts otherwise. */
-export function getJourneyContent(lesson: Lesson, seed: number): JourneyContent {
-  return JOURNEY_OVERRIDES[lesson.id] ?? generateJourney(lesson, seed);
+/**
+ * The journey's content for a verse at a tier: hand-authored for that tier where it exists (Medium's BG 2.48 is
+ * the Sanskrit verse), else hand-authored for every tier, else generated from the verse's parts.
+ */
+export function getJourneyContent(lesson: Lesson, seed: number, tier: DifficultyTier = 'beginner'): JourneyContent {
+  return TIER_JOURNEY_OVERRIDES[tier]?.[lesson.id] ?? JOURNEY_OVERRIDES[lesson.id] ?? generateJourney(lesson, seed);
+}
+
+/**
+ * Names which version of a verse's content a tier plays: the tier's own (tiers sharing one content share its
+ * variant, so a checkpoint carries across them), or 'base' (every tier without one). A checkpoint is only resumable
+ * under the variant it was saved with.
+ */
+export function journeyVariantFor(lessonId: string, tier: DifficultyTier): string {
+  const own = TIER_JOURNEY_OVERRIDES[tier]?.[lessonId];
+  return own ? (own.variant ?? tier) : 'base';
 }
 
 /** Every word across both halves, once each. */

@@ -5,5 +5,9 @@ export const WORD_IMAGES: Record<string, string> = {
   kartavya: 'duty', // Arjuna firing from the chariot
   dhananjaya: 'arjuna', // Arjuna aiming at the fish
   tyagkar: 'abandon', // Arjuna walking away from his dropped bow and crown
-  palankaro: 'perform' // Krishna beside Arjuna as he draws his bow
+  palankaro: 'perform', // Krishna beside Arjuna as he draws his bow
+  // The same pictures serve Medium's Sanskrit words for the same ideas
+  karmani: 'duty',
+  tyaktva: 'abandon',
+  kuru: 'perform'
 };

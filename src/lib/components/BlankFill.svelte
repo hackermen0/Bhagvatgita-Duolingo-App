@@ -5,7 +5,7 @@
 
   // A sentence with `___` gaps and a bank of options. Tapping an option fills the next empty gap;
   // tapping a filled gap puts its word back. Used by every fill-in-the-blank page of the journey.
-  let { template, options, onChange, disabled = false, answers, checked = false } = $props<{
+  let { template, options, onChange, disabled = false, answers, checked = false, spoken } = $props<{
     template: string;
     options: string[];
     /** Called with one entry per gap: the chosen option, or null while the gap is empty */
@@ -14,6 +14,8 @@
     /** The correct options, one per gap — used to colour the gaps once the page is checked */
     answers: string[];
     checked?: boolean;
+    /** What to say for an option when it isn't what is written, e.g. Roman Sanskrit spoken from its Devanagari */
+    spoken?: Record<string, string>;
   }>();
 
   // The template is fixed for this component's lifetime (the page remounts it), so capture it once
@@ -38,7 +40,9 @@
     const slot = filled.indexOf(null);
     if (slot === -1) return;
     playPopSound();
-    speak(option, 'en');
+    // Devanagari (the verse's own words) is spoken in Hindi's voice, everything else in English
+    const say = spoken?.[option] ?? option;
+    speak(say, /[\u0900-\u097F]/.test(say) ? 'hi' : 'en');
     filled[slot] = option;
     onChange([...filled]);
   }

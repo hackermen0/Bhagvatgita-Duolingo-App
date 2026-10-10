@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import type { PhilosophyContent } from '../data/philosophy';
+  import type { Backstory } from '../data/philosophy';
   import { hasTTS, speak, stopSpeaking } from '../utils/speech';
   import StoryIllustration from './StoryIllustration.svelte';
   import Icon from './Icon.svelte';
@@ -9,7 +9,7 @@
   // and a Continue button sit over the bottom. A verse with a recorded video plays it; until one is added, its
   // scenes play as a narrated slideshow: each illustration is shown while its line is read aloud.
   let { content, verseRef, onContinue, onClose } = $props<{
-    content: PhilosophyContent;
+    content: Backstory;
     verseRef: string;
     /** Leaves the video for the verse page (Continue, or Skip before it ends) */
     onContinue: () => void;

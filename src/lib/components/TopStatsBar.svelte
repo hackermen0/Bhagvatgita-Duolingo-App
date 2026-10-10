@@ -1,6 +1,6 @@
 <script lang="ts">
   import { gameState, dateKey } from '../state/gameState.svelte';
-  import { gitaData } from '../data/gitaData';
+  import { PRELUDE_ID, pathChaptersFor } from '../data/philosophy';
   import Icon from './Icon.svelte';
   import WeekCalendar from './WeekCalendar.svelte';
 
@@ -10,7 +10,12 @@
   const toggle = (p: Panel) => (open = open === p ? null : p);
 
   const streakActiveToday = $derived(gameState.lastActiveDate === dateKey());
-  const totalLessons = gitaData.chapters.flatMap((c) => c.sections.flatMap((s) => s.lessons)).length;
+  // The course is the mode's own path; the philosophy story page isn't a verse
+  const isVerse = (id: string) => id !== PRELUDE_ID;
+  const totalLessons = $derived(
+    pathChaptersFor(gameState.learningMode).flatMap((c) => c.sections.flatMap((s) => s.lessons)).filter((l) => isVerse(l.id)).length
+  );
+  const learned = $derived(gameState.completedInMode.filter(isVerse).length);
   const goalPct = $derived(Math.min(100, Math.round((gameState.today.xp / gameState.dailyGoal) * 100)));
 </script>
 
@@ -59,7 +64,7 @@
           <div class="w-14 h-14 rounded-2xl bg-primary-soft border-2 border-primary-edge flex items-center justify-center text-3xl font-deva text-primary">ॐ</div>
           <div class="flex-1">
             <p class="text-lg font-black">Bhagavad Gita</p>
-            <p class="text-sm text-text-muted">{gameState.versesLearned.length} of {totalLessons} verses learned</p>
+            <p class="text-sm text-text-muted">{learned} of {totalLessons} verses learned</p>
           </div>
         </div>
       {:else if open === 'streak'}

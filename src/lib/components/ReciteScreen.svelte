@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { gameState } from '../state/gameState.svelte';
-  import { scoreRecital, type JourneyWord, type RecitalScore } from '../data/journey';
+  import { scoreRecital, type JourneyWord, type RecitalClue, type RecitalScore } from '../data/journey';
   import type { HindiText } from '../data/gitaData';
   import { hasRecognition, listen, speak, stopSpeaking, type Listener } from '../utils/speech';
   import SpeakButton from './SpeakButton.svelte';
@@ -9,15 +9,17 @@
   import VoiceWave from './VoiceWave.svelte';
   import Mascot from './Mascot.svelte';
 
-  // An audio recital: the learner chooses Hindi or English, then says the text aloud (speech recognition)
+  // An audio recital: the learner chooses Hindi (or Sanskrit) or English, then says the text aloud (speech recognition)
   // or, where the browser can't listen, types it. Grading is lenient and nothing here costs a heart.
-  let { hindi, english, pool, hideText = false, title, onDone } = $props<{
+  let { hindi, english, pool, clue = 'text', langName = 'Hindi', title, onDone } = $props<{
     hindi: HindiText;
     english: string;
     /** The verse's words, to report which ones were missed */
     pool: JourneyWord[];
-    /** Start with the text hidden behind a "Show hint" button, leaving only the audio clue */
-    hideText?: boolean;
+    /** text: show the text · audio: hide it behind "Show hint", the clue is spoken in the chosen language · opposite-audio: the clue is spoken in the other language */
+    clue?: RecitalClue;
+    /** The verse's own language, as the recital is offered in it: Hindi, or Sanskrit on Medium's BG 2.48 */
+    langName?: string;
     title: string;
     /** `null` when the learner skipped */
     onDone: (result: { passed: boolean; missedKeys: string[] } | null) => void;
@@ -28,10 +30,10 @@
   let lang = $state<Lang | null>(null);
   // Captured once: the page remounts this component, so the starting state never needs to follow the prop
   // svelte-ignore state_referenced_locally
-  let showText = $state(!hideText);
+  let showText = $state(clue === 'text');
   // Only text that was visible from the start plays itself; a revealed hint stays quiet until asked
   // svelte-ignore state_referenced_locally
-  const autoplayText = !hideText;
+  const autoplayText = clue === 'text';
   let voiceSupported = $state(false);
   let typing = $state(false);
   let listening = $state(false);
@@ -56,7 +58,10 @@
 
   const isDeva = $derived(gameState.tierScriptMode === 'devanagari');
   const lines = $derived(lang === 'hi' ? hindiLines(hindi, isDeva) : englishLines(english));
-  const spoken = $derived(lang === 'hi' ? hindi.dev : english);
+  // With the text hidden, the clue is spoken in the chosen language, or in the other one (hear the meaning, say the verse)
+  const clueLang = (l: Lang): Lang => (clue === 'opposite-audio' ? (l === 'hi' ? 'en' : 'hi') : l);
+  const clueText = (l: Lang) => (clueLang(l) === 'hi' ? hindi.dev : english);
+  const nameOf = (l: Lang) => (l === 'hi' ? langName : 'English');
 
   function choose(l: Lang) {
     lang = l;
@@ -65,7 +70,7 @@
     transcript = '';
     typed = '';
     // The clue: hear it once, straight away. With the text on screen, the highlighted player does it instead.
-    if (!showText) speak(l === 'hi' ? hindi.dev : english, l);
+    if (!showText) speak(clueText(l), clueLang(l));
   }
 
   function evaluate(text: string) {
@@ -160,8 +165,8 @@
   {#if !lang}
     <div class="grid grid-cols-2 gap-3">
       <button type="button" onclick={() => choose('hi')} class="tile px-3 py-5 flex flex-col items-center gap-1">
-        <span class="text-2xl font-black font-deva">हिन्दी</span>
-        <span class="text-base font-black">Recite in Hindi</span>
+        <span class="text-2xl font-black font-deva">{langName === 'Sanskrit' ? 'संस्कृतम्' : 'हिन्दी'}</span>
+        <span class="text-base font-black">Recite in {langName}</span>
       </button>
       <button type="button" onclick={() => choose('en')} class="tile px-3 py-5 flex flex-col items-center gap-1">
         <span class="text-2xl font-black">English</span>
@@ -171,10 +176,10 @@
   {:else}
     <div class="card p-4 flex flex-col gap-3">
       <div class="flex items-center justify-between gap-2">
-        <p class="text-xs font-black uppercase tracking-wider text-primary">{lang === 'hi' ? 'In Hindi' : 'In English'}</p>
+        <p class="text-xs font-black uppercase tracking-wider text-primary">{lang === 'hi' ? `In ${langName}` : 'In English'}</p>
         <div class="flex items-center gap-2">
           <!-- Once the text is showing, its own player (below) highlights each word as it is spoken -->
-          {#if !showText}<SpeakButton text={spoken} {lang} label="Hear it" />{/if}
+          {#if !showText}<SpeakButton text={clueText(lang)} lang={clueLang(lang)} label="Hear it" />{/if}
           <button
             type="button"
             onclick={() => { lang = null; result = null; transcript = ''; message = ''; }}
@@ -194,7 +199,11 @@
         {/key}
       {:else}
         <p class="text-[15px] font-bold text-text-muted leading-relaxed">
-          Listen to the clue, then say it from memory.
+          {#if clue === 'opposite-audio'}
+            Listen to the {nameOf(clueLang(lang))} meaning, then say it in {nameOf(lang)} from memory.
+          {:else}
+            Listen to the clue, then say it from memory.
+          {/if}
         </p>
         <button type="button" onclick={() => (showText = true)} class="btn btn-secondary self-start px-4 py-2 text-sm">Show hint</button>
       {/if}
@@ -211,7 +220,7 @@
         <textarea
           bind:value={typed}
           rows="3"
-          placeholder={lang === 'hi' ? 'Type it in Hindi (Roman letters or Devanagari)…' : 'Type it in English…'}
+          placeholder={lang === 'hi' ? `Type it in ${langName} (Roman letters or Devanagari)…` : 'Type it in English…'}
           aria-label="Type your recital"
           class="w-full bg-bg-surface-alt border-2 border-border-warm focus:border-info rounded-2xl p-4 text-base font-bold text-text-primary placeholder-text-muted/60 focus:outline-none focus:ring-4 focus:ring-info/20 resize-none leading-relaxed"
         ></textarea>

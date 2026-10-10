@@ -2,7 +2,7 @@
   import { goto } from '$app/navigation';
   import { gameState, DAILY_GOAL_OPTIONS } from '$lib/state/gameState.svelte';
   import { planById, DIFFICULTY_TIERS, LEARNING_MODES, learningModeInfo, type PracticePreference } from '$lib/data/onboarding';
-  import { gitaData } from '$lib/data/gitaData';
+  import { pathChaptersFor } from '$lib/data/philosophy';
   import { JOURNEY_PAGE_COUNT } from '$lib/data/journey';
   import Icon from '$lib/components/Icon.svelte';
 
@@ -22,8 +22,9 @@
 
   // ─── Developer menu (testing) ──────────────────────────────────────────────
   let devOpen = $state(false);
-  const units = gitaData.chapters.flatMap((c) => c.sections.map((s) => ({ chapter: c, section: s })));
-  const allIds = units.flatMap((u) => u.section.lessons.map((l) => l.id));
+  // The path of the mode being played (philosophy mode adds Chapter 1)
+  const units = $derived(pathChaptersFor(gameState.learningMode).flatMap((c) => c.sections.map((s) => ({ chapter: c, section: s }))));
+  const allIds = $derived(units.flatMap((u) => u.section.lessons.map((l) => l.id)));
 
   function devStatus(id: string): { label: string; tone: 'done' | 'progress' | 'idle' } {
     if (gameState.isVerseDone(id)) return { label: 'Completed', tone: 'done' };

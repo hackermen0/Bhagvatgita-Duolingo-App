@@ -23,8 +23,11 @@ export function hindiTokens(h: HindiText): HindiToken[] {
   return dev.map((d, i) => ({ dev: d, roman: roman[i] ?? d }));
 }
 
-/** Glossary / memory key for a romanized word: lowercase letters only ("hai," → "hai"). */
-export const wordKey = (token: string): string => token.toLowerCase().replace(/[^a-z]/g, '');
+/** Lowercase Roman text with its diacritics folded away, so IAST Sanskrit and plain Roman agree (karmāṇi → karmani). */
+export const foldRoman = (s: string): string => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+/** Glossary / memory key for a romanized word: lowercase letters only ("hai," → "hai", "karmāṇi" → "karmani"). */
+export const wordKey = (token: string): string => foldRoman(token).replace(/[^a-z]/g, '');
 
 /** The glossary keys of every word in a romanized phrase. */
 export const romanWords = (text: string): string[] => text.split(/\s+/).map(wordKey).filter(Boolean);

@@ -2,9 +2,9 @@
   import { onMount, tick } from 'svelte';
   import { goto } from '$app/navigation';
   import { gameState, VERSE_XP, REPLAY_XP, PHILOSOPHY_XP, PHILOSOPHY_REPLAY_XP } from '$lib/state/gameState.svelte';
-  import { philosophyFor } from '$lib/data/philosophy';
+  import { PRELUDE_ID, isPhilosophyOnlySection, pathChaptersFor, philosophySummary } from '$lib/data/philosophy';
   import { JOURNEY_PAGES, JOURNEY_PAGE_COUNT } from '$lib/data/journey';
-  import { gitaData, type Lesson, type Section } from '$lib/data/gitaData';
+  import type { Lesson, Section } from '$lib/data/gitaData';
   import { practiceStatus } from '$lib/data/practice';
   import { planById } from '$lib/data/onboarding';
   import { learningConfig, newContentAdvice, goalGreeting } from '$lib/data/learningConfig';
@@ -15,7 +15,9 @@
   import { storyForSection, type UnitStory } from '$lib/data/stories';
 
   const cfg = $derived(learningConfig(gameState.profile));
-  const allLessons = gitaData.chapters.flatMap((c) => c.sections.flatMap((s) => s.lessons));
+  // Each mode has its own path: philosophy mode opens with Chapter 1, which the normal mode doesn't teach
+  const chapters = $derived(pathChaptersFor(gameState.learningMode));
+  const allLessons = $derived(chapters.flatMap((c) => c.sections.flatMap((s) => s.lessons)));
   const practice = $derived(practiceStatus());
   // The path shows the mode being played: its own progress, page counts and XP
   const philosophyMode = $derived(gameState.learningMode === 'philosophy');
@@ -73,14 +75,16 @@
   // Unit numbering runs across chapters, so each unit keeps its own color.
   // startIndex is the running node count (lessons + trophy) before this unit,
   // so pathOffset() can treat the whole path as one continuous line.
-  let runningNodeCount = 0;
-  const units = gitaData.chapters.flatMap((chapter) =>
-    chapter.sections.map((section, sIdx) => {
-      const startIndex = runningNodeCount;
-      runningNodeCount += section.lessons.length + 1;
-      return { chapter, section, unitNumber: sIdx + 1, startIndex };
-    })
-  );
+  const units = $derived.by(() => {
+    let runningNodeCount = 0;
+    return chapters.flatMap((chapter) =>
+      chapter.sections.map((section, sIdx) => {
+        const startIndex = runningNodeCount;
+        runningNodeCount += section.lessons.length + 1;
+        return { chapter, section, unitNumber: sIdx + 1, startIndex };
+      })
+    );
+  });
 
   let selected = $state<string | null>(null);
   let replayStory = $state<UnitStory | null>(null);
@@ -126,14 +130,17 @@
             <p class="text-[13px] font-extrabold uppercase tracking-wide opacity-80">Chapter {chapter.number}, Unit {unitNumber}</p>
             <h2 class="text-xl font-black leading-tight">{section.title}</h2>
           </div>
-          <a
-            href="/guidebook/{section.id}"
-            aria-label="Guidebook"
-            class="shrink-0 w-12 h-12 flex items-center justify-center rounded-xl border-2 border-white/40 hover:bg-white/10"
-            style="box-shadow: 0 3px 0 rgba(0,0,0,0.15)"
-          >
-            <Icon name="notebook" class="w-6 h-6" />
-          </a>
+          <!-- Philosophy mode's Chapter 1 teaches no words, so it has no guidebook -->
+          {#if !isPhilosophyOnlySection(section.id)}
+            <a
+              href="/guidebook/{section.id}"
+              aria-label="Guidebook"
+              class="shrink-0 w-12 h-12 flex items-center justify-center rounded-xl border-2 border-white/40 hover:bg-white/10"
+              style="box-shadow: 0 3px 0 rgba(0,0,0,0.15)"
+            >
+              <Icon name="notebook" class="w-6 h-6" />
+            </a>
+          {/if}
         </div>
       </div>
 
@@ -186,6 +193,8 @@
               >
                 {#if done}
                   <Icon name="check" class="w-8 h-8" />
+                {:else if lesson.id === PRELUDE_ID}
+                  <Icon name="book" class="w-8 h-8" />
                 {:else}
                   <Icon name="star" class="w-8 h-8" />
                 {/if}
@@ -229,7 +238,7 @@
                     {#if !locked && !done}
                       <p class="text-sm font-extrabold mt-1">
                         {#if philosophyMode}
-                          Story video · verse · {philosophyFor(lesson.id)?.questions.length ?? 0} questions
+                          {philosophySummary(lesson.id)}
                         {:else if checkpoint}
                           Page {checkpoint.page + 1} of {JOURNEY_PAGE_COUNT} · {JOURNEY_PAGES[checkpoint.page].title}
                         {:else}
@@ -243,7 +252,7 @@
                       {/if}
                     {/if}
                     {#if current && !advice}
-                      <p class="text-sm font-extrabold mt-1">{goalGreeting(gameState.profile, lesson.verseRef)}</p>
+                      <p class="text-sm font-extrabold mt-1">{goalGreeting(gameState.profile, lesson.id === PRELUDE_ID ? 'the story' : lesson.verseRef)}</p>
                     {/if}
                   </div>
 
@@ -284,7 +293,8 @@
           </div>
         {/each}
 
-        <!-- ─── Unit review trophy ─── -->
+        <!-- ─── Unit review trophy (word review, so not on philosophy mode's Chapter 1) ─── -->
+        {#if !isPhilosophyOnlySection(section.id)}
         <div class="relative w-full flex justify-center items-start h-[124px] {trophyOpen ? 'z-30' : ''}">
           <div style="transform: translateX({trophyOffset}px)">
             <button
@@ -330,6 +340,7 @@
             </div>
           {/if}
         </div>
+        {/if}
       </div>
     </section>
   {/each}

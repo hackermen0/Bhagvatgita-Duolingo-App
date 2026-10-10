@@ -219,7 +219,7 @@
       </div>
 
     {:else if stage === 'chooseDifficulty'}
-      {@render askBubble('Choose your difficulty level', 'Every verse comes in Hindi and you always answer in English. This sets how the Hindi is written.')}
+      {@render askBubble('Choose your difficulty level', 'You always answer in English. Beginner reads Hindi; Medium and Hard read the original Sanskrit, in Roman letters or Devanagari.')}
       <div class="flex flex-col gap-3.5 mt-6">
         {#each DIFFICULTY_TIERS as option}
           {@const isSelected = selectedTier === option.tier}
@@ -242,7 +242,7 @@
             <p class="text-xs font-black uppercase tracking-wider text-primary">{option.subtitle}</p>
             <div class="bg-bg-base/70 rounded-xl px-3 py-2 border border-border-warm text-sm font-semibold text-text-primary">
               <span class="text-[11px] font-bold text-text-muted block mb-0.5">Sample text:</span>
-              <span class="{option.tier === 'beginner' ? 'font-bold' : 'font-deva text-base font-bold'}">{option.sample}</span>
+              <span class="{option.tier === 'hard' ? 'font-deva text-base font-bold' : 'font-bold'}">{option.sample}</span>
             </div>
             <p class="text-xs font-bold text-text-muted leading-relaxed">{option.description}</p>
           </button>

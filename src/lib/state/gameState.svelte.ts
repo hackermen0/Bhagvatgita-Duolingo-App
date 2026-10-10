@@ -1,19 +1,20 @@
 import { browser } from '$app/environment';
 import { planById, type OnboardingProfile, type PracticePreference, type DifficultyTier, type LearningMode } from '../data/onboarding';
-import { JOURNEY_PAGE_COUNT } from '../data/journey';
+import { JOURNEY_PAGE_COUNT, journeyVariantFor } from '../data/journey';
 import { gitaData, sectionForLesson } from '../data/gitaData';
+import { PRELUDE_ID } from '../data/philosophy';
 
 export type { DifficultyTier, LearningMode };
-/** How Hindi is written on screen: Roman letters (Hinglish) or Devanagari. */
+/** How the verse's language (Hindi, or Sanskrit where a verse has it) is written on screen: Roman letters or Devanagari. */
 export type TierScriptMode = 'roman_hindi' | 'devanagari';
 export type ThemeMode = 'light' | 'dark';
 
 export const DIFFICULTY_TIER_IDS: readonly DifficultyTier[] = ['beginner', 'medium', 'hard'];
 export const LEARNING_MODE_IDS: readonly LearningMode[] = ['normal', 'philosophy'];
 
-/** beginner → Romanized Hindi (Hinglish) · medium / hard → Devanagari Hindi */
+/** beginner → Hindi in Roman (Hinglish) · medium → Sanskrit in Roman (IAST) · hard → Sanskrit in Devanagari */
 export function scriptModeForTier(tier: DifficultyTier): TierScriptMode {
-  return tier === 'beginner' ? 'roman_hindi' : 'devanagari';
+  return tier === 'hard' ? 'devanagari' : 'roman_hindi';
 }
 
 export interface WordMemory {
@@ -67,6 +68,8 @@ export interface JourneyCheckpoint {
   page: number;
   /** How many pages the journey had when this was saved — a checkpoint from a different layout can't be resumed */
   pages: number;
+  /** Which version of the verse's content it was saved under (see journeyVariantFor); none = 'base' */
+  variant?: string;
   seed: number;
   /** Word keys shown on each half's word-matching page */
   batches: string[][];
@@ -144,9 +147,9 @@ class GameState {
     return this.completedInMode.includes(lessonId);
   }
 
-  /** Verses finished in either mode */
+  /** Verses finished in either mode (the philosophy path's story page isn't a verse) */
   get versesLearned(): string[] {
-    return [...new Set([...this.completedLessons, ...this.philosophyCompleted])];
+    return [...new Set([...this.completedLessons, ...this.philosophyCompleted])].filter((id) => id !== PRELUDE_ID);
   }
 
   get today(): DailyStats {
@@ -362,9 +365,14 @@ class GameState {
     return true;
   }
 
-  /** Where the learner left off in this verse's journey, or undefined if they aren't part-way through. */
+  /**
+   * Where the learner left off in this verse's journey, or undefined if they aren't part-way through. A tier can
+   * have its own version of a verse (Medium's BG 2.48 is Sanskrit), and a checkpoint saved under another version
+   * can't be resumed: its words and pages aren't the ones this tier plays.
+   */
   checkpointFor(lessonId: string): JourneyCheckpoint | undefined {
-    return this.journeyCheckpoint[lessonId];
+    const c = this.journeyCheckpoint[lessonId];
+    return c && (c.variant ?? 'base') === journeyVariantFor(lessonId, this.difficultyTier) ? c : undefined;
   }
 
   saveCheckpoint(lessonId: string, checkpoint: JourneyCheckpoint) {

@@ -1,10 +1,37 @@
-// Philosophy mode: each verse is a short session of three pages — the backstory (a video), the verse with its
-// meaning on one page, then multiple-choice questions on what it means and how it applies.
+// Philosophy mode has its own path: Chapter 1 (the story before the Gita, then BG 1.1–1.5, from the philosophy
+// doc, see philosophyChapter1.ts) followed by the Chapter 2 verses the normal mode teaches. A verse is a short
+// session: an optional backstory (a video, or narrated scenes), the verse with its meaning on one page, then
+// multiple-choice questions on what it means and how it applies.
 //
-// All backstories and questions here were written by Claude and have not been reviewed by a Gita scholar.
-// Review before release, like the glosses in gitaData.ts.
+// The Chapter 2 backstories and questions below were written by Claude and have not been reviewed by a Gita
+// scholar. Review before release, like the glosses in gitaData.ts.
 
+import { gitaData, type Chapter, type Commentary, type HindiText, type Lesson, type MCQOption } from './gitaData';
+import { hindiOf } from './hindi';
+import type { LearningMode } from './onboarding';
 import type { IllustrationKey } from './stories';
+import { CHAPTER_1_VERSES, PRELUDE_PAGES } from './philosophyChapter1';
+
+// ─── The story before the Gita ──────────────────────────────────────────────
+// Inline text may use **bold** and *italic*.
+
+/** A paragraph, a line of Sanskrit (shown in Roman, spoken from its Devanagari), or a narrator's pause */
+export type StoryPara = string | { sanskrit: string; dev: string } | { pause: true };
+
+export interface StorySection {
+  /** "The story", "The modern mirror", … */
+  heading?: string;
+  /** mirror sections are set apart, as the present-day reflection of the story */
+  tone?: 'story' | 'mirror';
+  paragraphs: StoryPara[];
+}
+
+export interface StoryPage {
+  /** Small line above the title: "Opening", "Part 3", … */
+  kicker: string;
+  title: string;
+  sections: StorySection[];
+}
 
 /**
  * A recorded backstory video. `file` plays from `static/` (e.g. `/videos/bg2-47.mp4`) or any URL;
@@ -23,17 +50,31 @@ export interface BackstoryScene {
 /** meaning: what the verse says · context: the story around it · apply: using it in life */
 export type PhilosophyQuestionKind = 'meaning' | 'context' | 'apply';
 
-export interface PhilosophyQuestion {
-  id: string;
-  kind: PhilosophyQuestionKind;
-  prompt: string;
-  answer: string;
-  /** Wrong options; shown shuffled with the answer */
-  wrong: string[];
-  /** Shown after answering, right or wrong */
-  explanation: string;
+/**
+ * A quiz question. Chapter 2's are written as the answer plus wrong options, shuffled when asked; Chapter 1's keep
+ * the doc's fixed A–D order with the index of the right one.
+ */
+export type PhilosophyQuestion = { id: string; kind?: PhilosophyQuestionKind; prompt: string; explanation: string } & (
+  | { answer: string; wrong: string[] }
+  | { options: string[]; correct: number }
+);
+
+/** The question's options as the multiple-choice exercise takes them: Chapter 2's shuffled, Chapter 1's in the doc's order */
+export function questionOptions(q: PhilosophyQuestion): MCQOption[] {
+  if ('options' in q) return q.options.map((text, i) => ({ text, isCorrect: i === q.correct, explanation: q.explanation }));
+  const options = [q.answer, ...q.wrong].map((text, i) => ({ text, isCorrect: i === 0, explanation: q.explanation }));
+  for (let i = options.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [options[i], options[j]] = [options[j], options[i]];
+  }
+  return options;
 }
 
+export function correctAnswer(q: PhilosophyQuestion): string {
+  return 'options' in q ? q.options[q.correct] : q.answer;
+}
+
+/** A Chapter 2 verse's backstory and questions; the verse itself comes from gitaData */
 export interface PhilosophyContent {
   /** Title of the backstory page */
   backstoryTitle: string;
@@ -43,11 +84,23 @@ export interface PhilosophyContent {
   questions: PhilosophyQuestion[];
 }
 
-export const QUESTION_KIND_LABEL: Record<PhilosophyQuestionKind, string> = {
-  meaning: 'The meaning',
-  context: 'The story',
-  apply: 'In your life'
-};
+/** What the backstory player needs */
+export type Backstory = Pick<PhilosophyContent, 'backstoryTitle' | 'video' | 'scenes'>;
+
+/** A verse written only for philosophy mode (Chapter 1): everything the session shows is here */
+export interface PhilosophyVerse {
+  id: string;
+  verseRef: string;
+  title: string;
+  /** The Sanskrit: `roman` is the IAST shown on Beginner and Medium, `dev` is shown on Hard and always spoken */
+  sanskrit: HindiText;
+  english: string;
+  /** "The philosophy": titled reflections, each one or more paragraphs (split on newlines) */
+  sections: { heading: string; text: string }[];
+  questions: PhilosophyQuestion[];
+  /** A backstory video or narrated scenes, if the verse gets one later */
+  backstory?: Backstory;
+}
 
 const PHILOSOPHY: Record<string, PhilosophyContent> = {
   // ─── Unit 1: Duty and Right Action ────────────────────────────────────────
@@ -473,7 +526,117 @@ const PHILOSOPHY: Record<string, PhilosophyContent> = {
   }
 };
 
+// ─── The philosophy path ────────────────────────────────────────────────────
+
+/** The first node of Chapter 1: the story before the Gita */
+export const PRELUDE_ID = 'ph_prelude';
+export const PRELUDE_TITLE = 'The Story Before the Gita';
+export { PRELUDE_PAGES };
+
+/** Sections only philosophy mode has: no guidebook and no word review, since they teach no words */
+const PHILOSOPHY_ONLY_SECTIONS = new Set(['ph_ch1_sec1']);
+export const isPhilosophyOnlySection = (sectionId: string): boolean => PHILOSOPHY_ONLY_SECTIONS.has(sectionId);
+
+// The path is drawn from Chapter/Section/Lesson, so the philosophy-only nodes get minimal Lesson records. Their
+// content lives in PRELUDE_PAGES and CHAPTER_1_VERSES; nothing reads their word fields.
+const stubLesson = (id: string, title: string, verseRef: string, translation: string): Lesson => ({
+  id,
+  title,
+  verseRef,
+  translation,
+  purport: '',
+  hindiTranslationDevanagari: '',
+  hindiTranslationRoman: '',
+  wordBreakdown: [],
+  questions: []
+});
+
+const PHILOSOPHY_CHAPTERS: Chapter[] = [
+  {
+    id: 'ph_ch1',
+    number: 1,
+    title: 'Arjuna Vishada Yoga',
+    summary: "The Yoga of Arjuna's Despair",
+    sections: [
+      {
+        id: 'ph_ch1_sec1',
+        title: 'The Armies Gather',
+        lessons: [
+          stubLesson(PRELUDE_ID, PRELUDE_TITLE, 'Before 1.1', ''),
+          ...CHAPTER_1_VERSES.map((v) => stubLesson(v.id, v.title, v.verseRef, v.english))
+        ]
+      }
+    ]
+  },
+  ...gitaData.chapters
+];
+
+/** The chapters a mode's path shows: philosophy mode adds Chapter 1 before the verses the normal mode teaches */
+export const pathChaptersFor = (mode: LearningMode): Chapter[] => (mode === 'philosophy' ? PHILOSOPHY_CHAPTERS : gitaData.chapters);
+
+/** Any lesson on either path, by id */
+export function findLesson(lessonId: string): Lesson | undefined {
+  return PHILOSOPHY_CHAPTERS.flatMap((c) => c.sections.flatMap((s) => s.lessons)).find((l) => l.id === lessonId);
+}
+
+// ─── A verse's session ──────────────────────────────────────────────────────
+
+/** Everything the philosophy screen shows for one verse, whichever chapter it comes from */
+export interface PhilosophySession {
+  id: string;
+  verseRef: string;
+  title: string;
+  essence?: string;
+  /** The verse itself: the Sanskrit (Chapter 1) or its Hindi translation (Chapter 2) */
+  verse: { language: 'sanskrit' | 'hindi'; text: HindiText };
+  english: string;
+  /** Titled explanations: "The philosophy" (Chapter 1) or "What it means" (Chapter 2) */
+  sectionsTitle: string;
+  sections: { heading: string; text: string }[];
+  commentary?: Commentary;
+  backstory?: Backstory;
+  questions: PhilosophyQuestion[];
+}
+
 /** The philosophy session for a verse, or undefined when that verse has none written yet. */
-export function philosophyFor(lessonId: string): PhilosophyContent | undefined {
-  return PHILOSOPHY[lessonId];
+export function philosophySession(lessonId: string): PhilosophySession | undefined {
+  const v = CHAPTER_1_VERSES.find((x) => x.id === lessonId);
+  if (v) {
+    return {
+      id: v.id,
+      verseRef: v.verseRef,
+      title: v.title,
+      verse: { language: 'sanskrit', text: v.sanskrit },
+      english: v.english,
+      sectionsTitle: 'The philosophy',
+      sections: v.sections,
+      backstory: v.backstory,
+      questions: v.questions
+    };
+  }
+  const content = PHILOSOPHY[lessonId];
+  const lesson = gitaData.chapters.flatMap((c) => c.sections.flatMap((s) => s.lessons)).find((l) => l.id === lessonId);
+  if (!content || !lesson) return undefined;
+  return {
+    id: lesson.id,
+    verseRef: lesson.verseRef,
+    title: lesson.title,
+    essence: lesson.essence,
+    verse: { language: 'hindi', text: hindiOf(lesson) },
+    english: lesson.translation,
+    sectionsTitle: 'What it means',
+    sections: [{ heading: '', text: lesson.purport }],
+    commentary: lesson.commentary,
+    backstory: { backstoryTitle: content.backstoryTitle, video: content.video, scenes: content.scenes },
+    questions: content.questions
+  };
+}
+
+/** One line for a path node's popover: what the session holds */
+export function philosophySummary(lessonId: string): string {
+  if (lessonId === PRELUDE_ID) return `${PRELUDE_PAGES.length} short story pages · read or listen`;
+  const s = philosophySession(lessonId);
+  if (!s) return 'Coming soon';
+  const quiz = `${s.questions.length} questions`;
+  return s.backstory ? `Story video · verse · ${quiz}` : `Verse · philosophy · ${quiz}`;
 }
