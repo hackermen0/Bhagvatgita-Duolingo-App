@@ -112,6 +112,8 @@
   let showFeedback = $state(false);
   let matchShock = $state(false);
   let shockTimer: ReturnType<typeof setTimeout> | undefined;
+  // Right answers in a row, for Krishna's combo reactions; any lost heart resets it
+  let streak = $state(0);
 
   function resetPageState() {
     matchComplete = false;
@@ -134,7 +136,10 @@
   });
 
   const mood = $derived.by((): MascotMood => {
-    if (showFeedback) return isCorrect ? 'cheerful' : 'disappointed';
+    if (showFeedback) {
+      if (isCorrect) return streak >= 5 ? 'amazed' : streak >= 3 ? 'excited' : 'cheerful';
+      return gameState.hearts === 1 ? 'worried' : 'disappointed';
+    }
     return matchShock ? 'shocked' : 'default';
   });
 
@@ -179,6 +184,7 @@
 
   // ─── Hearts ─────────────────────────────────────────────────────────────────
   function loseHeart() {
+    streak = 0;
     gameState.decrementHeart();
     if (gameState.hearts <= 0) setTimeout(() => (isGameOver = true), 800);
   }
@@ -275,6 +281,7 @@
       }
     });
     if (!isCorrect) loseHeart();
+    else streak += 1;
     showFeedback = true;
   }
 
@@ -345,6 +352,7 @@
     if (!selectedOption || isChecked || !current) return;
     isChecked = true;
     isCorrect = selectedOption.isCorrect;
+    streak = isCorrect ? streak + 1 : 0;
     showFeedback = true;
   }
 

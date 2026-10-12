@@ -1,4 +1,4 @@
-# Handover
+﻿# Handover
 
 Mobile-first, Duolingo-style Bhagavad Gita learning app. SvelteKit 5 (runes) + Tailwind v4, deployed on Vercel (`adapter-auto`, `engines.node: 20.x`). No backend: all progress is in `localStorage` (`gita_game_state`). Git HEAD at time of writing: `317ba45`, working tree clean.
 
@@ -82,23 +82,16 @@ Placed tiles can be **dragged to reorder** (pointer events, FLIP animation; tap 
 
 ## 4. Mascot animation (wired into the app)
 
-**Now live in the app.** `Mascot.svelte` (used in ~20 places) renders the layered SVG and plays a reaction when its `mood` prop changes. The animation code is `src/lib/mascot/krishna.ts` (ported from `preview.template.html`, per-instance, with cleanup); the SVG it animates is `src/lib/mascot/krishna-animated.svg`, **generated** by `node design/mascot-svg/build-preview.cjs` alongside `preview.html` — re-run it after re-exporting any expression SVG. The SVG is a separate lazy chunk (`loadKrishnaSvg`, also started by `preloadMascots`).
+**Live in the app.** `Mascot.svelte` (used in ~20 places) renders the layered SVG and plays a reaction when its `mood` prop changes. Animation code: `src/lib/mascot/krishna.ts`. The SVG it animates, `src/lib/mascot/krishna-animated.svg`, is **generated**: `node design/mascot-svg/build-preview.cjs` reads the Illustrator exports in `design/mascot/krishna-mascot_<Expression>.svg` (+ `krishna-mascot.ai`), stacks every expression's `face` group inside `#faces` (ids prefixed `<name>--`), adds the alternate arms and props, and also writes `design/mascot-svg/preview.html`, which **bundles `krishna.ts` itself** (esbuild), so the preview is exactly what the app plays. Re-run it after any re-export. The SVG (~178 KB) is a separate lazy chunk (`loadKrishnaSvg`, also started by `preloadMascots`).
 
-- Mood → reaction: `default` idle/rest · `cheerful`, `proud` → correct (laughing + sparkles) · `excited`, `amazed` → combo · `celebrating` → celebrate (confetti) · `affectionate` → love · `thinking` → think · `disappointed` → wrong · `crying` → heartbreak. The `angry` reaction exists but no mood uses it.
-- A reaction **holds its face** after the motion (the learner reads feedback with the mascot still smiling/sad); moving to another mood or `default` returns to the resting face.
-- Moods with no animation (`shocked`, `worried`, `determined`, `mischievous`, `puppy`) show their static WebP over the (still mounted) SVG, then the animated mascot comes back. `prefers-reduced-motion` uses the WebPs only. Shocked/worried change the whole pose, so they are the next candidates for animation.
-- Verified in headless Chrome (idle loops, laughing/disappointed/crying faces, confetti, shocked fallback, reduced motion, no console errors); not checked on a real phone for performance.
+- Expressions → SVG prefix: Default, Laughing `laughing`, Amazed `amazed`, Disappointed `disappointed`, Angry `angry`, Crying `crying`, Affectionate `affectionate`, Shocked `shocked`, Shocked - 2 `worried`, Too-Much-Crying `teary`. Adding one = add it to `EXPRESSIONS` in the build script, then use it from a reaction. The build warns about (and corrects) any artboard whose `shadow` drifted >0.5 px from Default.
+- Alternate viewer's-left arms: `#arm-raised` (fist up, from Laughing; used by correct/celebrate/heartbreak) and `#arm-stiff` (clenched fist at the side, Shocked's `right-arm-2`; used by shocked/worried). `setArm('normal' | 'raised' | 'stiff')`.
+- Mood → reaction: `default` rest · `cheerful`, `proud` → correct · `excited`, `amazed` → combo · `celebrating` → celebrate · `affectionate` → love · `thinking` → think · `disappointed` → wrong · `shocked` (wrong pair) → shocked · `worried` (jump test, too many mistakes) → worried · `puppy` ("Leaving so soon?" sheet) → plead · `crying` (out of hearts) → heartbreak (teary build-up, then crying). `angry` exists but no mood uses it.
+- A reaction **holds its face** after the motion. Some also start **held loops** (`H`, `holdEvery`: plead's quivering lip and dripping tears, worried's shiver) that run until the next reaction or `rest()`.
+- Static WebP only for `determined`, `mischievous`, and under `prefers-reduced-motion`.
+- Verified in headless Chrome (all reactions render, holds stop on rest, no console errors, svelte-check 0 errors); not checked on a real phone for performance.
 
-Original goal: Duolingo-style animated Krishna that reacts to right/wrong answers. Decision: **animate the layered SVG directly with the Web Animations API** (no Lottie/Rive — no extra dependency, instant to trigger from lesson code).
-
-Files in `design/mascot-svg/`:
-- `krishna-mascot.svg` — user-made layered export (Illustrator, traced from the PNG). Group IDs are the API: `head`, `hair-back`, `hair-front`, `hair-bun`, `left-ear`, `right-ear`, `left-eye`/`right-eye` (+ `left-pupil`/`right-pupil`), `eye-brow-left/right`, `mouth`, `tilak`, `headband`, `peacock-feather`, `earring-left/right`, `body`, `necklace`, `sash`, `Lungi`, `left-arm`, `right-arm` (contains the flute + `hand-right-fingers`), `leg-left/right`, `shadow`.
-- `preview.template.html` + `build-preview.cjs` → `preview.html` (open in a browser; buttons Correct / Wrong / Thinking / Celebrate, idle toggle). Rebuild with `node build-preview.cjs` after re-exporting the SVG.
-- Verified in a headless browser: idle loop + 4 reactions run with no errors, no gaps at joints when arms rotate/head tilts.
-
-Preview limits: expressions are faked (mouth flipped for a frown, eyes squashed for a blink). Faint seam in the hair near the ears (overlap the two hair shapes in Illustrator to fix). SVG angles: positive = clockwise, so the viewer's-left arm lifts with `+`, right arm with `−`.
-
-**Expressions done (2026-10-06):** `design/mascot-svg/expressions/*.svg` (default, laughing, amazed, disappointed, angry, crying, affectionate; Crying's artboard is offset by (3.45, 7.11), corrected in the build). `build-preview.cjs` now uses `expressions/default.svg` as the base, stacks every expression's `face` group inside `#faces` (ids prefixed `<emotion>--`), adds the raised-fist arm (`#arm-raised`, from Laughing) and the Affectionate hearts (`#love-hearts`). Preview reactions: correct→laughing, combo→amazed, wrong→disappointed, angry, out of hearts→crying, love→affectionate, celebrate (amazed→laughing + confetti), thinking; keys 1–8, space plays all. Remaining step is wiring into `Mascot.svelte` (step 3 below).
+Decision record: animate the layered SVG directly with the Web Animations API (no Lottie/Rive). SVG angles: positive = clockwise, so the viewer's-left arm lifts with `+`, right arm with `−`. Faint seam in the hair near the ears (overlap the two hair shapes in Illustrator to fix).
 
 ### Next steps (history)
 1. **Expression variants (user is drawing these).** One artboard per emotion, whole character copied, group named `<emotion>-krishna` (e.g. `disappointed-krishna`), face parts named like the defaults (`left-eye`, `eye-brow-left`, `mouth`, plus extras like `eyelid-left`, tears). First export received as a screenshot only — **the SVG itself has not been sent yet**. Plan: export with *Use Artboards* so each is its own SVG; code takes only the face parts and swaps them over the default face (with a quick squash) during reactions.

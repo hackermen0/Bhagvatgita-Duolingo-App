@@ -1,5 +1,6 @@
 // Animates the layered Krishna SVG (src/lib/mascot/krishna-animated.svg, built by design/mascot-svg/build-preview.cjs)
-// with the Web Animations API. Ported from design/mascot-svg/preview.template.html, where it can still be tried out.
+// with the Web Animations API. design/mascot-svg/preview.html bundles this same file, so every reaction can be
+// tried there (node design/mascot-svg/build-preview.cjs) exactly as the app plays it.
 //
 // Layers: `bob` carries the idle motion, `char` carries one-shot reactions, so they never fight over a transform.
 // The ground shadow stays put; `fx` (particles) sits on top of everything. A reaction swaps in that expression's
@@ -8,7 +9,12 @@
 
 const NS = 'http://www.w3.org/2000/svg';
 
-export type Reaction = 'correct' | 'combo' | 'wrong' | 'angry' | 'heartbreak' | 'love' | 'celebrate' | 'think';
+export type Reaction =
+  | 'correct' | 'combo' | 'wrong' | 'angry' | 'heartbreak' | 'love' | 'celebrate' | 'think'
+  | 'shocked' | 'worried' | 'plead';
+
+/** Every reaction, in the order the design preview demos them */
+export const REACTIONS: Reaction[] = ['correct', 'combo', 'wrong', 'shocked', 'worried', 'angry', 'plead', 'heartbreak', 'love', 'celebrate', 'think'];
 
 export interface Krishna {
   /** Play a one-shot reaction, replacing any reaction in progress. */
@@ -36,6 +42,7 @@ const P = {
   leftShoulder: [498, 832],
   rightShoulder: [772, 830],
   raisedElbow: [455, 945],
+  stiffShoulder: [460, 828],
   feather: [735, 240],
   leftEye: [505, 598],
   rightEye: [745, 598],
@@ -90,7 +97,9 @@ export function mountKrishna(host: HTMLElement, markup: string): Krishna {
   };
   [
     'amazed--left-eye-star', 'amazed--right-eye-star', 'crying--left-tear', 'crying--right-tear',
-    'affectionate--left-brush', 'affectionate--right-blush', 'love--left-heart-top', 'love--left-heart-bottom', 'love--right-heart'
+    'affectionate--left-brush', 'affectionate--right-blush', 'love--left-heart-top', 'love--left-heart-bottom', 'love--right-heart',
+    'shocked--left-eyeball', 'shocked--right-eyeball', 'worried--mouth', 'teary--mouth', 'teary--left-eye-tear', 'teary--right-eye-tear',
+    'teary--left-eye-white-big-blob', 'teary--right-eye-big-white-blob', 'teary--left-eye-white-small-blob', 'teary--right-eye-big-small-blob'
   ].forEach((n) => els[n] && selfPivot(els[n]));
 
   const show = (el: SVGElement | undefined, on: boolean) => {
@@ -159,10 +168,33 @@ export function mountKrishna(host: HTMLElement, markup: string): Krishna {
     later(ms + 250, () => (ctx = null));
   }
   function reset() {
+    clearHolds();
     setFace('default', false);
-    setArm(false, false);
+    setArm('normal', false);
     show(els['love-hearts'], false);
     flush.style.opacity = '0';
+  }
+
+  // ── Held loops: motion that keeps going while a face is held (a quivering lip, a nervous shiver),
+  //    stopped by the next reaction or rest() rather than by the reaction's own clock ──
+  const holds: Animation[] = [];
+  const holdTimers: ReturnType<typeof setInterval>[] = [];
+  const H = (el: SVGElement | undefined, frames: Keyframe[], o: KeyframeAnimationOptions) => {
+    if (!el || destroyed) return;
+    holds.push(el.animate(frames, { composite: 'add', iterations: Infinity, direction: 'alternate', easing: 'ease-in-out', ...o }));
+  };
+  // A move into a pose that stays put (fill: 'forwards') until the hold is cleared. Chain a held loop after it
+  // with an animation `delay`, not `later()`: a timer fires a frame late and the pose snaps back for that frame
+  const holdPose = (el: SVGElement | undefined, frames: Keyframe[], o: KeyframeAnimationOptions) => {
+    if (!el || destroyed) return;
+    holds.push(el.animate(frames, { composite: 'add', fill: 'forwards', easing: 'ease-in-out', ...o }));
+  };
+  const holdEvery = (ms: number, fn: () => void) => holdTimers.push(setInterval(() => !destroyed && fn(), ms));
+  function clearHolds() {
+    holds.forEach((a) => a.cancel());
+    holds.length = 0;
+    holdTimers.forEach(clearInterval);
+    holdTimers.length = 0;
   }
 
   // ── Face swap: squash the face shut, swap, spring it open (reads as a blink cut) ──
@@ -184,17 +216,24 @@ export function mountKrishna(host: HTMLElement, markup: string): Krishna {
     };
   }
 
-  // ── Arm swap: the raised fist flicks up from the elbow ──
-  let armUp = false;
-  function setArm(up: boolean, animate = true) {
-    if (up === armUp) return;
-    armUp = up;
-    show(els['left-arm'], !up);
-    show(els['arm-raised'], up);
-    if (animate) {
-      const el = up ? els['arm-raised'] : els['left-arm'];
-      const p = up ? P.raisedElbow : P.leftShoulder;
-      el.animate([{ transform: rot(up ? -40 : 25, p[0], p[1]) }, { transform: rot(up ? 8 : -5, p[0], p[1]), offset: 0.65 }, { transform: rot(0, p[0], p[1]) }], { duration: 260, easing: 'ease-out' });
+  // ── Arm swap (viewer's-left arm): hanging, raised fist (laughing, crying) or stiff clenched fist (shocked, worried).
+  //    The incoming arm swings in from `from` degrees about its pivot and overshoots a little ──
+  type Arm = 'normal' | 'raised' | 'stiff';
+  const ARMS: Record<Arm, { id: string; pivot: number[]; from: number }> = {
+    normal: { id: 'left-arm', pivot: P.leftShoulder, from: 25 },
+    raised: { id: 'arm-raised', pivot: P.raisedElbow, from: -40 },
+    stiff: { id: 'arm-stiff', pivot: P.stiffShoulder, from: -22 }
+  };
+  let arm: Arm = 'normal';
+  function setArm(next: Arm, animate = true) {
+    if (next === arm) return;
+    arm = next;
+    for (const [k, a] of Object.entries(ARMS)) show(els[a.id], k === next);
+    const { id: n, pivot: p, from } = ARMS[next];
+    if (animate && els[n]) {
+      els[n].animate([
+        { transform: rot(from, p[0], p[1]) }, { transform: rot(-from / 5, p[0], p[1]), offset: 0.65 }, { transform: rot(0, p[0], p[1]) }
+      ], { duration: 260, easing: 'ease-out' });
     }
   }
 
@@ -275,9 +314,42 @@ export function mountKrishna(host: HTMLElement, markup: string): Krishna {
       { transform: `${tr(rand(-50, 50), -260)} scale(0.8) rotate(${rand(-25, 25)}deg)`, opacity: 0 }
     ], { duration: rand(1300, 1700), easing: 'ease-out' });
   }
+  function sweat(x: number, y: number) {
+    spawn(`<path d="${dropD(x, y, 16)}" fill="#8fd3ff" stroke="#3a9fd8" stroke-width="3"/>`, [
+      { transform: 'translate(0,0) scale(0)', opacity: 1 }, { transform: 'translate(0,0) scale(1)', opacity: 1, offset: 0.2 },
+      { transform: 'translate(8px,70px) scale(0.9)', opacity: 0 }
+    ], { duration: 1000, easing: 'ease-in' });
+  }
+  // A cartoon "!" that pops in beside the head
+  function exclaim(x: number, y: number, tilt: number, s: number) {
+    spawn(
+      `<g><rect x="${x - 11}" y="${y - 70}" width="22" height="78" rx="11" fill="#ff4b4b" stroke="#c42f2f" stroke-width="4"/><circle cx="${x}" cy="${y + 34}" r="13" fill="#ff4b4b" stroke="#c42f2f" stroke-width="4"/></g>`,
+      [
+        { transform: `rotate(${tilt}deg) scale(0)`, opacity: 1 },
+        { transform: `rotate(${tilt}deg) scale(${1.35 * s})`, opacity: 1, offset: 0.18 },
+        { transform: `rotate(${tilt}deg) scale(${s})`, opacity: 1, offset: 0.32 },
+        { transform: `translate(0,-8px) rotate(${tilt}deg) scale(${s})`, opacity: 1, offset: 0.8 },
+        { transform: `translate(0,-20px) rotate(${tilt}deg) scale(${0.8 * s})`, opacity: 0 }
+      ],
+      { duration: 950, easing: 'ease-out' }
+    );
+  }
+  // Short "surprise" strokes bursting out around the top of the head
+  function surpriseLines() {
+    for (const deg of [-155, -130, -105, -75, -50, -25]) {
+      const a = (deg * Math.PI) / 180;
+      const [x1, y1] = [627 + Math.cos(a) * 400, 470 + Math.sin(a) * 330];
+      const [x2, y2] = [627 + Math.cos(a) * 460, 470 + Math.sin(a) * 385];
+      spawn(`<path d="M${x1},${y1}L${x2},${y2}" stroke="#102331" stroke-width="12" stroke-linecap="round" fill="none" opacity=".75"/>`, [
+        { transform: `${tr(0, 0)} scale(0)` },
+        { transform: `${tr((x2 - x1) * 0.4, (y2 - y1) * 0.4)} scale(1.2)`, offset: 0.35 },
+        { transform: `${tr(x2 - x1, y2 - y1)} scale(0.4)`, opacity: 0 }
+      ], { duration: 520, easing: 'ease-out' });
+    }
+  }
 
   // ── Motion building blocks ──
-  function hop(h = 110, dur = 800, armsUp = 38, raisedArm = false) {
+  function hop(h = 110, dur = 800, armsUp = 38) {
     R(char, [
       { transform: tr(0, 0) + sc(1, 1, FEET[0], FEET[1]), offset: 0 },
       { transform: tr(0, 0) + sc(1.07, 0.9, FEET[0], FEET[1]), offset: 0.18 },
@@ -287,7 +359,7 @@ export function mountKrishna(host: HTMLElement, markup: string): Krishna {
     ], { duration: dur, easing: 'ease-out' });
     R(els.shadow, [{ transform: sc(1, 1, 618, 1169) }, { transform: sc(0.7, 0.7, 618, 1169), offset: 0.5 }, { transform: sc(1, 1, 618, 1169) }], { duration: dur });
     const arms: [string, number[], number][] = [['right-arm', P.rightShoulder, -armsUp]];
-    if (!raisedArm) arms.push(['left-arm', P.leftShoulder, armsUp]);
+    if (arm === 'normal') arms.push(['left-arm', P.leftShoulder, armsUp]);
     for (const [n, p, a] of arms) R(els[n], [{ transform: rot(0, p[0], p[1]) }, { transform: rot(a, p[0], p[1]), offset: 0.5 }, { transform: rot(0, p[0], p[1]) }], { duration: dur });
     R(els['peacock-feather'], [
       { transform: rot(0, P.feather[0], P.feather[1]) }, { transform: rot(-10, P.feather[0], P.feather[1]), offset: 0.5 },
@@ -306,8 +378,8 @@ export function mountKrishna(host: HTMLElement, markup: string): Krishna {
     correct() {
       begin();
       setFace('laughing');
-      setArm(true);
-      hop(100, 760, 34, true);
+      setArm('raised');
+      hop(100, 760, 34);
       later(120, () => headSeq([0, -5, 4, -5, 4, -3, 0], 900, (_i, a) => tr(0, a ? 3 : 0), { easing: 'linear' }));
       R(els['arm-raised'], wave([0, -14, 6, -14, 6, 0], P.raisedElbow), { duration: 900, delay: 150 });
       later(260, () => sparkles(5));
@@ -338,10 +410,7 @@ export function mountKrishna(host: HTMLElement, markup: string): Krishna {
       R(els['left-arm'], hold(rot(0, P.leftShoulder[0], P.leftShoulder[1]), rot(-8, P.leftShoulder[0], P.leftShoulder[1])), { duration: dur });
       R(els['right-arm'], hold(rot(0, P.rightShoulder[0], P.rightShoulder[1]), rot(6, P.rightShoulder[0], P.rightShoulder[1])), { duration: dur });
       R(els['peacock-feather'], hold(rot(0, P.feather[0], P.feather[1]), rot(16, P.feather[0], P.feather[1])), { duration: dur });
-      later(350, () => spawn(`<path d="${dropD(858, 470, 16)}" fill="#8fd3ff" stroke="#3a9fd8" stroke-width="3"/>`, [
-        { transform: 'translate(0,0) scale(0)', opacity: 1 }, { transform: 'translate(0,0) scale(1)', opacity: 1, offset: 0.2 },
-        { transform: 'translate(8px,70px) scale(0.9)', opacity: 0 }
-      ], { duration: 1000, easing: 'ease-in' }));
+      later(350, () => sweat(858, 470));
       finish(1450);
     },
     angry() {
@@ -364,21 +433,116 @@ export function mountKrishna(host: HTMLElement, markup: string): Krishna {
     },
     heartbreak() {
       begin();
-      setFace('crying');
-      setArm(true);
-      const dur = 2500;
-      const sob: Keyframe[] = [];
-      for (let i = 0; i <= 14; i++) sob.push({ transform: tr(0, i % 2 ? 7 : 0) + sc(i % 2 ? 1.015 : 1, i % 2 ? 0.985 : 1, FEET[0], FEET[1]), offset: i / 14 });
-      R(char, sob, { duration: dur, easing: 'ease-in-out' });
-      R(els['arm-raised'], wave([0, 6, -3, 6, -3, 6, -3, 6, 0], P.raisedElbow), { duration: dur });
-      headSeq([0, 4, 4, 2, 4, 0], dur, (i) => tr(0, i === 0 || i === 5 ? 0 : 10));
-      R(els['peacock-feather'], [
-        { transform: rot(0, P.feather[0], P.feather[1]) }, { transform: rot(18, P.feather[0], P.feather[1]), offset: 0.15 },
-        { transform: rot(18, P.feather[0], P.feather[1]), offset: 0.85 }, { transform: rot(0, P.feather[0], P.feather[1]) }
-      ], { duration: dur });
-      for (const n of ['crying--left-tear', 'crying--right-tear']) R(els[n], [{ transform: 'scale(1,1)' }, { transform: 'scale(1.25,1.35)' }, { transform: 'scale(1,1)' }], { duration: 300, iterations: 8 });
-      for (let k = 0; k < 11; k++) later(200 + k * 190, () => { teardrop(484, 664, -1); teardrop(786, 662, 1); });
-      finish(2450);
+      // First the eyes well up and the lip wobbles…
+      const welling = 700;
+      setFace('teary');
+      R(els['teary--mouth'], [{ transform: 'translate(-2px,0)' }, { transform: 'translate(2px,1px) scale(0.92,1.12)' }], { duration: 100, iterations: welling / 100, direction: 'alternate', easing: 'linear' });
+      for (const n of ['teary--left-eye-tear', 'teary--right-eye-tear']) R(els[n], [{ transform: 'scale(1,1)' }, { transform: 'scale(1.12,1.6)' }], { duration: welling, easing: 'ease-in' });
+      headSeq([0, 2, 0], welling, (i) => tr(0, i === 1 ? 8 : 0));
+      // …then he bursts into tears, rubbing an eye with his fist
+      later(welling, () => {
+        setFace('crying');
+        setArm('raised');
+        const dur = 2500;
+        const sob: Keyframe[] = [];
+        for (let i = 0; i <= 14; i++) sob.push({ transform: tr(0, i % 2 ? 7 : 0) + sc(i % 2 ? 1.015 : 1, i % 2 ? 0.985 : 1, FEET[0], FEET[1]), offset: i / 14 });
+        R(char, sob, { duration: dur, easing: 'ease-in-out' });
+        R(els['arm-raised'], wave([0, 6, -3, 6, -3, 6, -3, 6, 0], P.raisedElbow), { duration: dur });
+        headSeq([0, -5, 4, 2, 4, 0], dur, (i) => tr(0, i === 0 || i === 5 ? 0 : i === 1 ? -6 : 10));
+        R(els['peacock-feather'], [
+          { transform: rot(0, P.feather[0], P.feather[1]) }, { transform: rot(18, P.feather[0], P.feather[1]), offset: 0.15 },
+          { transform: rot(18, P.feather[0], P.feather[1]), offset: 0.85 }, { transform: rot(0, P.feather[0], P.feather[1]) }
+        ], { duration: dur });
+        for (const n of ['crying--left-tear', 'crying--right-tear']) R(els[n], [{ transform: 'scale(1,1)' }, { transform: 'scale(1.25,1.35)' }, { transform: 'scale(1,1)' }], { duration: 300, iterations: 8 });
+        for (let k = 0; k < 11; k++) later(120 + k * 190, () => { teardrop(484, 664, -1); teardrop(786, 662, 1); });
+      });
+      finish(welling + 2450);
+    },
+    shocked() {
+      begin();
+      setFace('shocked');
+      setArm('stiff');
+      const F = FEET;
+      // Jolts up and stretches, lands with a squash
+      R(char, [
+        { transform: tr(0, 0) + sc(1, 1, F[0], F[1]), offset: 0 },
+        { transform: tr(0, -60) + sc(0.9, 1.13, F[0], F[1]), offset: 0.14, easing: 'ease-in' },
+        { transform: tr(0, 0) + sc(1.07, 0.93, F[0], F[1]), offset: 0.32 },
+        { transform: tr(0, 0) + sc(0.98, 1.02, F[0], F[1]), offset: 0.46 },
+        { transform: tr(0, 0) + sc(1, 1, F[0], F[1]), offset: 1 }
+      ], { duration: 900, easing: 'ease-out' });
+      R(els.shadow, [
+        { transform: sc(1, 1, 618, 1169) }, { transform: sc(0.75, 0.75, 618, 1169), offset: 0.14 },
+        { transform: sc(1, 1, 618, 1169), offset: 0.32 }, { transform: sc(1, 1, 618, 1169) }
+      ], { duration: 900 });
+      headSeq([0, -2, 2, -2, 2, -1, 1, 0], 1000, (i) => tr(0, i === 1 ? -16 : 0), { easing: 'linear' });
+      R(els['peacock-feather'], wave([0, -26, 12, -8, 4, 0], P.feather), { duration: 1000 });
+      R(els['right-arm'], wave([0, -16, 4, 0], P.rightShoulder), { duration: 700 });
+      // Pupils shrink to pinpricks and tremble
+      for (const n of ['shocked--left-eyeball', 'shocked--right-eyeball']) {
+        R(els[n], [
+          { transform: 'scale(1)' }, { transform: 'scale(0.55)', offset: 0.1 }, { transform: 'translate(2px,0) scale(0.6)', offset: 0.3 },
+          { transform: 'translate(-2px,0) scale(0.6)', offset: 0.5 }, { transform: 'translate(2px,0) scale(0.6)', offset: 0.7 }, { transform: 'scale(1)' }
+        ], { duration: 1000, easing: 'linear' });
+      }
+      later(60, () => { exclaim(905, 330, 14, 1); exclaim(350, 360, -14, 0.75); surpriseLines(); });
+      later(900, () => R(char, [{ transform: tr(-1.5, 0) }, { transform: tr(1.5, 0) }], { duration: 70, iterations: 16, direction: 'alternate', easing: 'linear' }));
+      finish(1000);
+    },
+    worried() {
+      begin();
+      setFace('worried');
+      setArm('stiff');
+      const dur = 2200;
+      const F = FEET;
+      R(char, [{ transform: tr(-2, 0) }, { transform: tr(2, 0) }], { duration: 80, iterations: dur / 80, direction: 'alternate', easing: 'linear' });
+      // Gulp
+      R(char, [{ transform: sc(1, 1, F[0], F[1]) }, { transform: sc(1.025, 0.965, F[0], F[1]), offset: 0.5 }, { transform: sc(1, 1, F[0], F[1]) }], { duration: 380, delay: 500 });
+      headSeq([0, 0, 0], 380, (i) => tr(0, i === 1 ? 10 : 0), { delay: 500 });
+      R(els['worried--mouth'], [{ transform: 'scale(1,1)' }, { transform: 'scale(0.9,0.7)' }, { transform: 'scale(1,1)' }], { duration: 380, delay: 500 });
+      // Eyes dart left, right, back
+      for (const n of ['worried--left-eye-pupil', 'worried--right-eye-pupil']) {
+        R(els[n], [
+          { transform: tr(0, 0), offset: 0 }, { transform: tr(-12, 2), offset: 0.1 }, { transform: tr(-12, 2), offset: 0.32 },
+          { transform: tr(12, 2), offset: 0.4 }, { transform: tr(12, 2), offset: 0.62 }, { transform: tr(-6, 0), offset: 0.72 },
+          { transform: tr(0, 0), offset: 0.85 }, { transform: tr(0, 0), offset: 1 }
+        ], { duration: dur, easing: 'ease-out' });
+      }
+      for (const n of ['worried--left-eyebrow', 'worried--right-eyebrow']) {
+        R(els[n], [{ transform: tr(0, 0) }, { transform: tr(0, -9) }, { transform: tr(0, 0) }, { transform: tr(0, -9) }, { transform: tr(0, 0) }], { duration: 600, delay: 1100 });
+      }
+      for (let k = 0; k < 3; k++) later(200 + k * 650, () => { sweat(850, 470); if (k !== 1) sweat(405, 488); });
+      // Keeps shivering, faintly, for as long as the face is held
+      H(char, [{ transform: tr(-1, 0) }, { transform: tr(1, 0) }], { duration: 90, delay: dur, easing: 'linear' });
+      finish(dur);
+    },
+    plead() {
+      begin();
+      setFace('teary');
+      const F = FEET;
+      // Two little "please" bounces
+      for (const delay of [0, 440]) {
+        R(char, [
+          { transform: tr(0, 0) + sc(1, 1, F[0], F[1]) }, { transform: tr(0, 0) + sc(1.04, 0.95, F[0], F[1]), offset: 0.3 },
+          { transform: tr(0, -18) + sc(0.98, 1.03, F[0], F[1]), offset: 0.6 }, { transform: tr(0, 0) + sc(1, 1, F[0], F[1]) }
+        ], { duration: 420, delay, easing: 'ease-out' });
+      }
+      // The head tilts in and stays tilted, swaying a little, while the eyes well and the lip quivers
+      for (const n of HEAD) {
+        holdPose(els[n], [{ transform: rot(0, NECK[0], NECK[1]) }, { transform: rot(-8, NECK[0], NECK[1]) }], { duration: 500, easing: 'ease-out' });
+        // Sways on top of the held tilt (-8° ↔ -5°), starting the instant the tilt lands
+        H(els[n], [{ transform: rot(0, NECK[0], NECK[1]) }, { transform: rot(3, NECK[0], NECK[1]) + tr(0, 2) }], { duration: 1400, delay: 500 });
+      }
+      for (const n of ['teary--left-eye-tear', 'teary--right-eye-tear']) H(els[n], [{ transform: 'scale(1,1)' }, { transform: 'scale(1.06,1.2)' }], { duration: 650 });
+      for (const n of ['teary--left-eye-white-big-blob', 'teary--right-eye-big-white-blob', 'teary--left-eye-white-small-blob', 'teary--right-eye-big-small-blob']) {
+        H(els[n], [{ transform: 'scale(1)' }, { transform: 'scale(1.2)' }], { duration: 900 });
+      }
+      H(els['teary--mouth'], [{ transform: 'translate(-1.5px,0)' }, { transform: 'translate(1.5px,1px) scale(0.94,1.1)' }], { duration: 110, easing: 'linear' });
+      // A tear escapes now and then
+      let side = -1;
+      const drip = () => { side = -side; teardrop(side < 0 ? 462 : 802, 678, side); };
+      later(900, () => { drip(); holdEvery(1700, drip); });
+      finish(1000);
     },
     love() {
       begin();
@@ -407,9 +571,9 @@ export function mountKrishna(host: HTMLElement, markup: string): Krishna {
       hop(170, 950, 60);
       later(150, () => confetti(46));
       later(300, () => sparkles(7, 627, 430, 420));
-      later(900, () => { setFace('laughing'); setArm(true); });
+      later(900, () => { setFace('laughing'); setArm('raised'); });
       later(950, () => {
-        hop(150, 850, 40, true);
+        hop(150, 850, 40);
         R(els['arm-raised'], wave([0, -16, 6, -16, 0], P.raisedElbow), { duration: 850 });
         headSeq([0, -6, 5, -6, 5, 0], 850, () => '', { easing: 'linear' });
       });
@@ -434,8 +598,9 @@ export function mountKrishna(host: HTMLElement, markup: string): Krishna {
     rest() {
       if (destroyed) return;
       cancelCtx();
+      clearHolds();
       setFace('default');
-      setArm(false);
+      setArm('normal');
       show(els['love-hearts'], false);
       flush.style.opacity = '0';
     },
@@ -443,6 +608,7 @@ export function mountKrishna(host: HTMLElement, markup: string): Krishna {
       destroyed = true;
       stopIdle();
       cancelCtx();
+      clearHolds();
       host.innerHTML = '';
     }
   };

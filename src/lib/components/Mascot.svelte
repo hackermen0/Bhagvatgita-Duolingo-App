@@ -22,8 +22,7 @@
 
   /**
    * The moods that have a hand-animated version (the layered SVG, see ../mascot/krishna.ts). `idle` is the resting
-   * face. Moods that change the whole pose — shocked, worried, determined, mischievous, puppy — have no animation
-   * yet, so they keep showing their static WebP.
+   * face. Determined and mischievous have no animated expression yet, so they keep showing their static WebP.
    */
   const ANIMATED: Partial<Record<MascotMood, Reaction | 'idle'>> = {
     default: 'idle',
@@ -35,6 +34,9 @@
     affectionate: 'love',
     thinking: 'think',
     disappointed: 'wrong',
+    shocked: 'shocked',
+    worried: 'worried',
+    puppy: 'plead',
     crying: 'heartbreak'
   };
 
