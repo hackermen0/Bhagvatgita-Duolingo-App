@@ -2,15 +2,31 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import { gitaData } from '$lib/data/gitaData';
-  import { PRELUDE_ID, findLesson, philosophySession } from '$lib/data/philosophy';
+  import { PRELUDE_ID, PRELUDE_TITLE, findLesson, philosophySession } from '$lib/data/philosophy';
   import { gameState } from '$lib/state/gameState.svelte';
   import JourneyScreen from '$lib/components/JourneyScreen.svelte';
   import PhilosophyScreen from '$lib/components/PhilosophyScreen.svelte';
   import PreludeStory from '$lib/components/PreludeStory.svelte';
+  import TestSwitcher from '$lib/components/TestSwitcher.svelte';
   import Mascot from '$lib/components/Mascot.svelte';
 
   const lessonId = $derived($page.params.lessonId ?? '');
   const philosophyMode = $derived(gameState.learningMode === 'philosophy');
+
+  // TEMPORARY (testing): every session opens on a mode / level switcher; the verse starts once it is dismissed
+  let startedFor = $state('');
+  const atSwitcher = $derived(startedFor !== lessonId);
+  const known = $derived(findLesson(lessonId));
+  const normalLesson = $derived(gitaData.chapters.flatMap((c) => c.sections.flatMap((s) => s.lessons)).find((l) => l.id === lessonId));
+  const blocked = $derived(
+    !known
+      ? ''
+      : philosophyMode && lessonId !== PRELUDE_ID && !philosophySession(lessonId)
+        ? 'The philosophy lesson for this verse is still being written. Switch to Learning mode to play it.'
+        : !philosophyMode && !normalLesson
+          ? 'This part of the story only exists in Philosophy mode. Switch to Philosophy to play it.'
+          : ''
+  );
 
   // The normal mode teaches only gitaData's verses; philosophy mode's path also has Chapter 1 and its story page
   const lesson = $derived(
@@ -25,7 +41,15 @@
   }
 </script>
 
-{#if philosophyMode && lessonId === PRELUDE_ID}
+{#if atSwitcher && known}
+  <TestSwitcher
+    eyebrow={lessonId === PRELUDE_ID ? 'Before the Gita' : known.verseRef}
+    title={lessonId === PRELUDE_ID ? PRELUDE_TITLE : known.title}
+    {blocked}
+    onStart={() => (startedFor = lessonId)}
+    onBack={handleExit}
+  />
+{:else if philosophyMode && lessonId === PRELUDE_ID}
   <PreludeStory onExit={handleExit} />
 {:else if philosophyMode && session}
   {#key session.id}
